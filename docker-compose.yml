@@ -28,4 +28,4 @@ services:
 
 networks:
   habit-network:
-    driver: bridges
+    driver: bridge
