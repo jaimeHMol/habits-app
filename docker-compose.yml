@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    restart: always
+    env_file: ./backend/.env
+    volumes:
+      - ./backend/habits.db:/app/habits.db # Persist SQLite data
+    networks:
+      - habit-network
+
+  frontend:
+    build: ./frontend
+    restart: always
+    networks:
+      - habit-network
+
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - habit-network
+
+networks:
+  habit-network:
+    driver: bridge
