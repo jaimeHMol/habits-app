@@ -4,6 +4,7 @@ from src.infrastructure.database import engine
 from src.domain.models import User
 from src.api.security import get_password_hash
 
+
 def update_admin_password():
     # We use getpass to avoid the password appearing in the terminal history
     new_password = getpass.getpass("Enter new robust password: ")
@@ -29,6 +30,7 @@ def update_admin_password():
         session.add(user)
         session.commit()
         print("Success: Admin password updated with a new salted hash.")
+
 
 if __name__ == "__main__":
     update_admin_password()

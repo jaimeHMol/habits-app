@@ -7,10 +7,11 @@ from src.api.security import create_access_token, verify_password
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+
 @router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    session: Session = Depends(get_session) # Inject DB session
+    session: Session = Depends(get_session),  # Inject DB session
 ):
     """
     Authenticates the user against the database securely.
@@ -18,7 +19,7 @@ def login(
     # 1. Look for the user in the database
     statement = select(User).where(User.username == form_data.username)
     user = session.exec(statement).first()
-    
+
     # 2. Verify existence and check the password hash
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
@@ -26,7 +27,7 @@ def login(
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # 3. If everything is correct, generate token
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}

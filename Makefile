@@ -1,30 +1,37 @@
-.PHONY: setup dev-back dev-front test-back test-front clean-db reset-all
+.PHONY: setup dev-back dev-front test-back test-front lint-back lint-front clean-db reset-all
 
 # --- Instalación ---
 setup:
 	@echo "Installing backend dependencies..."
-	cd backend && pip install -r requirements.txt
+	cd backend && . venv/bin/activate && pip install -r requirements.txt && pip install ruff
 	@echo "Installing frontend dependencies..."
 	cd frontend && npm install
 
 # --- Servidores de Desarrollo ---
 dev-back:
 	@echo "Starting FastAPI..."
-	cd backend && uvicorn src.main:app --reload
+	cd backend && . venv/bin/activate && uvicorn src.main:app --reload
 
 dev-front:
 	@echo "Starting Vite/React..."
- 	# cd frontend && npm run dev
-	npm run dev
+	cd frontend && npm run dev
 
-# --- Pruebas ---
+# --- Pruebas y Linting ---
 test-back:
 	@echo "Starting test suite in Python..."
-	cd backend && python -m pytest -v
+	cd backend && . venv/bin/activate && python3 -m pytest -v
 
 test-front:
 	@echo "Starting test suite in React..."
 	cd frontend && npm run test
+
+lint-back:
+	@echo "Running Ruff (linter/formatter)..."
+	cd backend && . venv/bin/activate && ruff check . && ruff format --check .
+
+lint-front:
+	@echo "Running ESLint..."
+	cd frontend && npm run lint
 
 # --- Utilidades de Base de Datos ---
 clean-db:

@@ -5,6 +5,7 @@ from src.infrastructure.database import create_db_and_tables
 from src.api.routers import router as tasks_router
 from src.api.auth_router import router as auth_router
 
+
 # Lifespan context manager runs code before the app starts accepting requests
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -13,16 +14,17 @@ async def lifespan(app: FastAPI):
     yield
     # Code here runs on app shutdown (not needed for SQLite)
 
+
 app = FastAPI(
     title="Habit Tracker API",
     description="Backend for the Hexagonal Habit Tracker built with FastAPI and SQLModel",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # Configure CORS so the React frontend can communicate with the API
 origins = [
-    "http://localhost:5173", # Vite default port
+    "http://localhost:5173",  # Vite default port
     "http://localhost:3000",
     "http://127.0.0.1:5173",
 ]
@@ -31,7 +33,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"], # Allows GET, POST, PUT, DELETE, etc.
+    allow_methods=["*"],  # Allows GET, POST, PUT, DELETE, etc.
     allow_headers=["*"],
 )
 
@@ -39,6 +41,9 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(tasks_router)
 
+
 @app.get("/")
 def root():
-    return {"message": "Habit Tracker API is running. Go to /docs for the interactive Swagger UI."}
+    return {
+        "message": "Habit Tracker API is running. Go to /docs for the interactive Swagger UI."
+    }
