@@ -1,6 +1,15 @@
 from typing import List, Optional
-from src.domain.models import Task, TaskCreate, TaskUpdate, ColumnId
-from src.application.interfaces import ITaskRepository
+from src.domain.models import (
+    Task,
+    TaskCreate,
+    TaskUpdate,
+    ColumnId,
+    Reminder,
+    ReminderCreate,
+    ReminderUpdate,
+    User,
+)
+from src.application.interfaces import ITaskRepository, IReminderRepository
 
 
 class TaskService:
@@ -100,3 +109,43 @@ class TaskService:
         # Apply the new order_index
         sorted_ids = [t.id for t in sorted_tasks if t.id is not None]
         self.repository.reorder_tasks(column_id, sorted_ids)
+
+
+class ReminderService:
+    """
+    Application Service that orchestrates use cases for Reminders.
+    """
+
+    def __init__(self, repository: IReminderRepository):
+        self.repository = repository
+
+    def get_all_reminders(self) -> List[Reminder]:
+        return self.repository.get_all()
+
+    def get_reminder(self, reminder_id: int) -> Optional[Reminder]:
+        return self.repository.get_by_id(reminder_id)
+
+    def create_reminder(self, reminder_data: ReminderCreate) -> Reminder:
+        return self.repository.create(reminder_data)
+
+    def update_reminder(
+        self, reminder_id: int, reminder_data: ReminderUpdate
+    ) -> Optional[Reminder]:
+        return self.repository.update(reminder_id, reminder_data)
+
+    def delete_reminder(self, reminder_id: int) -> bool:
+        return self.repository.delete(reminder_id)
+
+
+class UserService:
+    """
+    Application Service for User-related operations (settings).
+    """
+
+    def __init__(self, repository):
+        self.repository = repository
+
+    def update_settings(
+        self, user_id: int, start_time: str, end_time: str
+    ) -> Optional[User]:
+        return self.repository.update_settings(user_id, start_time, end_time)

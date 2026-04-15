@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
 import { CheckCircle2, Circle, PartyPopper, ArrowRight } from 'lucide-react'
 
@@ -17,17 +17,17 @@ export const DailyReviewModal = () => {
     );
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     confirmReview(completedIds);
-  };
+  }, [confirmReview, completedIds]);
 
   // If there are no uncompleted tasks to review, we should just auto-confirm 
   // to update the date and reset for the new day
-  React.useEffect(() => {
+  useEffect(() => {
     if (dailyTasksToReview.length === 0 && !isLoading) {
       handleConfirm();
     }
-  }, [dailyTasksToReview.length]);
+  }, [dailyTasksToReview.length, isLoading, handleConfirm]);
 
   if (dailyTasksToReview.length === 0) return null;
 

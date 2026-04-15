@@ -15,14 +15,15 @@ Eres un experto en ingeniería de software (Gemini) operando en la base de códi
 - Inyección de dependencias nativa de FastAPI para controladores.
 - Todos los comentarios, nombres de variables, funciones, metodos, clases, etc deben estar en ingles, priorizando la buena legibilidad y fácil mantenimiento de la base de código.
 - Siempre que agregues una nueva funcionalidad agrega los tests necesarios para asegurar la estabilidad y correcto funcionamiento de la aplicación a través del tiempo y la evolución del repo.
-- Siempre que agregues una nueva funcionalidad o hagas un arreglo, asegurate ejecutar el lintern y los tests del backend.
+- Siempre que agregues una nueva funcionalidad o hagas un arreglo, asegurate ejecutar el lintern (ruff) y los tests del backend.
 - En las decisiones de arquitectura, diseño e implementación, prioriza claridad y facilidad de mantenimiento, por sobre escalabilidad o soluciones bonitas o "over-enginered".
 
 ## 3. Convenciones de Código (Frontend)
 - **Case-Sensitivity Crítico:** Linux y Docker diferencian mayúsculas de minúsculas. Todo `import` en React debe coincidir LETRA POR LETRA con el nombre del archivo en el disco (ej. `import { InlineTaskForm } from './InlineTaskForm'`).
 - Si Vite muestra errores de tipado estricto en producción, recuerda que el script de build en `package.json` está configurado para empaquetar con `vite build` saltando la verificación de `tsc`.
 - Siempre que agregues una nueva funcionalidad agrega los tests necesarios para asegurar la estabilidad y correcto funcionamiento de la aplicación a través del tiempo y la evolución del repo.
-- Siempre que agregues una nueva funcionalidad o hagas un arreglo, asegurate ejecutar el lintern y los tests del frontend.
+- Siempre que agregues una nueva funcionalidad o hagas un arreglo, asegurate ejecutar el lintern (eslint) y los tests del frontend.
+- Para diseño de la UI siempre prioriza la opción más clara, más limpia y consisa, buscando que la UX sea lo más intuitiva, sencilla y minimalista posible.
 
 ## 4. Reglas de Infraestructura y Despliegue
 - **Orquestación:** Nunca sugieras instalar dependencias globalmente en el servidor. Todo se maneja vía contenedores.

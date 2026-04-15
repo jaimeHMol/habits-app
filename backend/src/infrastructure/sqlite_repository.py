@@ -1,7 +1,16 @@
 from typing import List, Optional
 from sqlmodel import Session, select
-from src.domain.models import Task, TaskCreate, TaskUpdate, ColumnId
-from src.application.interfaces import ITaskRepository
+from src.domain.models import (
+    Task,
+    TaskCreate,
+    TaskUpdate,
+    ColumnId,
+    Reminder,
+    ReminderCreate,
+    ReminderUpdate,
+    User,
+)
+from src.application.interfaces import ITaskRepository, IReminderRepository
 
 
 class SQLiteTaskRepository(ITaskRepository):
@@ -91,3 +100,76 @@ class SQLiteTaskRepository(ITaskRepository):
         except Exception:
             self.session.rollback()
             return False
+
+
+class SQLiteReminderRepository(IReminderRepository):
+    """
+    SQLite Adapter for the Reminder Repository using SQLModel.
+    """
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get_all(self) -> List[Reminder]:
+        statement = select(Reminder).order_by(Reminder.created_at)
+        results = self.session.exec(statement)
+        return results.all()
+
+    def get_by_id(self, reminder_id: int) -> Optional[Reminder]:
+        return self.session.get(Reminder, reminder_id)
+
+    def create(self, reminder_data: ReminderCreate) -> Reminder:
+        db_reminder = Reminder.model_validate(reminder_data)
+        self.session.add(db_reminder)
+        self.session.commit()
+        self.session.refresh(db_reminder)
+        return db_reminder
+
+    def update(
+        self, reminder_id: int, reminder_data: ReminderUpdate
+    ) -> Optional[Reminder]:
+        db_reminder = self.get_by_id(reminder_id)
+        if not db_reminder:
+            return None
+
+        update_data = reminder_data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(db_reminder, key, value)
+
+        self.session.add(db_reminder)
+        self.session.commit()
+        self.session.refresh(db_reminder)
+        return db_reminder
+
+    def delete(self, reminder_id: int) -> bool:
+        db_reminder = self.get_by_id(reminder_id)
+        if not db_reminder:
+            return False
+
+        self.session.delete(db_reminder)
+        self.session.commit()
+        return True
+
+
+class SQLiteUserRepository:
+    """
+    Minimal repository for user settings.
+    """
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def update_settings(
+        self, user_id: int, start_time: str, end_time: str
+    ) -> Optional[User]:
+        db_user = self.session.get(User, user_id)
+        if not db_user:
+            return None
+
+        db_user.day_start_time = start_time
+        db_user.day_end_time = end_time
+
+        self.session.add(db_user)
+        self.session.commit()
+        self.session.refresh(db_user)
+        return db_user

@@ -105,5 +105,73 @@ export const taskApi = {
       headers: getHeaders(),
     });
     return handleResponse(response);
+  },
+
+  // --- Reminders ---
+  getReminders: async () => {
+    const response = await fetch(`${BASE_URL}/reminders/`, { headers: getHeaders() });
+    const data = await handleResponse(response);
+    return data.map(r => ({
+      ...r,
+      intervalMinutes: r.interval_minutes,
+      isActive: r.is_active
+    }));
+  },
+
+  createReminder: async (reminderData) => {
+    const response = await fetch(`${BASE_URL}/reminders/`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        title: reminderData.title,
+        interval_minutes: reminderData.intervalMinutes,
+        is_active: true
+      }),
+    });
+    return handleResponse(response);
+  },
+
+  updateReminder: async (reminderId, reminderData) => {
+    const response = await fetch(`${BASE_URL}/reminders/${reminderId}`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        title: reminderData.title,
+        interval_minutes: reminderData.intervalMinutes,
+        is_active: reminderData.isActive
+      }),
+    });
+    return handleResponse(response);
+  },
+
+  deleteReminder: async (reminderId) => {
+    const response = await fetch(`${BASE_URL}/reminders/${reminderId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  // --- User / Settings ---
+  getMe: async () => {
+    const response = await fetch(`${BASE_URL}/users/me`, { headers: getHeaders() });
+    const data = await handleResponse(response);
+    return {
+      ...data,
+      dayStartTime: data.day_start_time,
+      dayEndTime: data.day_end_time
+    };
+  },
+
+  updateSettings: async (settings) => {
+    const response = await fetch(`${BASE_URL}/users/settings`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        day_start_time: settings.dayStartTime,
+        day_end_time: settings.dayEndTime
+      }),
+    });
+    return handleResponse(response);
   }
-};
+  };

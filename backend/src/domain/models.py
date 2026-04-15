@@ -53,6 +53,8 @@ class TaskUpdate(SQLModel):
 class UserBase(SQLModel):
     username: str = Field(index=True, unique=True)
     is_active: bool = Field(default=True)
+    day_start_time: str = Field(default="08:00")
+    day_end_time: str = Field(default="20:00")
 
 
 class User(UserBase, table=True):
@@ -63,3 +65,24 @@ class User(UserBase, table=True):
 
 class UserCreate(UserBase):
     password: str
+
+
+class ReminderBase(SQLModel):
+    title: str
+    interval_minutes: int = Field(gt=0)
+    is_active: bool = Field(default=True)
+
+
+class Reminder(ReminderBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class ReminderCreate(ReminderBase):
+    pass
+
+
+class ReminderUpdate(SQLModel):
+    title: Optional[str] = None
+    interval_minutes: Optional[int] = Field(default=None, gt=0)
+    is_active: Optional[bool] = None

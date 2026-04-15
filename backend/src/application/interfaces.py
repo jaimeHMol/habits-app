@@ -1,5 +1,13 @@
 from typing import List, Optional, Protocol
-from src.domain.models import Task, TaskCreate, TaskUpdate, ColumnId
+from src.domain.models import (
+    Task,
+    TaskCreate,
+    TaskUpdate,
+    ColumnId,
+    Reminder,
+    ReminderCreate,
+    ReminderUpdate,
+)
 
 
 class ITaskRepository(Protocol):
@@ -30,3 +38,21 @@ class ITaskRepository(Protocol):
         Sets completed=False for all tasks in the daily column.
         """
         ...
+
+
+class IReminderRepository(Protocol):
+    """
+    Interface (Port) for Reminder data persistence.
+    """
+
+    def get_all(self) -> List[Reminder]: ...
+
+    def get_by_id(self, reminder_id: int) -> Optional[Reminder]: ...
+
+    def create(self, reminder_data: ReminderCreate) -> Reminder: ...
+
+    def update(
+        self, reminder_id: int, reminder_data: ReminderUpdate
+    ) -> Optional[Reminder]: ...
+
+    def delete(self, reminder_id: int) -> bool: ...

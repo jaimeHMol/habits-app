@@ -4,7 +4,8 @@ from sqlmodel import SQLModel, create_engine, Session
 from sqlalchemy.pool import StaticPool  # 1. Añadimos esta importación
 from src.main import app
 from src.infrastructure.database import get_session
-from src.api.security import get_current_user
+from src.api.security import get_current_user, get_password_hash
+from src.domain.models import User
 
 # 2. Configuramos el engine para usar StaticPool
 SQLITE_URL = "sqlite:///:memory:"
@@ -34,12 +35,17 @@ def client_fixture(session: Session):
     """
     Returns a FastAPI TestClient with the database dependency overridden.
     """
+    # Create a test user in the DB
+    test_user = User(username="testuser", hashed_password=get_password_hash("testpass"))
+    session.add(test_user)
+    session.commit()
+    session.refresh(test_user)
 
     def get_session_override():
         return session
 
     def get_current_user_override():
-        return "testuser"
+        return test_user
 
     app.dependency_overrides[get_session] = get_session_override
     app.dependency_overrides[get_current_user] = get_current_user_override

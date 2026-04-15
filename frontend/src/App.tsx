@@ -3,7 +3,25 @@ import { useHabitStore } from './store/useHabitStore'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { Column } from './components/Column'
 import { DailyReviewModal } from './components/DailyReviewModal'
+import { ReminderEngine } from './components/ReminderEngine'
+import { ReminderPanel } from './components/ReminderPanel'
 import { LogOut, Lock } from 'lucide-react'
+
+// Custom "Finger with ribbon" SVG Component
+const FingerRibbonIcon = ({ size = 24, className = "" }) => (
+  <svg 
+    width={size} height={size} viewBox="0 0 24 24" fill="none" 
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
+    className={className}
+  >
+    <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+    <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+    <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+    <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+    <path d="M11 6c-1-1-3-1-3 1s2 2 3 1" className="text-paramo-frailejon" />
+    <path d="M11 6c1-1 3-1 3 1s-2 2-3 1" className="text-paramo-frailejon" />
+  </svg>
+);
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -20,6 +38,7 @@ function App() {
   const [password, setPassword] = useState('')
   const [loginError, setLoginError] = useState(false)
   const [isLoggingIn, setIsLoggingIn] = useState(false)
+  const [isReminderPanelOpen, setIsReminderPanelOpen] = useState(false)
 
   const greeting = getGreeting()
 
@@ -81,8 +100,11 @@ function App() {
   return (
     <div className="min-h-screen h-full font-sans selection:bg-paramo-frailejon/30 flex flex-col pb-24 md:pb-0">
       {showReviewModal && <DailyReviewModal />}
+      <ReminderEngine />
+      <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
+      
       <header className="p-4 md:p-6 mb-4 md:mb-8 flex justify-between items-start">
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
             {greeting}, <span className="text-paramo-frailejon">Jaime</span>
           </h1>
@@ -90,9 +112,21 @@ function App() {
             Habit Tracker • {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
-        <button onClick={logout} title="Logout" className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
-          <LogOut size={18} />
-        </button>
+        
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsReminderPanelOpen(true)}
+            title="Recordatorios" 
+            className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
+          >
+            <FingerRibbonIcon size={20} />
+            <span className="hidden md:inline text-[10px] font-black uppercase tracking-tighter">Alertas</span>
+          </button>
+          
+          <button onClick={logout} title="Logout" className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
+            <LogOut size={18} />
+          </button>
+        </div>
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
