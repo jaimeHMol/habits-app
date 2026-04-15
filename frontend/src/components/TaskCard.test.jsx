@@ -63,6 +63,28 @@ describe('TaskCard Component', () => {
     expect(screen.getByText('Test Description')).toBeInTheDocument();
   });
 
+  it('renders markdown in description correctly', () => {
+    const markdownTask = { 
+      ...defaultTask, 
+      isCollapsed: false, 
+      description: 'Check this **bold** text and [this link](https://google.com)' 
+    };
+    render(
+      <TaskCard 
+        task={markdownTask} 
+        column={defaultColumn} 
+        snapshot={defaultSnapshot} 
+        dragHandleProps={{}} 
+      />
+    );
+    
+    expect(screen.getByText('bold')).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: /this link/i });
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', 'https://google.com');
+    expect(link).toHaveAttribute('target', '_blank');
+  });
+
   it('does not show description when collapsed', () => {
     render(
       <TaskCard 

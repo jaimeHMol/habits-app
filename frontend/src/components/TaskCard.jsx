@@ -1,6 +1,8 @@
 import React from 'react'
 import { useHabitStore } from '../store/useHabitStore'
 import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
@@ -68,9 +70,23 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
           </div>
           {!task.isCollapsed && (
             <div className="mt-1.5 animate-fadeIn">
-              <p className={`text-xs leading-relaxed font-light break-normal text-balance ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`}>
-                {task.description}
-              </p>
+              <div className="prose-container">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({node, ...props}) => <p className={`text-xs leading-relaxed font-light break-normal text-balance ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`} {...props} />,
+                    a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-bold text-white/90" {...props} />,
+                    em: ({node, ...props}) => <em className="italic" {...props} />,
+                    del: ({node, ...props}) => <del className="line-through decoration-white/30" {...props} />,
+                    ul: ({node, ...props}) => <ul className={`list-disc list-inside ml-1 text-xs ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`} {...props} />,
+                    ol: ({node, ...props}) => <ol className={`list-decimal list-inside ml-1 text-xs ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`} {...props} />,
+                    li: ({node, ...props}) => <li className="mb-0.5 leading-relaxed font-light" {...props} />,
+                  }}
+                >
+                  {task.description}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </div>
