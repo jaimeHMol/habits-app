@@ -43,10 +43,11 @@ lint-front: ## Run ESLint on frontend
 	cd frontend && npm run lint
 
 # --- Utilidades de Base de Datos ---
-clean-db: ## Delete the local SQLite database
-	@echo "Deleting SQLite database..."
-	rm -f backend/habits.db
-	@echo "Database cleaned. It will be recreated when starting the server."
+clean-db: ## Empty the local SQLite database without deleting the file
+	@echo "Cleaning SQLite database..."
+	@truncate -s 0 backend/habits.db || cat /dev/null > backend/habits.db
+	@chmod 666 backend/habits.db
+	@echo "Database cleaned and permissions reset. It will be recreated on next start."
 
 reset-all: clean-db setup ## Clean database and reinstall all dependencies
 	@echo "Project reset to its initial state."
