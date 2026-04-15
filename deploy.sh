@@ -14,7 +14,11 @@ echo "🏗️ Building images and starting services..."
 # We use sudo because docker commands require it on your server
 sudo docker compose up -d --build
 
-# 4. Spring cleaning (Vital to avoid filling up the server's disk)
+# 4. Restart nginx to apply any configuration changes (if needed)
+echo "🔄 Restarting nginx to apply any configuration changes..."
+sudo docker compose restart nginx
+
+# 5. Spring cleaning (Vital to avoid filling up the server's disk)
 echo "🧹 Cleaning up old and dangling images..."
 # -f forces the cleanup without prompting (Y/N), ideal for automation
 sudo docker image prune -f
