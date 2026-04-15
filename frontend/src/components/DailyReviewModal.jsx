@@ -4,12 +4,12 @@ import { CheckCircle2, Circle, PartyPopper, ArrowRight } from 'lucide-react'
 
 export const DailyReviewModal = () => {
   const { tasks, confirmReview, isLoading } = useHabitStore();
-  const dailyTasks = tasks.filter(t => t.columnId === 'daily');
+  
+  // Show only tasks that were NOT completed yesterday
+  const dailyTasksToReview = tasks.filter(t => t.columnId === 'daily' && !t.completed);
   
   // Track which tasks the user says they completed yesterday
-  const [completedIds, setCompletedIds] = useState(
-    dailyTasks.filter(t => t.completed).map(t => t.id)
-  );
+  const [completedIds, setCompletedIds] = useState([]);
 
   const toggleTask = (id) => {
     setCompletedIds(prev => 
@@ -21,7 +21,15 @@ export const DailyReviewModal = () => {
     confirmReview(completedIds);
   };
 
-  if (dailyTasks.length === 0) return null;
+  // If there are no uncompleted tasks to review, we should just auto-confirm 
+  // to update the date and reset for the new day
+  React.useEffect(() => {
+    if (dailyTasksToReview.length === 0 && !isLoading) {
+      handleConfirm();
+    }
+  }, [dailyTasksToReview.length]);
+
+  if (dailyTasksToReview.length === 0) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-paramo-bg/90 backdrop-blur-sm animate-fadeIn">
@@ -37,7 +45,7 @@ export const DailyReviewModal = () => {
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
           <div className="flex flex-col gap-2">
-            {dailyTasks.map(task => {
+            {dailyTasksToReview.map(task => {
               const isSelected = completedIds.includes(task.id);
               return (
                 <button
