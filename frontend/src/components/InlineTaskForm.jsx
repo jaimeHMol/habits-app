@@ -82,36 +82,38 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
       <textarea placeholder="Description (optional)..." value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} className="bg-transparent border border-white/10 rounded-md p-2 text-xs text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon resize-y min-h-[4rem] h-24 disabled:opacity-50" />
       
       <div className="flex flex-wrap gap-2 items-center">
-        <select value={priority} onChange={(e) => setPriority(e.target.value)} disabled={isSaving} className={`bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-paramo-frailejon disabled:opacity-50 ${priorityColorClass}`}>
-          <option value="muted" className="text-paramo-muted font-bold">Optional</option>
-          <option value="frailejon" className="text-paramo-frailejon font-bold">Important</option>
-          <option value="tierra" className="text-paramo-tierra font-bold">Critical</option>
         </select>
 
-        {/* Focus Duration Input */}
-        <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7" title="Focus duration (minutes)">
-          <input 
-            type="number" min="0" placeholder="Min" value={durationMinutes} 
-            onChange={(e) => setDurationMinutes(e.target.value)} disabled={isSaving} 
-            className="w-10 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
-          />
-          <div className="flex flex-col border-l border-white/10">
-            <button 
-              type="button" disabled={isSaving}
-              onClick={() => setDurationMinutes(prev => Math.max(1, (parseInt(prev) || 0) + 5))}
-              className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
-            >
-              <ChevronUp size={10} />
-            </button>
-            <button 
-              type="button" disabled={isSaving}
-              onClick={() => setDurationMinutes(prev => Math.max(0, (parseInt(prev) || 5) - 5) || '')}
-              className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
-            >
-              <ChevronDown size={10} />
-            </button>
+        {/* Focus Duration Input - Only for Daily column */}
+        {column.id === 'daily' && (
+          <div className="flex items-center gap-1.5" title="Focus duration">
+            <span className="text-[10px] font-bold text-paramo-muted uppercase tracking-tight">During</span>
+            <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">
+              <input 
+                type="number" min="0" placeholder="0" value={durationMinutes} 
+                onChange={(e) => setDurationMinutes(e.target.value)} disabled={isSaving} 
+                className="w-10 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
+              />
+              <div className="flex flex-col border-l border-white/10">
+                <button 
+                  type="button" disabled={isSaving}
+                  onClick={() => setDurationMinutes(prev => Math.max(1, (parseInt(prev) || 0) + 5))}
+                  className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
+                >
+                  <ChevronUp size={10} />
+                </button>
+                <button 
+                  type="button" disabled={isSaving}
+                  onClick={() => setDurationMinutes(prev => Math.max(0, (parseInt(prev) || 5) - 5) || '')}
+                  className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
+                >
+                  <ChevronDown size={10} />
+                </button>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold text-paramo-muted uppercase tracking-tight">min</span>
           </div>
-        </div>
+        )}
 
         {(column.type === 'monthly' || column.type === 'annually') && (
           <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">

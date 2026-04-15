@@ -14,6 +14,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
   const showDateBadge = hasMonthlyDate || hasAnnuallyDate;
 
   const isTimerActive = activeTimer.taskId === task.id;
+  const isDailyColumn = column.id === 'daily';
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -49,7 +50,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
             {task.completed ? <RotateCcw size={18} strokeWidth={2} /> : <CheckCircle2 size={20} strokeWidth={1.5} />}
           </button>
 
-          {!task.completed && task.durationMinutes > 0 && (
+          {isDailyColumn && !task.completed && task.durationMinutes > 0 && (
             <button
               title={isTimerActive ? "Stop focus" : "Start focus"}
               onClick={(e) => {
@@ -67,7 +68,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="flex flex-col min-w-0 flex-1 opacity-90">
-              {(showDateBadge || (task.durationMinutes > 0 && !task.completed && !isTimerActive)) && (
+              {(showDateBadge || (isDailyColumn && task.durationMinutes > 0 && !task.completed && !isTimerActive)) && (
                 <div className="flex items-center gap-2 mb-1">
                   {showDateBadge && (
                     <span className={`flex items-center gap-1 text-[10px] md:text-[11px] font-black uppercase tracking-tighter ${task.completed ? 'text-paramo-muted' : 'text-paramo-frailejon'}`}>
@@ -75,7 +76,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                       {column.type === 'monthly' ? task.targetDay : `${task.targetDay} ${monthNames[task.targetMonth - 1]}`}
                     </span>
                   )}
-                  {task.durationMinutes > 0 && !task.completed && !isTimerActive && (
+                  {isDailyColumn && task.durationMinutes > 0 && !task.completed && !isTimerActive && (
                     <span className="flex items-center gap-1 text-[10px] font-bold text-paramo-muted/60 uppercase tracking-widest">
                       <Clock size={10} /> {task.durationMinutes}m
                     </span>
