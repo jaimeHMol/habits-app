@@ -55,4 +55,4 @@ reset-all: clean-db setup ## Clean database and reinstall all dependencies
 backup-manual: ## Run a manual database backup
 	@echo "Running manual backup..."
 	@mkdir -p backups
-	./backend/scripts/backup.sh
+	DB_FILE=backend/habits.db BACKUP_DIR=backups ./backend/scripts/backup.sh
