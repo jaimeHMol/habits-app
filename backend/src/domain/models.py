@@ -88,3 +88,16 @@ class ReminderUpdate(SQLModel):
     title: Optional[str] = None
     interval_minutes: Optional[int] = Field(default=None, gt=0)
     is_active: Optional[bool] = None
+
+
+class TaskCompletionLog(SQLModel, table=True):
+    __tablename__ = "task_completion_log"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    task_id: int = Field(index=True)
+    task_title: str
+    column_id: ColumnId
+    priority: Priority
+    target_day: Optional[int] = None
+    target_month: Optional[int] = None
+    completed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_retroactive: bool = Field(default=False)

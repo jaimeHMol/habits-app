@@ -4,6 +4,7 @@ from src.domain.models import (
     Task,
     TaskCreate,
     TaskUpdate,
+    TaskCompletionLog,
     ColumnId,
     Reminder,
     ReminderCreate,
@@ -132,6 +133,39 @@ class SQLiteTaskRepository(ITaskRepository):
         except Exception:
             self.session.rollback()
             return False
+
+    def log_completion(self, task: Task, is_retroactive: bool) -> None:
+        """
+        Inserts a log entry for a task completion.
+        """
+        log_entry = TaskCompletionLog(
+            task_id=task.id,
+            task_title=task.title,
+            column_id=task.column_id,
+            priority=task.priority,
+            target_day=task.target_day,
+            target_month=task.target_month,
+            is_retroactive=is_retroactive,
+        )
+        self.session.add(log_entry)
+        self.session.commit()
+        self.session.refresh(task)  # Important: keep the task object alive
+
+    def remove_last_completion_log(self, task: Task) -> None:
+        """
+        Deletes the most recent log for a given task.
+        """
+        statement = (
+            select(TaskCompletionLog)
+            .where(TaskCompletionLog.task_id == task.id)
+            .order_by(TaskCompletionLog.completed_at.desc())
+        )
+
+        result = self.session.exec(statement).first()
+        if result:
+            self.session.delete(result)
+            self.session.commit()
+            self.session.refresh(task)  # Keep it alive
 
 
 class SQLiteReminderRepository(IReminderRepository):

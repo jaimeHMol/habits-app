@@ -65,9 +65,11 @@ def delete_task(task_id: int, service: TaskService = Depends(get_task_service)):
 
 @router.patch("/{task_id}/complete", response_model=Task)
 def toggle_task_completion(
-    task_id: int, service: TaskService = Depends(get_task_service)
+    task_id: int,
+    is_retroactive: bool = False,
+    service: TaskService = Depends(get_task_service),
 ):
-    task = service.toggle_completion(task_id)
+    task = service.toggle_completion(task_id, is_retroactive)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task

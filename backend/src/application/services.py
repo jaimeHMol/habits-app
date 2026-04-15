@@ -58,13 +58,23 @@ class TaskService:
     def delete_task(self, task_id: int) -> bool:
         return self.repository.delete(task_id)
 
-    def toggle_completion(self, task_id: int) -> Optional[Task]:
+    def toggle_completion(
+        self, task_id: int, is_retroactive: bool = False
+    ) -> Optional[Task]:
         task = self.repository.get_by_id(task_id)
         if not task:
             return None
 
-        update_data = TaskUpdate(completed=not task.completed)
-        return self.repository.update(task_id, update_data)
+        new_status = not task.completed
+        update_data = TaskUpdate(completed=new_status)
+        updated_task = self.repository.update(task_id, update_data)
+
+        if updated_task.completed:
+            self.repository.log_completion(updated_task, is_retroactive)
+        else:
+            self.repository.remove_last_completion_log(updated_task)
+
+        return updated_task
 
     def reorder_column(self, column_id: ColumnId, task_ids: List[int]) -> bool:
         """

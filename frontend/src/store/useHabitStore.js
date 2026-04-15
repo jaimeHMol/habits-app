@@ -102,7 +102,7 @@ export const useHabitStore = create((set, get) => ({
       for (const id of completedTaskIds) {
         const task = tasks.find(t => t.id === id);
         if (task && !task.completed) {
-          await taskApi.toggleComplete(id);
+          await taskApi.toggleComplete(id, true);
         }
       }
       
@@ -157,7 +157,7 @@ export const useHabitStore = create((set, get) => ({
       tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
     }));
     try {
-      await taskApi.toggleComplete(taskId);
+      await taskApi.toggleComplete(taskId, false);
     } catch (error) {
       get().fetchTasks(); // Revert on failure
     }

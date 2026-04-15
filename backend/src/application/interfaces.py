@@ -51,6 +51,18 @@ class ITaskRepository(Protocol):
         """
         ...
 
+    def log_completion(self, task: Task, is_retroactive: bool) -> None:
+        """
+        Records a task completion event in the log.
+        """
+        ...
+
+    def remove_last_completion_log(self, task: Task) -> None:
+        """
+        Removes the most recent log for a specific task and refreshes the task.
+        """
+        ...
+
 
 class IReminderRepository(Protocol):
     """

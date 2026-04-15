@@ -83,8 +83,8 @@ export const taskApi = {
     return handleResponse(response);
   },
 
-  toggleComplete: async (taskId) => {
-    const response = await fetch(`${API_URL}${taskId}/complete`, {
+  toggleComplete: async (taskId, isRetroactive = false) => {
+    const response = await fetch(`${API_URL}${taskId}/complete?is_retroactive=${isRetroactive}`, {
       method: 'PATCH',
       headers: getHeaders(),
     });
