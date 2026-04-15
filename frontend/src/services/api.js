@@ -52,7 +52,8 @@ export const taskApi = {
       columnId: task.column_id,
       targetDay: task.target_day,
       targetMonth: task.target_month,
-      isCollapsed: task.is_collapsed
+      isCollapsed: task.is_collapsed,
+      durationMinutes: task.duration_minutes
     }));
   },
 

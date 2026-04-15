@@ -9,6 +9,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
   const [priority, setPriority] = useState(initialData?.priority || 'muted');
   const [targetDay, setTargetDay] = useState(initialData?.targetDay || '');
   const [targetMonth, setTargetMonth] = useState(initialData?.targetMonth || '');
+  const [durationMinutes, setDurationMinutes] = useState(initialData?.durationMinutes || '');
   
   // NEW: Local error state for form validation
   const [error, setError] = useState('');
@@ -54,6 +55,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
       title, description, priority,
       targetDay: dayInt,
       targetMonth: targetMonth ? parseInt(targetMonth) : null,
+      durationMinutes: durationMinutes ? parseInt(durationMinutes) : null,
     });
     
     // If it failed in the backend, stop the saving state but DO NOT close the form
@@ -85,6 +87,32 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
           <option value="frailejon" className="text-paramo-frailejon font-bold">Important</option>
           <option value="tierra" className="text-paramo-tierra font-bold">Critical</option>
         </select>
+
+        {/* Focus Duration Input */}
+        <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7" title="Focus duration (minutes)">
+          <input 
+            type="number" min="0" placeholder="Min" value={durationMinutes} 
+            onChange={(e) => setDurationMinutes(e.target.value)} disabled={isSaving} 
+            className="w-10 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
+          />
+          <div className="flex flex-col border-l border-white/10">
+            <button 
+              type="button" disabled={isSaving}
+              onClick={() => setDurationMinutes(prev => Math.max(1, (parseInt(prev) || 0) + 5))}
+              className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
+            >
+              <ChevronUp size={10} />
+            </button>
+            <button 
+              type="button" disabled={isSaving}
+              onClick={() => setDurationMinutes(prev => Math.max(0, (parseInt(prev) || 5) - 5) || '')}
+              className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
+            >
+              <ChevronDown size={10} />
+            </button>
+          </div>
+        </div>
+
         {(column.type === 'monthly' || column.type === 'annually') && (
           <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">
             <input 

@@ -17,6 +17,9 @@ describe('TaskCard Component', () => {
     useHabitStore.mockReturnValue({
       toggleCollapse: mockToggleCollapse,
       toggleTaskCompletion: mockToggleTaskCompletion,
+      activeTimer: { taskId: null, remainingSeconds: 0 },
+      startTimer: vi.fn(),
+      stopTimer: vi.fn(),
     });
   });
 

@@ -32,7 +32,7 @@ const getGreeting = () => {
 }
 
 function App() {
-  const { columns, reorderTasks, fetchTasks, isAuthenticated, login, logout, showReviewModal, checkDayChange } = useHabitStore()
+  const { columns, reorderTasks, fetchTasks, isAuthenticated, login, logout, showReviewModal, checkDayChange, activeTimer, tickTimer } = useHabitStore()
   
   const [activeMobileColumn, setActiveMobileColumn] = useState('daily')
   const [username, setUsername] = useState('')
@@ -50,6 +50,17 @@ function App() {
       });
     }
   }, [fetchTasks, isAuthenticated, checkDayChange]);
+
+  // Timer loop for Focus Mode
+  useEffect(() => {
+    let interval;
+    if (isAuthenticated && activeTimer.taskId) {
+      interval = setInterval(() => {
+        tickTimer();
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAuthenticated, activeTimer.taskId, tickTimer]);
 
   const onDragEnd = (result) => {
     const { source, destination } = result

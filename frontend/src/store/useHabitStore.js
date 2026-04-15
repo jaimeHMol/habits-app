@@ -32,6 +32,33 @@ export const useHabitStore = create((set, get) => ({
   error: null,
   showReviewModal: false,
   lastUsedDate: localStorage.getItem('last_used_date'),
+  activeTimer: { taskId: null, remainingSeconds: 0 },
+
+  startTimer: (taskId, durationMinutes) => {
+    set({ activeTimer: { taskId, remainingSeconds: durationMinutes * 60 } });
+  },
+
+  stopTimer: () => {
+    set({ activeTimer: { taskId: null, remainingSeconds: 0 } });
+  },
+
+  tickTimer: () => {
+    const { activeTimer, toggleTaskCompletion, stopTimer } = get();
+    if (!activeTimer.taskId) return;
+
+    if (activeTimer.remainingSeconds <= 1) {
+      // Time is up!
+      toggleTaskCompletion(activeTimer.taskId);
+      stopTimer();
+    } else {
+      set({ 
+        activeTimer: { 
+          ...activeTimer, 
+          remainingSeconds: activeTimer.remainingSeconds - 1 
+        } 
+      });
+    }
+  },
 
   checkDayChange: () => {
     const lastDate = get().lastUsedDate;
@@ -156,6 +183,7 @@ export const useHabitStore = create((set, get) => ({
       priority: taskData.priority,
       target_day: taskData.targetDay,
       target_month: taskData.targetMonth,
+      duration_minutes: taskData.durationMinutes,
       column_id: columnId,
       is_collapsed: true,
       completed: false
@@ -176,6 +204,7 @@ export const useHabitStore = create((set, get) => ({
       priority: updatedData.priority,
       target_day: updatedData.targetDay,
       target_month: updatedData.targetMonth,
+      duration_minutes: updatedData.durationMinutes,
     };
     try {
       await taskApi.update(taskId, payload);

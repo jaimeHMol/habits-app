@@ -26,6 +26,7 @@ class TaskBase(SQLModel):
     target_month: Optional[int] = Field(default=None, ge=1, le=12)
     completed: bool = Field(default=False)
     is_collapsed: bool = Field(default=True)
+    duration_minutes: Optional[int] = Field(default=None)
     order_index: int = Field(default=0)  # To persist Drag & Drop sorting
 
 
@@ -47,6 +48,7 @@ class TaskUpdate(SQLModel):
     target_month: Optional[int] = None
     completed: Optional[bool] = None
     is_collapsed: Optional[bool] = None
+    duration_minutes: Optional[int] = None
     order_index: Optional[int] = None
 
 
