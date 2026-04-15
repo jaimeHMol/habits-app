@@ -90,7 +90,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
             <input 
               type="number" min="1" max="31" placeholder="Day" value={targetDay} 
               onChange={(e) => setTargetDay(e.target.value)} disabled={isSaving} 
-              className="w-8 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
+              className="w-10 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
             />
             <div className="flex flex-col border-l border-white/10">
               <button 

@@ -93,7 +93,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
               <div className="flex items-center bg-black/20 border border-white/5 rounded-lg overflow-hidden">
                 <input 
                   type="number" value={newInterval} onChange={(e) => setNewInterval(e.target.value)} min="1"
-                  className="w-12 bg-transparent p-2 text-sm text-white text-center focus:outline-none no-spinner"
+                  className="w-10 bg-transparent p-2 text-sm text-white text-center focus:outline-none no-spinner"
                 />
                 <div className="flex flex-col border-l border-white/5">
                   <button 
