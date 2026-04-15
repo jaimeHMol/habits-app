@@ -5,7 +5,7 @@ import { useHabitStore } from '../store/useHabitStore'
 const SLACK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'; // A clean "pop" sound
 
 export const ReminderEngine = () => {
-  const { reminders, userSettings, lastTriggeredAt, setTriggered, fetchReminders } = useReminderStore();
+  const { reminders, userSettings, lastTriggeredAt, setTriggered, fetchReminders, addAlert } = useReminderStore();
   const { isAuthenticated } = useHabitStore();
   const audioRef = useRef(new Audio(SLACK_SOUND_URL));
 
@@ -57,10 +57,10 @@ export const ReminderEngine = () => {
           body: reminder.title,
           icon: '/favicon.svg'
         });
-      } else {
-        // Fallback or simple toast could go here if we had a toast system
-        console.log("Reminder triggered:", reminder.title);
       }
+
+      // In-app Alert
+      addAlert(reminder);
 
       setTriggered(reminder.id);
     };

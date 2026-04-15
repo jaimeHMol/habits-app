@@ -5,6 +5,7 @@ import { Column } from './components/Column'
 import { DailyReviewModal } from './components/DailyReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
+import { NotificationToast } from './components/NotificationToast'
 import { LogOut, Lock } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
@@ -100,6 +101,7 @@ function App() {
   return (
     <div className="min-h-screen h-full font-sans selection:bg-paramo-frailejon/30 flex flex-col pb-24 md:pb-0">
       {showReviewModal && <DailyReviewModal />}
+      <NotificationToast />
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
       
@@ -114,15 +116,13 @@ function App() {
         </div>
         
         <div className="flex items-center gap-2">
-          <button 
+          <button
             onClick={() => setIsReminderPanelOpen(true)}
-            title="Recordatorios" 
+            title="Recordatorios"
             className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
           >
             <FingerRibbonIcon size={20} />
-            <span className="hidden md:inline text-[10px] font-black uppercase tracking-tighter">Alertas</span>
-          </button>
-          
+          </button>          
           <button onClick={logout} title="Logout" className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
             <LogOut size={18} />
           </button>

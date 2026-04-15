@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
-import { X, Plus, Trash2, Bell, Clock, Save, BellOff, BellRing } from 'lucide-react'
+import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -24,16 +24,6 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
   
   const [newTitle, setNewTitle] = useState('');
   const [newInterval, setNewInterval] = useState(60);
-  const [startTime, setStartTime] = useState(userSettings.dayStartTime);
-  const [endTime, setEndTime] = useState(userSettings.dayEndTime);
-
-  // Sync local state when userSettings change or panel opens
-  React.useEffect(() => {
-    if (isOpen) {
-      setStartTime(userSettings.dayStartTime);
-      setEndTime(userSettings.dayEndTime);
-    }
-  }, [isOpen, userSettings.dayStartTime, userSettings.dayEndTime]);
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -44,10 +34,6 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
 
   const handleToggle = (reminder) => {
     updateReminder(reminder.id, { ...reminder, isActive: !reminder.isActive });
-  };
-
-  const handleSaveSettings = () => {
-    updateSettings({ dayStartTime: startTime, dayEndTime: endTime });
   };
 
   if (!isOpen) return null;
@@ -74,24 +60,22 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
             <div className="space-y-1">
               <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">Inicio</label>
               <input 
-                type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)}
+                type="time" 
+                value={userSettings.dayStartTime} 
+                onChange={(e) => updateSettings({ ...userSettings, dayStartTime: e.target.value })}
                 className="w-full bg-black/20 border border-white/5 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-paramo-frailejon"
               />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">Fin</label>
               <input 
-                type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)}
+                type="time" 
+                value={userSettings.dayEndTime} 
+                onChange={(e) => updateSettings({ ...userSettings, dayEndTime: e.target.value })}
                 className="w-full bg-black/20 border border-white/5 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-paramo-frailejon"
               />
             </div>
           </div>
-          <button 
-            onClick={handleSaveSettings}
-            className="w-full bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-widest py-2 rounded-lg transition-colors flex items-center justify-center gap-2"
-          >
-            <Save size={12} /> Guardar Horario
-          </button>
         </section>
 
         {/* Add Reminder Form */}

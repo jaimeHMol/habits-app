@@ -9,6 +9,7 @@ export const useReminderStore = create((set, get) => ({
   },
   // Map of reminderId -> lastTriggeredTime (ISO String)
   lastTriggeredAt: JSON.parse(localStorage.getItem('reminders_last_triggered') || '{}'),
+  activeAlerts: [],
   isLoading: false,
 
   fetchReminders: async () => {
@@ -75,5 +76,20 @@ export const useReminderStore = create((set, get) => ({
     const newTriggered = { ...get().lastTriggeredAt, [reminderId]: now };
     localStorage.setItem('reminders_last_triggered', JSON.stringify(newTriggered));
     set({ lastTriggeredAt: newTriggered });
+  },
+
+  addAlert: (reminder) => {
+    const id = Date.now();
+    set(state => ({ 
+      activeAlerts: [...state.activeAlerts, { ...reminder, alertId: id }] 
+    }));
+    // Auto-remove after 10 seconds
+    setTimeout(() => get().removeAlert(id), 10000);
+  },
+
+  removeAlert: (alertId) => {
+    set(state => ({ 
+      activeAlerts: state.activeAlerts.filter(a => a.alertId !== alertId) 
+    }));
   }
 }))
