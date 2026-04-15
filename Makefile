@@ -50,3 +50,9 @@ clean-db: ## Delete the local SQLite database
 
 reset-all: clean-db setup ## Clean database and reinstall all dependencies
 	@echo "Project reset to its initial state."
+
+# --- Gestión de Backups ---
+backup-manual: ## Run a manual database backup
+	@echo "Running manual backup..."
+	@mkdir -p backups
+	./backend/scripts/backup.sh

@@ -77,5 +77,17 @@ Maintain code quality with built-in tests and linters:
 
 The SQLite database is stored at `backend/habits.db`. When using Docker, this file is mounted as a volume to ensure your data persists across container restarts.
 
+## 🛡️ Database Backups
+
+The application includes an automated backup system:
+- **Schedule**: Runs daily at **4:00 AM** (Colombia Time - `America/Bogota`).
+- **Retention**: Keeps backups for **30 days**.
+- **Location**: Backups are stored in the `./backups` directory on the host.
+
+To trigger a backup manually:
+```bash
+make backup-manual
+```
+
 ---
 *Built with care for productivity enthusiasts.*

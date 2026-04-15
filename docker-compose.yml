@@ -26,6 +26,32 @@ services:
     networks:
       - habit-network
 
+  backup:
+    image: alpine:latest
+    restart: always
+    env_file: ./backend/.env
+    environment:
+      - TZ=America/Bogota
+      - DB_TYPE=sqlite
+      - DB_FILE=/app/habits.db
+      - BACKUP_DIR=/backups
+    volumes:
+      - ./backend/habits.db:/app/habits.db:ro
+      - ./backend/scripts/backup.sh:/usr/local/bin/backup.sh:ro
+      - ./backups:/backups
+    networks:
+      - habit-network
+    # Install dependencies and setup crontab to run at 4:00 AM
+    entrypoint: >
+      /bin/sh -c "
+      apk add --no-cache sqlite bash tzdata &&
+      echo '0 4 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1' > /etc/periodic/daily/backup_job &&
+      chmod +x /etc/periodic/daily/backup_job &&
+      crontab /etc/periodic/daily/backup_job &&
+      echo 'Backup service started. Cron schedule: 4 AM (America/Bogota)' &&
+      crond -f -l 2
+      "
+
 networks:
   habit-network:
     driver: bridge
