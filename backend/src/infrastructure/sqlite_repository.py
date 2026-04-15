@@ -101,6 +101,38 @@ class SQLiteTaskRepository(ITaskRepository):
             self.session.rollback()
             return False
 
+    def reset_monthly_tasks(self) -> bool:
+        """
+        Sets completed=False for all tasks in the monthly column.
+        """
+        try:
+            statement = select(Task).where(Task.column_id == ColumnId.MONTHLY)
+            results = self.session.exec(statement)
+            for task in results:
+                task.completed = False
+                self.session.add(task)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            return False
+
+    def reset_annually_tasks(self) -> bool:
+        """
+        Sets completed=False for all tasks in the annually column.
+        """
+        try:
+            statement = select(Task).where(Task.column_id == ColumnId.ANNUALLY)
+            results = self.session.exec(statement)
+            for task in results:
+                task.completed = False
+                self.session.add(task)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            return False
+
 
 class SQLiteReminderRepository(IReminderRepository):
     """

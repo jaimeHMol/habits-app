@@ -31,6 +31,7 @@ export const useHabitStore = create((set, get) => ({
   isLoading: false,
   error: null,
   showReviewModal: false,
+  pendingResets: [], // ['daily', 'monthly', 'annually']
   lastUsedDate: localStorage.getItem('last_used_date'),
   activeTimer: { taskId: null, remainingSeconds: 0 },
 
@@ -61,47 +62,63 @@ export const useHabitStore = create((set, get) => ({
   },
 
   checkDayChange: () => {
-    const lastDate = get().lastUsedDate;
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+    const lastDateStr = get().lastUsedDate;
+    const today = new Date();
+    const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
-    if (lastDate && lastDate !== today) {
-      // It's a new day! Check if there are daily tasks to review
-      const hasDailyTasks = get().tasks.some(t => t.columnId === 'daily');
-      if (hasDailyTasks) {
-        set({ showReviewModal: true });
-      } else {
-        // If no tasks, just update the date
-        localStorage.setItem('last_used_date', today);
-        set({ lastUsedDate: today });
+    if (lastDateStr && lastDateStr !== todayStr) {
+      const lastDate = new Date(lastDateStr + 'T00:00:00'); // Use ISO-like for consistent parsing
+      
+      const resets = ['daily'];
+      if (today.getMonth() !== lastDate.getMonth() || today.getFullYear() !== lastDate.getFullYear()) {
+        resets.push('monthly');
       }
-    } else if (!lastDate) {
-      // First time initialization
-      localStorage.setItem('last_used_date', today);
-      set({ lastUsedDate: today });
+      if (today.getFullYear() !== lastDate.getFullYear()) {
+        resets.push('annually');
+      }
+
+      // Check if there are tasks to review in these columns
+      const hasTasksToReview = get().tasks.some(t => resets.includes(t.columnId));
+      
+      if (hasTasksToReview) {
+        set({ pendingResets: resets, showReviewModal: true });
+      } else {
+        // Just update the date if no tasks
+        localStorage.setItem('last_used_date', todayStr);
+        set({ lastUsedDate: todayStr, pendingResets: [] });
+      }
+    } else if (!lastDateStr) {
+      localStorage.setItem('last_used_date', todayStr);
+      set({ lastUsedDate: todayStr });
     }
   },
 
   confirmReview: async (completedTaskIds) => {
     set({ isLoading: true });
     try {
-      // 1. Mark tasks as completed for "yesterday"
+      const { pendingResets, tasks } = get();
+
+      // 1. Mark tasks as completed (the ones user said they finished)
       for (const id of completedTaskIds) {
-        const task = get().tasks.find(t => t.id === id);
+        const task = tasks.find(t => t.id === id);
         if (task && !task.completed) {
           await taskApi.toggleComplete(id);
         }
       }
       
-      // 2. Perform the global reset of Daily column in backend
-      await taskApi.resetDaily();
+      // 2. Perform resets in backend for each pending column
+      if (pendingResets.includes('daily')) await taskApi.resetDaily();
+      if (pendingResets.includes('monthly')) await taskApi.resetMonthly();
+      if (pendingResets.includes('annually')) await taskApi.resetAnnually();
       
       // 3. Update local state
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-      localStorage.setItem('last_used_date', today);
+      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+      localStorage.setItem('last_used_date', todayStr);
       
       set({ 
         showReviewModal: false, 
-        lastUsedDate: today,
+        lastUsedDate: todayStr,
+        pendingResets: [],
         isLoading: false 
       });
       

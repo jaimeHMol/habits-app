@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useHabitStore } from './store/useHabitStore'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { Column } from './components/Column'
-import { DailyReviewModal } from './components/DailyReviewModal'
+import { PeriodicReviewModal } from './components/PeriodicReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
 import { NotificationToast } from './components/NotificationToast'
@@ -111,7 +111,7 @@ function App() {
   // --- MAIN DASHBOARD ---
   return (
     <div className="min-h-screen h-full font-sans selection:bg-paramo-frailejon/30 flex flex-col pb-24 md:pb-0">
-      {showReviewModal && <DailyReviewModal />}
+      {showReviewModal && <PeriodicReviewModal />}
       <NotificationToast />
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
@@ -129,7 +129,7 @@ function App() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsReminderPanelOpen(true)}
-            title="Recordatorios"
+            title="Reminders"
             className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
           >
             <FingerRibbonIcon size={20} />

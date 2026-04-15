@@ -39,6 +39,18 @@ class ITaskRepository(Protocol):
         """
         ...
 
+    def reset_monthly_tasks(self) -> bool:
+        """
+        Sets completed=False for all tasks in the monthly column.
+        """
+        ...
+
+    def reset_annually_tasks(self) -> bool:
+        """
+        Sets completed=False for all tasks in the annually column.
+        """
+        ...
+
 
 class IReminderRepository(Protocol):
     """

@@ -108,6 +108,22 @@ export const taskApi = {
     return handleResponse(response);
   },
 
+  resetMonthly: async () => {
+    const response = await fetch(`${BASE_URL}/tasks/reset-monthly`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  resetAnnually: async () => {
+    const response = await fetch(`${BASE_URL}/tasks/reset-annually`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  },
+
   // --- Reminders ---
   getReminders: async () => {
     const response = await fetch(`${BASE_URL}/reminders/`, { headers: getHeaders() });

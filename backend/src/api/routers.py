@@ -91,6 +91,22 @@ def reset_daily_tasks(service: TaskService = Depends(get_task_service)):
     return {"message": "Daily tasks reset successfully"}
 
 
+@router.post("/reset-monthly", status_code=status.HTTP_200_OK)
+def reset_monthly_tasks(service: TaskService = Depends(get_task_service)):
+    success = service.reset_monthly_tasks()
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to reset monthly tasks")
+    return {"message": "Monthly tasks reset successfully"}
+
+
+@router.post("/reset-annually", status_code=status.HTTP_200_OK)
+def reset_annually_tasks(service: TaskService = Depends(get_task_service)):
+    success = service.reset_annually_tasks()
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to reset annually tasks")
+    return {"message": "Annually tasks reset successfully"}
+
+
 # --- Reminders Router ---
 reminders_router = APIRouter(
     prefix="/reminders",

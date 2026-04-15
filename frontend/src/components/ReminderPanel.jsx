@@ -43,7 +43,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
       <div className="p-6 border-b border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <FingerRibbonIcon className="text-paramo-frailejon" />
-          <h2 className="text-xl font-bold text-white italic tracking-tight">Recordatorios</h2>
+          <h2 className="text-xl font-bold text-white italic tracking-tight">Reminders</h2>
         </div>
         <button onClick={onClose} className="text-paramo-muted hover:text-white transition-colors">
           <X size={24} />
@@ -54,11 +54,11 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
         {/* Settings Section */}
         <section className="space-y-4">
           <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
-            <Clock size={14} /> Jornada de Actividad
+            <Clock size={14} /> Activity Window
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">Inicio</label>
+              <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">Start</label>
               <input 
                 type="time" 
                 value={userSettings.dayStartTime} 
@@ -67,7 +67,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">Fin</label>
+              <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">End</label>
               <input 
                 type="time" 
                 value={userSettings.dayEndTime} 
@@ -81,15 +81,15 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
         {/* Add Reminder Form */}
         <section className="space-y-4">
           <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
-            <Plus size={14} /> Nuevo Recordatorio
+            <Plus size={14} /> New Reminder
           </h3>
           <form onSubmit={handleAdd} className="space-y-3">
             <input 
-              type="text" placeholder="Ej: Tomar agua, Postura..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+              type="text" placeholder="Ex: Drink water, Posture..." value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
               className="w-full bg-black/20 border border-white/5 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon"
             />
             <div className="flex items-center gap-3">
-              <span className="text-xs text-paramo-muted">Cada</span>
+              <span className="text-xs text-paramo-muted">Every</span>
               <div className="flex items-center bg-black/20 border border-white/5 rounded-lg overflow-hidden">
                 <input 
                   type="number" value={newInterval} onChange={(e) => setNewInterval(e.target.value)} min="1"
@@ -112,12 +112,12 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
                   </button>
                 </div>
               </div>
-              <span className="text-xs text-paramo-muted">minutos</span>
+              <span className="text-xs text-paramo-muted">minutes</span>
               <button 
                 type="submit" disabled={!newTitle.trim() || isLoading}
                 className="flex-1 bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold py-2 rounded-lg hover:bg-paramo-frailejon/20 transition-all disabled:opacity-50"
               >
-                Añadir
+                Add
               </button>
             </div>
           </form>
@@ -126,16 +126,16 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
         {/* List Section */}
         <section className="space-y-4">
           <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
-            <Bell size={14} /> Mis Alertas
+            <Bell size={14} /> My Alerts
           </h3>
           <div className="space-y-3">
-            {reminders.length === 0 && <p className="text-xs text-paramo-muted italic text-center py-4">No hay recordatorios activos.</p>}
+            {reminders.length === 0 && <p className="text-xs text-paramo-muted italic text-center py-4">No active reminders.</p>}
             {reminders.map(reminder => (
               <div key={reminder.id} className={`p-4 rounded-xl border transition-all ${reminder.isActive ? 'bg-paramo-card border-white/10' : 'bg-black/10 border-white/5 opacity-60'}`}>
                 <div className="flex justify-between items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <h4 className={`text-sm font-bold truncate ${reminder.isActive ? 'text-white' : 'text-paramo-muted'}`}>{reminder.title}</h4>
-                    <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">Cada {reminder.intervalMinutes} min</p>
+                    <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">Every {reminder.intervalMinutes} min</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <button 
