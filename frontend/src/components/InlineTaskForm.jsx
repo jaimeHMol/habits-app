@@ -82,6 +82,10 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
       <textarea placeholder="Description (optional)..." value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} className="bg-transparent border border-white/10 rounded-md p-2 text-xs text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon resize-y min-h-[4rem] h-24 disabled:opacity-50" />
       
       <div className="flex flex-wrap gap-2 items-center">
+        <select value={priority} onChange={(e) => setPriority(e.target.value)} disabled={isSaving} className={`bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-paramo-frailejon disabled:opacity-50 ${priorityColorClass}`}>
+          <option value="muted" className="text-paramo-muted font-bold">Optional</option>
+          <option value="frailejon" className="text-paramo-frailejon font-bold">Important</option>
+          <option value="tierra" className="text-paramo-tierra font-bold">Critical</option>
         </select>
 
         {/* Focus Duration Input - Only for Daily column */}
