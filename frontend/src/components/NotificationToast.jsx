@@ -19,7 +19,7 @@ export const NotificationToast = () => {
           </div>
           
           <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-white uppercase tracking-tight">Recordatorio</h4>
+            <h4 className="text-sm font-bold text-white uppercase tracking-tight">Recuerda</h4>
             <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">{alert.title}</p>
           </div>
 

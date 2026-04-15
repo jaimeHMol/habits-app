@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
-import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing } from 'lucide-react'
+import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -90,10 +90,28 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
             />
             <div className="flex items-center gap-3">
               <span className="text-xs text-paramo-muted">Cada</span>
-              <input 
-                type="number" value={newInterval} onChange={(e) => setNewInterval(e.target.value)} min="1"
-                className="w-20 bg-black/20 border border-white/5 rounded-lg p-2 text-sm text-white text-center focus:outline-none focus:border-paramo-frailejon"
-              />
+              <div className="flex items-center bg-black/20 border border-white/5 rounded-lg overflow-hidden">
+                <input 
+                  type="number" value={newInterval} onChange={(e) => setNewInterval(e.target.value)} min="1"
+                  className="w-12 bg-transparent p-2 text-sm text-white text-center focus:outline-none no-spinner"
+                />
+                <div className="flex flex-col border-l border-white/5">
+                  <button 
+                    type="button"
+                    onClick={() => setNewInterval(prev => Math.max(1, parseInt(prev) + 5))}
+                    className="p-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/5"
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setNewInterval(prev => Math.max(1, parseInt(prev) - 5))}
+                    className="p-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors"
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </div>
+              </div>
               <span className="text-xs text-paramo-muted">minutos</span>
               <button 
                 type="submit" disabled={!newTitle.trim() || isLoading}

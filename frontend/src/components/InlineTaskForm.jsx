@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Trash2, X, Save, AlertCircle } from 'lucide-react'
+import { Trash2, X, Save, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react'
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
@@ -86,7 +86,29 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
           <option value="tierra" className="text-paramo-tierra font-bold">Critical</option>
         </select>
         {(column.type === 'monthly' || column.type === 'annually') && (
-          <input type="number" min="1" max="31" placeholder="Day" value={targetDay} onChange={(e) => setTargetDay(e.target.value)} disabled={isSaving} className="w-14 bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs text-paramo-muted focus:outline-none focus:border-paramo-frailejon disabled:opacity-50" />
+          <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">
+            <input 
+              type="number" min="1" max="31" placeholder="Day" value={targetDay} 
+              onChange={(e) => setTargetDay(e.target.value)} disabled={isSaving} 
+              className="w-8 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
+            />
+            <div className="flex flex-col border-l border-white/10">
+              <button 
+                type="button" disabled={isSaving}
+                onClick={() => setTargetDay(prev => Math.min(31, Math.max(1, (parseInt(prev) || 0) + 1)))}
+                className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
+              >
+                <ChevronUp size={10} />
+              </button>
+              <button 
+                type="button" disabled={isSaving}
+                onClick={() => setTargetDay(prev => Math.min(31, Math.max(1, (parseInt(prev) || 2) - 1)))}
+                className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
+              >
+                <ChevronDown size={10} />
+              </button>
+            </div>
+          </div>
         )}
         {column.type === 'annually' && (
           <select value={targetMonth} onChange={(e) => setTargetMonth(e.target.value)} disabled={isSaving} className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs text-paramo-muted focus:outline-none focus:border-paramo-frailejon disabled:opacity-50">
