@@ -10,6 +10,7 @@ A minimalist, high-performance task and habit tracker built with a focus on simp
 ## ✨ Features
 
 - **Intuitive Board**: Organize tasks across Daily, Monthly, Annually, and To-Do columns.
+- **Daily Reset & Review**: Automated daily reset for habits with a "Review Modal" to catch forgotten completions from the previous day.
 - **Markdown Support**: Rich text descriptions with support for **bold**, *italics*, ~~strikethrough~~, [links](https://google.com), and lists.
 - **Smart Drag & Drop**: Smoothly reorder tasks within and across columns using `@hello-pangea/dnd`.
 - **Priority System**: Visual categorization of tasks (Muted, Important/Frailejón, Critical/Tierra).

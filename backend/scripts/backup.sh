@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Configuration
 DB_TYPE=${DB_TYPE:-"sqlite"}

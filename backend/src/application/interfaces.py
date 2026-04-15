@@ -24,3 +24,9 @@ class ITaskRepository(Protocol):
         to persist the Drag & Drop state from the UI.
         """
         ...
+
+    def reset_daily_tasks(self) -> bool:
+        """
+        Sets completed=False for all tasks in the daily column.
+        """
+        ...

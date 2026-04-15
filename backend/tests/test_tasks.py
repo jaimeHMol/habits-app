@@ -72,3 +72,37 @@ def test_chronological_sorting_business_logic(client: TestClient):
     assert monthly_tasks[0]["target_day"] == 5
     assert monthly_tasks[1]["title"] == "Pay Internet"
     assert monthly_tasks[1]["target_day"] == 25
+
+
+def test_reset_daily_tasks(client: TestClient):
+    """
+    Test that all daily tasks are reset to uncompleted status.
+    """
+    # 1. Create and complete a daily task
+    res1 = client.post("/tasks/", json={"title": "Task 1", "column_id": ColumnId.DAILY})
+    id1 = res1.json()["id"]
+    client.patch(f"/tasks/{id1}/complete")
+
+    # 2. Create another daily task and complete it
+    res2 = client.post("/tasks/", json={"title": "Task 2", "column_id": ColumnId.DAILY})
+    id2 = res2.json()["id"]
+    client.patch(f"/tasks/{id2}/complete")
+
+    # 3. Create a TODO task and complete it (should NOT be reset)
+    res3 = client.post("/tasks/", json={"title": "Todo 1", "column_id": ColumnId.TODO})
+    id3 = res3.json()["id"]
+    client.patch(f"/tasks/{id3}/complete")
+
+    # 4. Trigger reset
+    reset_res = client.post("/tasks/reset-daily")
+    assert reset_res.status_code == 200
+
+    # 5. Verify results
+    all_tasks = client.get("/tasks/").json()
+    t1 = next(t for t in all_tasks if t["id"] == id1)
+    t2 = next(t for t in all_tasks if t["id"] == id2)
+    t3 = next(t for t in all_tasks if t["id"] == id3)
+
+    assert t1["completed"] is False
+    assert t2["completed"] is False
+    assert t3["completed"] is True  # Todo column should remain untouched

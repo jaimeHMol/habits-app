@@ -68,3 +68,11 @@ def reorder_tasks(
     if not success:
         raise HTTPException(status_code=400, detail="Failed to reorder tasks")
     return {"message": "Reorder successful"}
+
+
+@router.post("/reset-daily", status_code=status.HTTP_200_OK)
+def reset_daily_tasks(service: TaskService = Depends(get_task_service)):
+    success = service.reset_daily_tasks()
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to reset daily tasks")
+    return {"message": "Daily tasks reset successfully"}

@@ -97,5 +97,13 @@ export const taskApi = {
       body: JSON.stringify({ column_id: columnId, task_ids: taskIds }),
     });
     return handleResponse(response);
+  },
+
+  resetDaily: async () => {
+    const response = await fetch(`${BASE_URL}/tasks/reset-daily`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
   }
 };

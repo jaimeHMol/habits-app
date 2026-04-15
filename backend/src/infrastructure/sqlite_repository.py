@@ -75,3 +75,19 @@ class SQLiteTaskRepository(ITaskRepository):
         except Exception:
             self.session.rollback()
             return False
+
+    def reset_daily_tasks(self) -> bool:
+        """
+        Sets completed=False for all tasks in the daily column.
+        """
+        try:
+            statement = select(Task).where(Task.column_id == ColumnId.DAILY)
+            results = self.session.exec(statement)
+            for task in results:
+                task.completed = False
+                self.session.add(task)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            return False

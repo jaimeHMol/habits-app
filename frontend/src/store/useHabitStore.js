@@ -30,6 +30,60 @@ export const useHabitStore = create((set, get) => ({
   tasks: [],
   isLoading: false,
   error: null,
+  showReviewModal: false,
+  lastUsedDate: localStorage.getItem('last_used_date'),
+
+  checkDayChange: () => {
+    const lastDate = get().lastUsedDate;
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+    if (lastDate && lastDate !== today) {
+      // It's a new day! Check if there are daily tasks to review
+      const hasDailyTasks = get().tasks.some(t => t.columnId === 'daily');
+      if (hasDailyTasks) {
+        set({ showReviewModal: true });
+      } else {
+        // If no tasks, just update the date
+        localStorage.setItem('last_used_date', today);
+        set({ lastUsedDate: today });
+      }
+    } else if (!lastDate) {
+      // First time initialization
+      localStorage.setItem('last_used_date', today);
+      set({ lastUsedDate: today });
+    }
+  },
+
+  confirmReview: async (completedTaskIds) => {
+    set({ isLoading: true });
+    try {
+      // 1. Mark tasks as completed for "yesterday"
+      for (const id of completedTaskIds) {
+        const task = get().tasks.find(t => t.id === id);
+        if (task && !task.completed) {
+          await taskApi.toggleComplete(id);
+        }
+      }
+      
+      // 2. Perform the global reset of Daily column in backend
+      await taskApi.resetDaily();
+      
+      // 3. Update local state
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+      localStorage.setItem('last_used_date', today);
+      
+      set({ 
+        showReviewModal: false, 
+        lastUsedDate: today,
+        isLoading: false 
+      });
+      
+      await get().fetchTasks();
+    } catch (error) {
+      console.error("Review confirmation failed", error);
+      set({ isLoading: false });
+    }
+  },
 
   fetchTasks: async () => {
     set({ isLoading: true, error: null });

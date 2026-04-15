@@ -63,6 +63,12 @@ class TaskService:
         """
         return self.repository.reorder_tasks(column_id, task_ids)
 
+    def reset_daily_tasks(self) -> bool:
+        """
+        Orchestrates the reset of all daily tasks to uncompleted status.
+        """
+        return self.repository.reset_daily_tasks()
+
     def _ensure_chronological_order(self, column_id: ColumnId):
         """
         Internal helper to sort Monthly/Annually columns by date.

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useHabitStore } from './store/useHabitStore'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { Column } from './components/Column'
+import { DailyReviewModal } from './components/DailyReviewModal'
 import { LogOut, Lock } from 'lucide-react'
 
 const getGreeting = () => {
@@ -12,7 +13,7 @@ const getGreeting = () => {
 }
 
 function App() {
-  const { columns, reorderTasks, fetchTasks, isAuthenticated, login, logout } = useHabitStore()
+  const { columns, reorderTasks, fetchTasks, isAuthenticated, login, logout, showReviewModal, checkDayChange } = useHabitStore()
   
   const [activeMobileColumn, setActiveMobileColumn] = useState('daily')
   const [username, setUsername] = useState('')
@@ -24,9 +25,11 @@ function App() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      fetchTasks();
+      fetchTasks().then(() => {
+        checkDayChange();
+      });
     }
-  }, [fetchTasks, isAuthenticated]);
+  }, [fetchTasks, isAuthenticated, checkDayChange]);
 
   const onDragEnd = (result) => {
     const { source, destination } = result
@@ -77,6 +80,7 @@ function App() {
   // --- MAIN DASHBOARD ---
   return (
     <div className="min-h-screen h-full font-sans selection:bg-paramo-frailejon/30 flex flex-col pb-24 md:pb-0">
+      {showReviewModal && <DailyReviewModal />}
       <header className="p-4 md:p-6 mb-4 md:mb-8 flex justify-between items-start">
         <div>
           <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
