@@ -36,28 +36,42 @@ class ReorderRequest(BaseModel):
 
 
 @router.get("/", response_model=List[Task])
-def get_all_tasks(service: TaskService = Depends(get_task_service)):
-    return service.get_all_tasks()
+def get_all_tasks(
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    return service.get_all_tasks(current_user.id)
 
 
 @router.post("/", response_model=Task, status_code=status.HTTP_201_CREATED)
-def create_task(task_in: TaskCreate, service: TaskService = Depends(get_task_service)):
-    return service.create_new_task(task_in)
+def create_task(
+    task_in: TaskCreate,
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    return service.create_new_task(task_in, current_user.id)
 
 
 @router.put("/{task_id}", response_model=Task)
 def update_task(
-    task_id: int, task_in: TaskUpdate, service: TaskService = Depends(get_task_service)
+    task_id: int,
+    task_in: TaskUpdate,
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
 ):
-    task = service.update_task_details(task_id, task_in)
+    task = service.update_task_details(task_id, task_in, current_user.id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task(task_id: int, service: TaskService = Depends(get_task_service)):
-    success = service.delete_task(task_id)
+def delete_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    success = service.delete_task(task_id, current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Task not found")
     return None
@@ -67,9 +81,10 @@ def delete_task(task_id: int, service: TaskService = Depends(get_task_service)):
 def toggle_task_completion(
     task_id: int,
     is_retroactive: bool = False,
+    current_user: User = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.toggle_completion(task_id, is_retroactive)
+    task = service.toggle_completion(task_id, current_user.id, is_retroactive)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -79,17 +94,22 @@ def toggle_task_completion(
 def increment_task(
     task_id: int,
     is_retroactive: bool = False,
+    current_user: User = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.increment_task(task_id, is_retroactive)
+    task = service.increment_task(task_id, current_user.id, is_retroactive)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
 
 
 @router.patch("/{task_id}/decrement", response_model=Task)
-def decrement_task(task_id: int, service: TaskService = Depends(get_task_service)):
-    task = service.decrement_task(task_id)
+def decrement_task(
+    task_id: int,
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    task = service.decrement_task(task_id, current_user.id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -97,33 +117,46 @@ def decrement_task(task_id: int, service: TaskService = Depends(get_task_service
 
 @router.put("/reorder/column", status_code=status.HTTP_200_OK)
 def reorder_tasks(
-    request: ReorderRequest, service: TaskService = Depends(get_task_service)
+    request: ReorderRequest,
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
 ):
-    success = service.reorder_column(request.column_id, request.task_ids)
+    success = service.reorder_column(
+        request.column_id, request.task_ids, current_user.id
+    )
     if not success:
         raise HTTPException(status_code=400, detail="Failed to reorder tasks")
     return {"message": "Reorder successful"}
 
 
 @router.post("/reset-daily", status_code=status.HTTP_200_OK)
-def reset_daily_tasks(service: TaskService = Depends(get_task_service)):
-    success = service.reset_daily_tasks()
+def reset_daily_tasks(
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    success = service.reset_daily_tasks(current_user.id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to reset daily tasks")
     return {"message": "Daily tasks reset successfully"}
 
 
 @router.post("/reset-monthly", status_code=status.HTTP_200_OK)
-def reset_monthly_tasks(service: TaskService = Depends(get_task_service)):
-    success = service.reset_monthly_tasks()
+def reset_monthly_tasks(
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    success = service.reset_monthly_tasks(current_user.id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to reset monthly tasks")
     return {"message": "Monthly tasks reset successfully"}
 
 
 @router.post("/reset-annually", status_code=status.HTTP_200_OK)
-def reset_annually_tasks(service: TaskService = Depends(get_task_service)):
-    success = service.reset_annually_tasks()
+def reset_annually_tasks(
+    current_user: User = Depends(get_current_user),
+    service: TaskService = Depends(get_task_service),
+):
+    success = service.reset_annually_tasks(current_user.id)
     if not success:
         raise HTTPException(status_code=500, detail="Failed to reset annually tasks")
     return {"message": "Annually tasks reset successfully"}
@@ -138,8 +171,11 @@ reminders_router = APIRouter(
 
 
 @reminders_router.get("/", response_model=List[Reminder])
-def get_reminders(service: ReminderService = Depends(get_reminder_service)):
-    return service.get_all_reminders()
+def get_reminders(
+    current_user: User = Depends(get_current_user),
+    service: ReminderService = Depends(get_reminder_service),
+):
+    return service.get_all_reminders(current_user.id)
 
 
 @reminders_router.post(
@@ -147,18 +183,20 @@ def get_reminders(service: ReminderService = Depends(get_reminder_service)):
 )
 def create_reminder(
     reminder_in: ReminderCreate,
+    current_user: User = Depends(get_current_user),
     service: ReminderService = Depends(get_reminder_service),
 ):
-    return service.create_reminder(reminder_in)
+    return service.create_reminder(reminder_in, current_user.id)
 
 
 @reminders_router.put("/{reminder_id}", response_model=Reminder)
 def update_reminder(
     reminder_id: int,
     reminder_in: ReminderUpdate,
+    current_user: User = Depends(get_current_user),
     service: ReminderService = Depends(get_reminder_service),
 ):
-    reminder = service.update_reminder(reminder_id, reminder_in)
+    reminder = service.update_reminder(reminder_id, reminder_in, current_user.id)
     if not reminder:
         raise HTTPException(status_code=404, detail="Reminder not found")
     return reminder
@@ -166,9 +204,11 @@ def update_reminder(
 
 @reminders_router.delete("/{reminder_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reminder(
-    reminder_id: int, service: ReminderService = Depends(get_reminder_service)
+    reminder_id: int,
+    current_user: User = Depends(get_current_user),
+    service: ReminderService = Depends(get_reminder_service),
 ):
-    success = service.delete_reminder(reminder_id)
+    success = service.delete_reminder(reminder_id, current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Reminder not found")
     return None

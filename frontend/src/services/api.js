@@ -21,7 +21,10 @@ const handleResponse = async (response) => {
     window.location.reload(); // Force reload to clear state and show login
     throw new Error('Session expired');
   }
-  if (!response.ok) throw new Error('API request failed');
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || 'API request failed');
+  }
   return response.status !== 204 ? response.json() : true;
 };
 
@@ -40,6 +43,28 @@ export const taskApi = {
 
     if (!response.ok) throw new Error('Invalid credentials');
     return response.json();
+  },
+
+  register: async (data) => {
+    const response = await fetch(`${BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        full_name: data.fullName,
+        username: data.username,
+        password: data.password,
+        invitation_code: data.invitationCode
+      }),
+    });
+    return handleResponse(response);
+  },
+
+  generateInvite: async () => {
+    const response = await fetch(`${BASE_URL}/auth/invitations/generate`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
   },
 
   getAll: async () => {
@@ -194,6 +219,7 @@ export const taskApi = {
     const data = await handleResponse(response);
     return {
       ...data,
+      fullName: data.full_name,
       dayStartTime: data.day_start_time,
       dayEndTime: data.day_end_time
     };
@@ -210,4 +236,4 @@ export const taskApi = {
     });
     return handleResponse(response);
   }
-  };
+};

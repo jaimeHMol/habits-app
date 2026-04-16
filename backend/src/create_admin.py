@@ -31,6 +31,8 @@ def create_admin_user():
         # Create new admin securely using credentials from settings
         admin = User(
             username=settings.admin_username,
+            full_name="Jaime",
+            role="admin",
             hashed_password=get_password_hash(settings.admin_password),
         )
         session.add(admin)

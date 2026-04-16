@@ -105,7 +105,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         {/* Focus Duration Input - Only for Daily column */}
         {column.id === 'daily' && (
           <div className="flex items-center gap-1.5" title="Focus duration">
-            <span className="text-[10px] text-paramo-muted uppercase tracking-tight">during</span>
+            <span className="text-[10px] text-paramo-muted tracking-tight">during</span>
             <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">
               <input 
                 type="number" min="0" placeholder="0" value={durationMinutes} 
@@ -129,7 +129,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
                 </button>
               </div>
             </div>
-            <span className="text-[10px] text-paramo-muted uppercase tracking-tight">min</span>
+            <span className="text-[10px] text-paramo-muted tracking-tight">min</span>
           </div>
         )}
 

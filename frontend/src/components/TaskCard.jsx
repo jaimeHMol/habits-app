@@ -1,6 +1,6 @@
 import React from 'react'
 import { useHabitStore } from '../store/useHabitStore'
-import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus, Hash } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -38,16 +38,16 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
       <div className="p-3 md:p-4 flex items-start gap-2 md:gap-3">
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
           {task.taskType === 'counter' ? (
-            <div className="flex flex-col items-center gap-1.5">
+            <div className="flex flex-col items-center gap-2">
               <button 
                 title="Increment"
                 onClick={(e) => {
                   e.stopPropagation();
                   incrementTask(task.id);
                 }}
-                className="w-10 h-10 rounded-full bg-paramo-frailejon/10 text-paramo-frailejon hover:bg-paramo-frailejon hover:text-paramo-bg transition-all flex items-center justify-center border border-paramo-frailejon/30 shadow-lg shadow-paramo-frailejon/5 active:scale-90"
+                className="mt-0.5 text-paramo-muted hover:text-paramo-frailejon transition-colors"
               >
-                <Plus size={20} strokeWidth={2.5} />
+                <Plus size={20} strokeWidth={1.5} />
               </button>
               <button 
                 title="Decrement"
@@ -55,7 +55,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   e.stopPropagation();
                   decrementTask(task.id);
                 }}
-                className={`p-1.5 rounded-lg text-paramo-muted hover:text-white hover:bg-white/5 transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : 'opacity-0 group-hover:opacity-100'}`}
+                className={`p-1 text-paramo-muted/40 hover:text-white transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : 'opacity-0 group-hover:opacity-100'}`}
               >
                 <Minus size={14} />
               </button>
@@ -104,8 +104,8 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                     </span>
                   )}
                   {task.taskType === 'counter' && (
-                    <span className="flex items-center gap-1 text-[10px] font-black text-paramo-tierra uppercase tracking-widest bg-paramo-tierra/10 px-1.5 py-0.5 rounded shadow-sm">
-                      Count: {task.currentCount}
+                    <span className="flex items-center gap-0.5 text-[10px] font-black text-paramo-tierra uppercase tracking-widest bg-paramo-tierra/10 px-1.5 py-0.5 rounded shadow-sm">
+                      <Hash size={10} strokeWidth={3} /> {task.currentCount}
                     </span>
                   )}
                   {isDailyColumn && task.durationMinutes > 0 && !task.completed && !isTimerActive && (

@@ -3,12 +3,17 @@ import { taskApi } from '../services/api'
 
 export const useHabitStore = create((set, get) => ({
   isAuthenticated: !!localStorage.getItem('habit_token'),
+  user: null, // { username, fullName, role }
   
   login: async (username, password) => {
     try {
       const data = await taskApi.login(username, password);
       localStorage.setItem('habit_token', data.access_token);
-      set({ isAuthenticated: true, error: null });
+      set({ 
+        isAuthenticated: true, 
+        user: data.user, 
+        error: null 
+      });
       get().fetchTasks(); // Load data immediately after login
       return true;
     } catch (error) {
@@ -16,10 +21,39 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
+  register: async (data) => {
+    try {
+      await taskApi.register(data);
+      return { success: true };
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  },
+
   logout: () => {
     localStorage.removeItem('habit_token');
-    set({ isAuthenticated: false, tasks: [] });
+    set({ isAuthenticated: false, user: null, tasks: [] });
   },
+
+  fetchUserProfile: async () => {
+    try {
+      const user = await taskApi.getMe();
+      set({ user });
+    } catch (error) {
+      console.error("Failed to fetch profile", error);
+    }
+  },
+
+  generateInvite: async () => {
+    try {
+      const data = await taskApi.generateInvite();
+      return data.code;
+    } catch (error) {
+      console.error("Failed to generate invite", error);
+      return null;
+    }
+  },
+
   columns: [
     // Added viewMode to each column state
     { id: 'daily', title: 'Daily', type: 'daily', viewMode: 'active' },

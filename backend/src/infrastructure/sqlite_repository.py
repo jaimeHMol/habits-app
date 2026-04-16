@@ -23,21 +23,26 @@ class SQLiteTaskRepository(ITaskRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def get_all(self) -> List[Task]:
+    def get_all(self, user_id: int) -> List[Task]:
         # Sorting by order_index by default to match UI expectations
-        statement = select(Task).order_by(Task.order_index)
+        statement = (
+            select(Task).where(Task.user_id == user_id).order_by(Task.order_index)
+        )
         results = self.session.exec(statement)
         return results.all()
 
-    def get_by_id(self, task_id: int) -> Optional[Task]:
-        return self.session.get(Task, task_id)
+    def get_by_id(self, task_id: int, user_id: int) -> Optional[Task]:
+        statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
+        return self.session.exec(statement).first()
 
-    def create(self, task_data: TaskCreate) -> Task:
-        # FIX: Changed from_orm to model_validate (Pydantic V2)
+    def create(self, task_data: TaskCreate, user_id: int) -> Task:
         db_task = Task.model_validate(task_data)
+        db_task.user_id = user_id
 
         if db_task.order_index == 0:
-            statement = select(Task).where(Task.column_id == db_task.column_id)
+            statement = select(Task).where(
+                Task.column_id == db_task.column_id, Task.user_id == user_id
+            )
             count = len(self.session.exec(statement).all())
             db_task.order_index = count
 
@@ -46,12 +51,13 @@ class SQLiteTaskRepository(ITaskRepository):
         self.session.refresh(db_task)
         return db_task
 
-    def update(self, task_id: int, task_data: TaskUpdate) -> Optional[Task]:
-        db_task = self.get_by_id(task_id)
+    def update(
+        self, task_id: int, task_data: TaskUpdate, user_id: int
+    ) -> Optional[Task]:
+        db_task = self.get_by_id(task_id, user_id)
         if not db_task:
             return None
 
-        # FIX: Changed dict() to model_dump() (Pydantic V2)
         update_data = task_data.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_task, key, value)
@@ -61,8 +67,8 @@ class SQLiteTaskRepository(ITaskRepository):
         self.session.refresh(db_task)
         return db_task
 
-    def delete(self, task_id: int) -> bool:
-        db_task = self.get_by_id(task_id)
+    def delete(self, task_id: int, user_id: int) -> bool:
+        db_task = self.get_by_id(task_id, user_id)
         if not db_task:
             return False
 
@@ -70,13 +76,15 @@ class SQLiteTaskRepository(ITaskRepository):
         self.session.commit()
         return True
 
-    def reorder_tasks(self, column_id: ColumnId, task_ids: List[int]) -> bool:
+    def reorder_tasks(
+        self, column_id: ColumnId, task_ids: List[int], user_id: int
+    ) -> bool:
         """
         Bulk update of order_index for tasks in a column.
         """
         try:
             for index, t_id in enumerate(task_ids):
-                db_task = self.get_by_id(t_id)
+                db_task = self.get_by_id(t_id, user_id)
                 if db_task and db_task.column_id == column_id:
                     db_task.order_index = index
                     self.session.add(db_task)
@@ -87,12 +95,14 @@ class SQLiteTaskRepository(ITaskRepository):
             self.session.rollback()
             return False
 
-    def reset_daily_tasks(self) -> bool:
+    def reset_daily_tasks(self, user_id: int) -> bool:
         """
         Sets completed=False for all tasks in the daily column.
         """
         try:
-            statement = select(Task).where(Task.column_id == ColumnId.DAILY)
+            statement = select(Task).where(
+                Task.column_id == ColumnId.DAILY, Task.user_id == user_id
+            )
             results = self.session.exec(statement)
             for task in results:
                 task.completed = False
@@ -103,13 +113,15 @@ class SQLiteTaskRepository(ITaskRepository):
             self.session.rollback()
             return False
 
-    def reset_monthly_tasks(self) -> bool:
+    def reset_monthly_tasks(self, user_id: int) -> bool:
         """
         Sets completed=False for all monthly tasks.
         For COUNTER tasks, resets current_count to 0.
         """
         try:
-            statement = select(Task).where(Task.column_id == ColumnId.MONTHLY)
+            statement = select(Task).where(
+                Task.column_id == ColumnId.MONTHLY, Task.user_id == user_id
+            )
             results = self.session.exec(statement)
             for task in results:
                 if task.task_type == TaskType.COUNTER:
@@ -123,11 +135,13 @@ class SQLiteTaskRepository(ITaskRepository):
             self.session.rollback()
             return False
 
-    def increment_task(self, task_id: int, is_retroactive: bool) -> Optional[Task]:
+    def increment_task(
+        self, task_id: int, user_id: int, is_retroactive: bool
+    ) -> Optional[Task]:
         """
         Increments current_count and logs the event.
         """
-        task = self.get_by_id(task_id)
+        task = self.get_by_id(task_id, user_id)
         if not task:
             return None
 
@@ -140,11 +154,11 @@ class SQLiteTaskRepository(ITaskRepository):
 
         return task
 
-    def decrement_task(self, task_id: int) -> Optional[Task]:
+    def decrement_task(self, task_id: int, user_id: int) -> Optional[Task]:
         """
         Decrements current_count and removes the last log.
         """
-        task = self.get_by_id(task_id)
+        task = self.get_by_id(task_id, user_id)
         if not task:
             return None
 
@@ -157,12 +171,14 @@ class SQLiteTaskRepository(ITaskRepository):
 
         return task
 
-    def reset_annually_tasks(self) -> bool:
+    def reset_annually_tasks(self, user_id: int) -> bool:
         """
         Sets completed=False for all tasks in the annually column.
         """
         try:
-            statement = select(Task).where(Task.column_id == ColumnId.ANNUALLY)
+            statement = select(Task).where(
+                Task.column_id == ColumnId.ANNUALLY, Task.user_id == user_id
+            )
             results = self.session.exec(statement)
             for task in results:
                 task.completed = False
@@ -179,6 +195,7 @@ class SQLiteTaskRepository(ITaskRepository):
         """
         log_entry = TaskCompletionLog(
             task_id=task.id,
+            user_id=task.user_id,
             task_title=task.title,
             column_id=task.column_id,
             priority=task.priority,
@@ -196,7 +213,10 @@ class SQLiteTaskRepository(ITaskRepository):
         """
         statement = (
             select(TaskCompletionLog)
-            .where(TaskCompletionLog.task_id == task.id)
+            .where(
+                TaskCompletionLog.task_id == task.id,
+                TaskCompletionLog.user_id == task.user_id,
+            )
             .order_by(TaskCompletionLog.completed_at.desc())
         )
 
@@ -215,25 +235,33 @@ class SQLiteReminderRepository(IReminderRepository):
     def __init__(self, session: Session):
         self.session = session
 
-    def get_all(self) -> List[Reminder]:
-        statement = select(Reminder).order_by(Reminder.created_at)
+    def get_all(self, user_id: int) -> List[Reminder]:
+        statement = (
+            select(Reminder)
+            .where(Reminder.user_id == user_id)
+            .order_by(Reminder.created_at)
+        )
         results = self.session.exec(statement)
         return results.all()
 
-    def get_by_id(self, reminder_id: int) -> Optional[Reminder]:
-        return self.session.get(Reminder, reminder_id)
+    def get_by_id(self, reminder_id: int, user_id: int) -> Optional[Reminder]:
+        statement = select(Reminder).where(
+            Reminder.id == reminder_id, Reminder.user_id == user_id
+        )
+        return self.session.exec(statement).first()
 
-    def create(self, reminder_data: ReminderCreate) -> Reminder:
+    def create(self, reminder_data: ReminderCreate, user_id: int) -> Reminder:
         db_reminder = Reminder.model_validate(reminder_data)
+        db_reminder.user_id = user_id
         self.session.add(db_reminder)
         self.session.commit()
         self.session.refresh(db_reminder)
         return db_reminder
 
     def update(
-        self, reminder_id: int, reminder_data: ReminderUpdate
+        self, reminder_id: int, reminder_data: ReminderUpdate, user_id: int
     ) -> Optional[Reminder]:
-        db_reminder = self.get_by_id(reminder_id)
+        db_reminder = self.get_by_id(reminder_id, user_id)
         if not db_reminder:
             return None
 
@@ -246,8 +274,8 @@ class SQLiteReminderRepository(IReminderRepository):
         self.session.refresh(db_reminder)
         return db_reminder
 
-    def delete(self, reminder_id: int) -> bool:
-        db_reminder = self.get_by_id(reminder_id)
+    def delete(self, reminder_id: int, user_id: int) -> bool:
+        db_reminder = self.get_by_id(reminder_id, user_id)
         if not db_reminder:
             return False
 

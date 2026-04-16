@@ -35,6 +35,7 @@ class TaskBase(SQLModel):
     duration_minutes: Optional[int] = Field(default=None)
     current_count: int = Field(default=0)
     order_index: int = Field(default=0)  # To persist Drag & Drop sorting
+    user_id: Optional[int] = Field(default=None, index=True)
 
 
 class Task(TaskBase, table=True):
@@ -63,6 +64,8 @@ class TaskUpdate(SQLModel):
 
 class UserBase(SQLModel):
     username: str = Field(index=True, unique=True)
+    full_name: str = Field(default="User")
+    role: str = Field(default="user")
     is_active: bool = Field(default=True)
     day_start_time: str = Field(default="08:00")
     day_end_time: str = Field(default="20:00")
@@ -82,6 +85,7 @@ class ReminderBase(SQLModel):
     title: str
     interval_minutes: int = Field(gt=0)
     is_active: bool = Field(default=True)
+    user_id: Optional[int] = Field(default=None, index=True)
 
 
 class Reminder(ReminderBase, table=True):
@@ -103,6 +107,7 @@ class TaskCompletionLog(SQLModel, table=True):
     __tablename__ = "task_completion_log"
     id: Optional[int] = Field(default=None, primary_key=True)
     task_id: int = Field(index=True)
+    user_id: int = Field(index=True)
     task_title: str
     column_id: ColumnId
     priority: Priority
@@ -110,3 +115,10 @@ class TaskCompletionLog(SQLModel, table=True):
     target_month: Optional[int] = None
     completed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_retroactive: bool = Field(default=False)
+
+
+class InvitationCode(SQLModel, table=True):
+    code: str = Field(primary_key=True)
+    is_used: bool = Field(default=False)
+    used_by_id: Optional[int] = Field(default=None)
+    created_by_id: int
