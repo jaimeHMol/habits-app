@@ -49,6 +49,9 @@ export const useHabitStore = create((set, get) => ({
 
     if (activeTimer.remainingSeconds <= 1) {
       // Time is up!
+      const alarm = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      alarm.play().catch(e => console.log("Audio blocked", e));
+      
       toggleTaskCompletion(activeTimer.taskId);
       stopTimer();
     } else {

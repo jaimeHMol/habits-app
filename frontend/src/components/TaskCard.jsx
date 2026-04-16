@@ -45,10 +45,9 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   e.stopPropagation();
                   incrementTask(task.id);
                 }}
-                className="w-10 h-10 rounded-full bg-paramo-frailejon/10 text-paramo-frailejon hover:bg-paramo-frailejon hover:text-paramo-bg transition-all flex flex-col items-center justify-center border border-paramo-frailejon/30 shadow-lg shadow-paramo-frailejon/5 active:scale-90"
+                className="w-10 h-10 rounded-full bg-paramo-frailejon/10 text-paramo-frailejon hover:bg-paramo-frailejon hover:text-paramo-bg transition-all flex items-center justify-center border border-paramo-frailejon/30 shadow-lg shadow-paramo-frailejon/5 active:scale-90"
               >
-                <span className="text-xs font-black leading-none">{task.currentCount}</span>
-                <Plus size={14} strokeWidth={3} />
+                <Plus size={20} strokeWidth={2.5} />
               </button>
               <button 
                 title="Decrement"
@@ -96,12 +95,17 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-start gap-2">
             <div className="flex flex-col min-w-0 flex-1 opacity-90">
-              {(showDateBadge || (isDailyColumn && task.durationMinutes > 0 && !task.completed && !isTimerActive)) && (
+              {(showDateBadge || (isDailyColumn && task.durationMinutes > 0 && !task.completed && !isTimerActive) || task.taskType === 'counter') && (
                 <div className="flex items-center gap-2 mb-1">
                   {showDateBadge && (
                     <span className={`flex items-center gap-1 text-[10px] md:text-[11px] font-black uppercase tracking-tighter ${task.completed ? 'text-paramo-muted' : 'text-paramo-frailejon'}`}>
                       <Calendar size={10} />
                       {column.type === 'monthly' ? task.targetDay : `${task.targetDay} ${monthNames[task.targetMonth - 1]}`}
+                    </span>
+                  )}
+                  {task.taskType === 'counter' && (
+                    <span className="flex items-center gap-1 text-[10px] font-black text-paramo-tierra uppercase tracking-widest bg-paramo-tierra/10 px-1.5 py-0.5 rounded shadow-sm">
+                      Count: {task.currentCount}
                     </span>
                   )}
                   {isDailyColumn && task.durationMinutes > 0 && !task.completed && !isTimerActive && (
@@ -118,7 +122,6 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 {isTimerActive ? (
                   <span className="flex items-center gap-2">
                     <span className="text-xl tabular-nums tracking-tighter">{formatTime(activeTimer.remainingSeconds)}</span>
-                    <span className="opacity-50 text-[10px] normal-case not-italic tracking-normal">enfocando...</span>
                   </span>
                 ) : task.title}
               </h3>

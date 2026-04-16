@@ -97,8 +97,8 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
             value={taskType} onChange={(e) => setTaskType(e.target.value)} disabled={isSaving} 
             className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold text-paramo-muted focus:outline-none focus:border-paramo-frailejon disabled:opacity-50"
           >
-            <option value="checkbox">Standard</option>
-            <option value="counter">Tally Counter</option>
+            <option value="checkbox">Once</option>
+            <option value="counter">Counter</option>
           </select>
         )}
 
