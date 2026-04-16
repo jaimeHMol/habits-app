@@ -163,6 +163,28 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
+  incrementTask: async (taskId, isRetroactive = false) => {
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
+    }));
+    try {
+      await taskApi.increment(taskId, isRetroactive);
+    } catch (error) {
+      get().fetchTasks();
+    }
+  },
+
+  decrementTask: async (taskId) => {
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
+    }));
+    try {
+      await taskApi.decrement(taskId);
+    } catch (error) {
+      get().fetchTasks();
+    }
+  },
+
   // FIXED: Reorder logic now accounts for the current view subset
   reorderTasks: async (columnId, startIndex, endIndex) => {
     const state = get();
@@ -201,6 +223,8 @@ export const useHabitStore = create((set, get) => ({
       target_day: taskData.targetDay,
       target_month: taskData.targetMonth,
       duration_minutes: taskData.durationMinutes,
+      task_type: taskData.taskType,
+      current_count: taskData.currentCount || 0,
       column_id: columnId,
       is_collapsed: true,
       completed: false
@@ -222,6 +246,8 @@ export const useHabitStore = create((set, get) => ({
       target_day: updatedData.targetDay,
       target_month: updatedData.targetMonth,
       duration_minutes: updatedData.durationMinutes,
+      task_type: updatedData.taskType,
+      current_count: updatedData.currentCount,
     };
     try {
       await taskApi.update(taskId, payload);

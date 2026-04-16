@@ -1,13 +1,13 @@
 import React from 'react'
 import { useHabitStore } from '../store/useHabitStore'
-import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
-  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer } = useHabitStore();
+  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask } = useHabitStore();
 
   const hasMonthlyDate = column.type === 'monthly' && task.targetDay != null;
   const hasAnnuallyDate = column.type === 'annually' && task.targetDay != null && task.targetMonth != null;
@@ -37,31 +37,59 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
     >
       <div className="p-3 md:p-4 flex items-start gap-2 md:gap-3">
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
-          <button 
-            title={task.completed ? "Mark as active" : "Mark as done"}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleTaskCompletion(task.id);
-            }}
-            className={`mt-0.5 transition-colors
-              ${task.completed ? 'text-paramo-frailejon hover:text-white' : 'text-paramo-muted hover:text-paramo-frailejon'}
-            `}
-          >
-            {task.completed ? <RotateCcw size={18} strokeWidth={2} /> : <CheckCircle2 size={20} strokeWidth={1.5} />}
-          </button>
+          {task.taskType === 'counter' ? (
+            <div className="flex flex-col items-center gap-1.5">
+              <button 
+                title="Increment"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  incrementTask(task.id);
+                }}
+                className="w-10 h-10 rounded-full bg-paramo-frailejon/10 text-paramo-frailejon hover:bg-paramo-frailejon hover:text-paramo-bg transition-all flex flex-col items-center justify-center border border-paramo-frailejon/30 shadow-lg shadow-paramo-frailejon/5 active:scale-90"
+              >
+                <span className="text-xs font-black leading-none">{task.currentCount}</span>
+                <Plus size={14} strokeWidth={3} />
+              </button>
+              <button 
+                title="Decrement"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  decrementTask(task.id);
+                }}
+                className={`p-1.5 rounded-lg text-paramo-muted hover:text-white hover:bg-white/5 transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : 'opacity-0 group-hover:opacity-100'}`}
+              >
+                <Minus size={14} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <button 
+                title={task.completed ? "Mark as active" : "Mark as done"}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleTaskCompletion(task.id);
+                }}
+                className={`mt-0.5 transition-colors
+                  ${task.completed ? 'text-paramo-frailejon hover:text-white' : 'text-paramo-muted hover:text-paramo-frailejon'}
+                `}
+              >
+                {task.completed ? <RotateCcw size={18} strokeWidth={2} /> : <CheckCircle2 size={20} strokeWidth={1.5} />}
+              </button>
 
-          {isDailyColumn && !task.completed && task.durationMinutes > 0 && (
-            <button
-              title={isTimerActive ? "Stop focus" : "Start focus"}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isTimerActive) stopTimer();
-                else startTimer(task.id, task.durationMinutes);
-              }}
-              className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? 'bg-paramo-frailejon text-white animate-pulse' : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
-            >
-              {isTimerActive ? <Square size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
-            </button>
+              {isDailyColumn && !task.completed && task.durationMinutes > 0 && (
+                <button
+                  title={isTimerActive ? "Stop focus" : "Start focus"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isTimerActive) stopTimer();
+                    else startTimer(task.id, task.durationMinutes);
+                  }}
+                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? 'bg-paramo-frailejon text-white animate-pulse' : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
+                >
+                  {isTimerActive ? <Square size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
+                </button>
+              )}
+            </>
           )}
         </div>
         

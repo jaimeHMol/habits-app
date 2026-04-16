@@ -10,6 +10,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
   const [targetDay, setTargetDay] = useState(initialData?.targetDay || '');
   const [targetMonth, setTargetMonth] = useState(initialData?.targetMonth || '');
   const [durationMinutes, setDurationMinutes] = useState(initialData?.durationMinutes || '');
+  const [taskType, setTaskType] = useState(initialData?.taskType || 'checkbox');
   
   // NEW: Local error state for form validation
   const [error, setError] = useState('');
@@ -56,6 +57,8 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
       targetDay: dayInt,
       targetMonth: targetMonth ? parseInt(targetMonth) : null,
       durationMinutes: durationMinutes ? parseInt(durationMinutes) : null,
+      taskType,
+      currentCount: initialData?.currentCount || 0
     });
     
     // If it failed in the backend, stop the saving state but DO NOT close the form
@@ -87,6 +90,17 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
           <option value="frailejon" className="text-paramo-frailejon font-bold">Important</option>
           <option value="tierra" className="text-paramo-tierra font-bold">Critical</option>
         </select>
+
+        {/* Task Type Selector - Only for Monthly column */}
+        {column.id === 'monthly' && (
+          <select 
+            value={taskType} onChange={(e) => setTaskType(e.target.value)} disabled={isSaving} 
+            className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold text-paramo-muted focus:outline-none focus:border-paramo-frailejon disabled:opacity-50"
+          >
+            <option value="checkbox">Standard</option>
+            <option value="counter">Tally Counter</option>
+          </select>
+        )}
 
         {/* Focus Duration Input - Only for Daily column */}
         {column.id === 'daily' && (

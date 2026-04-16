@@ -17,16 +17,23 @@ class Priority(str, Enum):
     TIERRA = "tierra"
 
 
+class TaskType(str, Enum):
+    CHECKBOX = "checkbox"
+    COUNTER = "counter"
+
+
 class TaskBase(SQLModel):
     title: str = Field(index=True)
     description: Optional[str] = Field(default=None)
     priority: Priority = Field(default=Priority.MUTED)
+    task_type: TaskType = Field(default=TaskType.CHECKBOX)
     column_id: ColumnId = Field(default=ColumnId.TODO)
     target_day: Optional[int] = Field(default=None, ge=1, le=31)
     target_month: Optional[int] = Field(default=None, ge=1, le=12)
     completed: bool = Field(default=False)
     is_collapsed: bool = Field(default=True)
     duration_minutes: Optional[int] = Field(default=None)
+    current_count: int = Field(default=0)
     order_index: int = Field(default=0)  # To persist Drag & Drop sorting
 
 
@@ -43,12 +50,14 @@ class TaskUpdate(SQLModel):
     title: Optional[str] = None
     description: Optional[str] = None
     priority: Optional[Priority] = None
+    task_type: Optional[TaskType] = None
     column_id: Optional[ColumnId] = None
     target_day: Optional[int] = None
     target_month: Optional[int] = None
     completed: Optional[bool] = None
     is_collapsed: Optional[bool] = None
     duration_minutes: Optional[int] = None
+    current_count: Optional[int] = None
     order_index: Optional[int] = None
 
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
-import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarClock, CalendarRange } from 'lucide-react'
+import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarClock, CalendarRange, Minus, Plus } from 'lucide-react'
 
 export const PeriodicReviewModal = () => {
-  const { tasks, pendingResets, confirmReview, isLoading } = useHabitStore();
+  const { tasks, pendingResets, confirmReview, isLoading, incrementTask, decrementTask } = useHabitStore();
   
   // Tasks to review from all pending reset columns
   const tasksToReview = tasks.filter(t => pendingResets.includes(t.columnId) && !t.completed);
@@ -46,6 +46,37 @@ export const PeriodicReviewModal = () => {
         </h3>
         <div className="flex flex-col gap-2">
           {tasks.map(task => {
+            if (task.taskType === 'counter') {
+              return (
+                <div 
+                  key={task.id}
+                  className="flex items-center justify-between gap-3 p-3 rounded-xl border border-white/5 bg-white/5 text-white"
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium line-clamp-1 italic">{task.title}</span>
+                    <span className="text-[10px] text-paramo-muted uppercase font-black">Added this cycle: {task.currentCount}</span>
+                  </div>
+                  <div className="flex items-center gap-1 bg-black/20 rounded-lg p-1 border border-white/5">
+                    <button 
+                      onClick={() => decrementTask(task.id)}
+                      className="p-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors"
+                      title="Remove"
+                    >
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-6 text-center text-xs font-bold tabular-nums">{task.currentCount}</span>
+                    <button 
+                      onClick={() => incrementTask(task.id, true)}
+                      className="p-1 hover:bg-white/5 text-paramo-frailejon hover:text-teal-400 transition-colors"
+                      title="Add"
+                    >
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
             const isSelected = completedIds.includes(task.id);
             return (
               <button

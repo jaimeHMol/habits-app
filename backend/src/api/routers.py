@@ -75,6 +75,26 @@ def toggle_task_completion(
     return task
 
 
+@router.patch("/{task_id}/increment", response_model=Task)
+def increment_task(
+    task_id: int,
+    is_retroactive: bool = False,
+    service: TaskService = Depends(get_task_service),
+):
+    task = service.increment_task(task_id, is_retroactive)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
+@router.patch("/{task_id}/decrement", response_model=Task)
+def decrement_task(task_id: int, service: TaskService = Depends(get_task_service)):
+    task = service.decrement_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+
 @router.put("/reorder/column", status_code=status.HTTP_200_OK)
 def reorder_tasks(
     request: ReorderRequest, service: TaskService = Depends(get_task_service)

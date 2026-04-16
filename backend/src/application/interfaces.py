@@ -63,6 +63,18 @@ class ITaskRepository(Protocol):
         """
         ...
 
+    def increment_task(self, task_id: int, is_retroactive: bool) -> Optional[Task]:
+        """
+        Increments current_count and logs the event.
+        """
+        ...
+
+    def decrement_task(self, task_id: int) -> Optional[Task]:
+        """
+        Decrements current_count and removes the last log.
+        """
+        ...
+
 
 class IReminderRepository(Protocol):
     """

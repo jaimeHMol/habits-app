@@ -5,6 +5,7 @@ from src.domain.models import (
     TaskCreate,
     TaskUpdate,
     TaskCompletionLog,
+    TaskType,
     ColumnId,
     Reminder,
     ReminderCreate,
@@ -104,19 +105,57 @@ class SQLiteTaskRepository(ITaskRepository):
 
     def reset_monthly_tasks(self) -> bool:
         """
-        Sets completed=False for all tasks in the monthly column.
+        Sets completed=False for all monthly tasks.
+        For COUNTER tasks, resets current_count to 0.
         """
         try:
             statement = select(Task).where(Task.column_id == ColumnId.MONTHLY)
             results = self.session.exec(statement)
             for task in results:
-                task.completed = False
+                if task.task_type == TaskType.COUNTER:
+                    task.current_count = 0
+                else:
+                    task.completed = False
                 self.session.add(task)
             self.session.commit()
             return True
         except Exception:
             self.session.rollback()
             return False
+
+    def increment_task(self, task_id: int, is_retroactive: bool) -> Optional[Task]:
+        """
+        Increments current_count and logs the event.
+        """
+        task = self.get_by_id(task_id)
+        if not task:
+            return None
+
+        task.current_count += 1
+        self.session.add(task)
+        self.session.commit()
+
+        # Log the increment using the existing history system
+        self.log_completion(task, is_retroactive)
+
+        return task
+
+    def decrement_task(self, task_id: int) -> Optional[Task]:
+        """
+        Decrements current_count and removes the last log.
+        """
+        task = self.get_by_id(task_id)
+        if not task:
+            return None
+
+        if task.current_count > 0:
+            task.current_count -= 1
+            self.session.add(task)
+            self.session.commit()
+            # Remove the last log for this task
+            self.remove_last_completion_log(task)
+
+        return task
 
     def reset_annually_tasks(self) -> bool:
         """

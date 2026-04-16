@@ -76,6 +76,20 @@ class TaskService:
 
         return updated_task
 
+    def increment_task(
+        self, task_id: int, is_retroactive: bool = False
+    ) -> Optional[Task]:
+        """
+        Orchestrates the increment of a counter task.
+        """
+        return self.repository.increment_task(task_id, is_retroactive)
+
+    def decrement_task(self, task_id: int) -> Optional[Task]:
+        """
+        Orchestrates the decrement of a counter task.
+        """
+        return self.repository.decrement_task(task_id)
+
     def reorder_column(self, column_id: ColumnId, task_ids: List[int]) -> bool:
         """
         Persists the manual order from a Drag & Drop action in the UI.

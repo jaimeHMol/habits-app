@@ -53,7 +53,9 @@ export const taskApi = {
       targetDay: task.target_day,
       targetMonth: task.target_month,
       isCollapsed: task.is_collapsed,
-      durationMinutes: task.duration_minutes
+      durationMinutes: task.duration_minutes,
+      taskType: task.task_type,
+      currentCount: task.current_count
     }));
   },
 
@@ -90,6 +92,23 @@ export const taskApi = {
     });
     return handleResponse(response);
   },
+
+  increment: async (taskId, isRetroactive = false) => {
+    const response = await fetch(`${API_URL}${taskId}/increment?is_retroactive=${isRetroactive}`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  },
+
+  decrement: async (taskId) => {
+    const response = await fetch(`${API_URL}${taskId}/decrement`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+    });
+    return handleResponse(response);
+  },
+
 
   reorderColumn: async (columnId, taskIds) => {
     const response = await fetch(`${BASE_URL}/tasks/reorder/column`, {
