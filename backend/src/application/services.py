@@ -18,8 +18,9 @@ class TaskService:
     It encapsulates business logic and interacts with the repository port.
     """
 
-    def __init__(self, repository: ITaskRepository):
+    def __init__(self, repository: ITaskRepository, reminder_repo: IReminderRepository):
         self.repository = repository
+        self.reminder_repo = reminder_repo
 
     def get_all_tasks(self, user_id: int) -> List[Task]:
         return self.repository.get_all(user_id)
@@ -34,7 +35,11 @@ class TaskService:
             # Refrescamos la tarea desde la BD para devolverla con el order_index correcto
             created_task = self.repository.get_by_id(created_task.id, user_id)
 
-        return created_task
+        # 3. Sync Reminder
+        self._sync_task_reminder(created_task)
+
+        # 4. Final refresh to ensure object is fresh after any commits in sync
+        return self.repository.get_by_id(created_task.id, user_id)
 
     def update_task_details(
         self, task_id: int, task_data: TaskUpdate, user_id: int
@@ -53,9 +58,21 @@ class TaskService:
             # Fetch updated version after re-sort
             updated_task = self.repository.get_by_id(task_id, user_id)
 
+        # Sync Reminder
+        if updated_task:
+            self._sync_task_reminder(updated_task)
+            # Final refresh
+            updated_task = self.repository.get_by_id(updated_task.id, user_id)
+
         return updated_task
 
     def delete_task(self, task_id: int, user_id: int) -> bool:
+        # Delete linked reminders first
+        all_reminders = self.reminder_repo.get_all(user_id)
+        linked_reminders = [r for r in all_reminders if r.task_id == task_id]
+        for r in linked_reminders:
+            self.reminder_repo.delete(r.id, user_id)
+
         return self.repository.delete(task_id, user_id)
 
     def toggle_completion(
@@ -115,6 +132,52 @@ class TaskService:
         Orchestrates the reset of all annually tasks to uncompleted status.
         """
         return self.repository.reset_annually_tasks(user_id)
+
+    def _sync_task_reminder(self, task: Task):
+        """
+        Automatically manages reminders for Monthly and Annually tasks with target dates.
+        """
+        user_id = task.user_id
+        if user_id is None:
+            return
+
+        all_reminders = self.reminder_repo.get_all(user_id)
+        existing_reminder = next(
+            (r for r in all_reminders if r.task_id == task.id), None
+        )
+
+        # Conditions for having a reminder:
+        # 1. Column is Monthly or Annually
+        # 2. Has a target_day set
+        should_have_reminder = (
+            task.column_id in [ColumnId.MONTHLY, ColumnId.ANNUALLY]
+            and task.target_day is not None
+        )
+
+        if should_have_reminder:
+            reminder_title = f"Recuerda: {task.title}"
+            if existing_reminder:
+                # Update if title changed
+                if existing_reminder.title != reminder_title:
+                    self.reminder_repo.update(
+                        existing_reminder.id,
+                        ReminderUpdate(title=reminder_title),
+                        user_id,
+                    )
+            else:
+                # Create new
+                self.reminder_repo.create(
+                    ReminderCreate(
+                        title=reminder_title,
+                        interval_minutes=1440,  # Default value, frontend will handle the 3-alert logic
+                        is_active=True,
+                        task_id=task.id,
+                    ),
+                    user_id,
+                )
+        elif existing_reminder:
+            # Delete if no longer needed
+            self.reminder_repo.delete(existing_reminder.id, user_id)
 
     def _ensure_chronological_order(self, column_id: ColumnId, user_id: int):
         """

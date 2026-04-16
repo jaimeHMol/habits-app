@@ -6,7 +6,7 @@ const SLACK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-p
 
 export const ReminderEngine = () => {
   const { reminders, userSettings, lastTriggeredAt, setTriggered, fetchReminders, addAlert } = useReminderStore();
-  const { isAuthenticated } = useHabitStore();
+  const { tasks, isAuthenticated } = useHabitStore();
   const audioRef = useRef(new Audio(SLACK_SOUND_URL));
 
   // Request notification permissions
@@ -29,6 +29,7 @@ export const ReminderEngine = () => {
     const checkReminders = () => {
       const now = new Date();
       const currentStr = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Bogota' });
+      const todayStr = now.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
       
       // 1. Check if we are within the activity window
       if (currentStr < userSettings.dayStartTime || currentStr > userSettings.dayEndTime) {
@@ -38,13 +39,68 @@ export const ReminderEngine = () => {
       reminders.forEach(reminder => {
         if (!reminder.isActive) return;
 
-        const lastTime = lastTriggeredAt[reminder.id] ? new Date(lastTriggeredAt[reminder.id]) : null;
-        const diffMinutes = lastTime ? (now - lastTime) / (1000 * 60) : Infinity;
+        // --- Logic A: Interval-based (General Reminders) ---
+        if (!reminder.taskId) {
+          const lastTime = lastTriggeredAt[reminder.id] ? new Date(lastTriggeredAt[reminder.id]) : null;
+          const diffMinutes = lastTime ? (now - lastTime) / (1000 * 60) : Infinity;
 
-        if (diffMinutes >= reminder.intervalMinutes) {
-          triggerNotification(reminder);
+          if (diffMinutes >= reminder.intervalMinutes) {
+            triggerNotification(reminder);
+          }
+          return;
         }
+
+        // --- Logic B: Slot-based (Task-linked Reminders) ---
+        const task = tasks.find(t => t.id === reminder.taskId);
+        if (!task || task.completed) return;
+
+        // Verify if today is the target day
+        const dayOfMonth = now.getDate();
+        const monthOfYear = now.getMonth() + 1; // 1-12
+
+        const isDueToday = (
+          (task.columnId === 'monthly' && task.targetDay === dayOfMonth) ||
+          (task.columnId === 'annually' && task.targetDay === dayOfMonth && task.targetMonth === monthOfYear)
+        );
+
+        if (!isDueToday) return;
+
+        // Calculate slots (Start, Middle, Near-End)
+        const slots = calculateSlots(userSettings.dayStartTime, userSettings.dayEndTime);
+        
+        slots.forEach((slotTime, index) => {
+          if (currentStr >= slotTime) {
+            const slotKey = `slot_${reminder.id}_${index}_${todayStr}`;
+            const alreadyTriggered = localStorage.getItem(slotKey);
+
+            if (!alreadyTriggered) {
+              triggerNotification(reminder);
+              localStorage.setItem(slotKey, 'true');
+            }
+          }
+        });
       });
+    };
+
+    const calculateSlots = (start, end) => {
+      const [hStart, mStart] = start.split(':').map(Number);
+      const [hEnd, mEnd] = end.split(':').map(Number);
+      
+      const startMin = hStart * 60 + mStart;
+      const endMin = hEnd * 60 + mEnd;
+      const duration = endMin - startMin;
+
+      const format = (totalMin) => {
+        const h = Math.floor(totalMin / 60);
+        const m = totalMin % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      };
+
+      return [
+        start, // Start
+        format(startMin + duration / 2), // Middle
+        format(endMin - 30) // End minus 30 min
+      ];
     };
 
     const triggerNotification = (reminder) => {

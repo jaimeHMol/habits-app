@@ -86,6 +86,7 @@ class ReminderBase(SQLModel):
     interval_minutes: int = Field(gt=0)
     is_active: bool = Field(default=True)
     user_id: Optional[int] = Field(default=None, index=True)
+    task_id: Optional[int] = Field(default=None, index=True)
 
 
 class Reminder(ReminderBase, table=True):
@@ -101,6 +102,7 @@ class ReminderUpdate(SQLModel):
     title: Optional[str] = None
     interval_minutes: Optional[int] = Field(default=None, gt=0)
     is_active: Optional[bool] = None
+    task_id: Optional[int] = None
 
 
 class TaskCompletionLog(SQLModel, table=True):

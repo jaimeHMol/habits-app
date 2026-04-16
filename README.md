@@ -9,14 +9,21 @@ A minimalist, high-performance task and habit tracker built with a focus on simp
 
 ## ✨ Features
 
-- **Intuitive Board**: Organize tasks across Daily, Monthly, Annually, and To-Do columns.
-- **Daily Reset & Review**: Automated daily reset for habits with a "Review Modal" to catch forgotten completions from the previous day.
-- **Reminders & Wellness**: Set recurring alerts (e.g., every 2 hours) for posture, hydration, or breaks. Includes audio cues and background browser notifications.
+- **Intuitive Board**: Organize tasks across **Daily**, **Monthly**, **Annually**, and **To-Do** columns.
+- **Task Types**: 
+  - **Checkbox**: Standard "done/not-done" tasks.
+  - **Counter**: Ideal for habits requiring multiple repetitions (e.g., "Drink 8 glasses of water").
+- **Task-Linked Alerts (New)**: Automated, mandatory reminders for **Monthly** and **Annually** tasks. They trigger 3 times during your workday (Start, Middle, and End) on the due day until the task is completed.
+- **Focused Timers**: Integrated countdown timer for tasks with a defined duration, helping you stay focused on a single activity.
+- **Smart Recurrence & Review**: 
+  - **Daily/Period Reset**: Habits automatically reset at the start of a new period.
+  - **Review Modal**: At the first login of the day, a "Review Modal" helps you log forgotten completions from the previous period before the reset.
+- **Wellness Reminders**: Set recurring interval-based alerts (e.g., "Stretch every 60 min") to maintain healthy habits throughout the day.
 - **Markdown Support**: Rich text descriptions with support for **bold**, *italics*, ~~strikethrough~~, [links](https://google.com), and lists.
 - **Smart Drag & Drop**: Smoothly reorder tasks within and across columns using `@hello-pangea/dnd`.
 - **Priority System**: Visual categorization of tasks (Muted, Important/Frailejón, Critical/Tierra).
 - **Responsive Design**: Optimized for both desktop and mobile use with a modern, dark "Páramo" aesthetic.
-- **Secure Auth**: Robust user authentication and session management.
+- **Secure Auth & Invites**: Robust user authentication and session management with a built-in **Invite Code** generation system for new users.
 
 ## 🛠️ Tech Stack
 

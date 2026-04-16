@@ -21,21 +21,22 @@ def get_task_repository(session: Session = Depends(get_session)) -> ITaskReposit
     return SQLiteTaskRepository(session=session)
 
 
-# 2. Provide the Application Service
-# FastAPI will inject the 'ITaskRepository' into this function
-def get_task_service(
-    repository: ITaskRepository = Depends(get_task_repository),
-) -> TaskService:
-    """
-    Returns the application service injected with its required repository.
-    """
-    return TaskService(repository=repository)
-
-
 def get_reminder_repository(
     session: Session = Depends(get_session),
 ) -> IReminderRepository:
     return SQLiteReminderRepository(session=session)
+
+
+# 2. Provide the Application Service
+# FastAPI will inject the dependencies into this function
+def get_task_service(
+    repository: ITaskRepository = Depends(get_task_repository),
+    reminder_repo: IReminderRepository = Depends(get_reminder_repository),
+) -> TaskService:
+    """
+    Returns the application service injected with its required repository.
+    """
+    return TaskService(repository=repository, reminder_repo=reminder_repo)
 
 
 def get_reminder_service(

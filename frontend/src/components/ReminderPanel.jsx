@@ -124,39 +124,69 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
         </section>
 
         {/* List Section */}
-        <section className="space-y-4">
-          <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
-            <Bell size={14} /> My Alerts
-          </h3>
-          <div className="space-y-3">
-            {reminders.length === 0 && <p className="text-xs text-paramo-muted italic text-center py-4">No active reminders.</p>}
-            {reminders.map(reminder => (
-              <div key={reminder.id} className={`p-4 rounded-xl border transition-all ${reminder.isActive ? 'bg-paramo-card border-white/10' : 'bg-black/10 border-white/5 opacity-60'}`}>
-                <div className="flex justify-between items-start gap-3">
-                  <div className="flex-1 min-w-0">
-                    <h4 className={`text-sm font-bold truncate ${reminder.isActive ? 'text-white' : 'text-paramo-muted'}`}>{reminder.title}</h4>
-                    <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">Every {reminder.intervalMinutes} min</p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => handleToggle(reminder)}
-                      className={`p-2 rounded-lg transition-colors ${reminder.isActive ? 'text-paramo-frailejon hover:bg-paramo-frailejon/10' : 'text-paramo-muted hover:bg-white/5'}`}
-                      title={reminder.isActive ? "Pausar" : "Activar"}
-                    >
-                      {reminder.isActive ? <BellRing size={16} /> : <BellOff size={16} />}
-                    </button>
-                    <button 
-                      onClick={() => deleteReminder(reminder.id)}
-                      className="p-2 text-paramo-muted hover:text-red-400 transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+        <section className="space-y-6">
+          <div className="space-y-4">
+            <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
+              <Bell size={14} /> My Alerts
+            </h3>
+            <div className="space-y-3">
+              {reminders.filter(r => !r.taskId).length === 0 && (
+                <p className="text-xs text-paramo-muted italic text-center py-2">No active general reminders.</p>
+              )}
+              {reminders.filter(r => !r.taskId).map(reminder => (
+                <div key={reminder.id} className={`p-4 rounded-xl border transition-all ${reminder.isActive ? 'bg-paramo-card border-white/10' : 'bg-black/10 border-white/5 opacity-60'}`}>
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className={`text-sm font-bold truncate ${reminder.isActive ? 'text-white' : 'text-paramo-muted'}`}>{reminder.title}</h4>
+                      <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">Every {reminder.intervalMinutes} min</p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button 
+                        onClick={() => handleToggle(reminder)}
+                        className={`p-2 rounded-lg transition-colors ${reminder.isActive ? 'text-paramo-frailejon hover:bg-paramo-frailejon/10' : 'text-paramo-muted hover:bg-white/5'}`}
+                        title={reminder.isActive ? "Pausar" : "Activar"}
+                      >
+                        {reminder.isActive ? <BellRing size={16} /> : <BellOff size={16} />}
+                      </button>
+                      <button 
+                        onClick={() => deleteReminder(reminder.id)}
+                        className="p-2 text-paramo-muted hover:text-red-400 transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
+
+          {/* Separator for Task Alerts */}
+          {reminders.some(r => r.taskId) && (
+            <div className="space-y-4 pt-4 border-t border-white/5">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500/80 flex items-center gap-2">
+                <BellRing size={12} /> Task-Linked Alerts
+              </h3>
+              <div className="space-y-3">
+                {reminders.filter(r => r.taskId).map(reminder => (
+                  <div key={reminder.id} className="p-4 rounded-xl border bg-orange-500/5 border-orange-500/20">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-bold text-white/90 truncate italic">{reminder.title}</h4>
+                        <p className="text-[9px] text-orange-500/60 uppercase font-black mt-1 tracking-wider">3 alerts on due day</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="p-2 text-orange-500/40" title="Managed by task">
+                          <BellRing size={16} />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       </div>
 

@@ -80,11 +80,16 @@ export const useReminderStore = create((set, get) => ({
 
   addAlert: (reminder) => {
     const id = Date.now();
+    const isUrgent = !!reminder.taskId;
+    
     set(state => ({ 
-      activeAlerts: [...state.activeAlerts, { ...reminder, alertId: id }] 
+      activeAlerts: [...state.activeAlerts, { ...reminder, alertId: id, isUrgent }] 
     }));
-    // Auto-remove after 10 seconds
-    setTimeout(() => get().removeAlert(id), 10000);
+
+    // Auto-remove after 10 seconds ONLY if NOT urgent
+    if (!isUrgent) {
+      setTimeout(() => get().removeAlert(id), 10000);
+    }
   },
 
   removeAlert: (alertId) => {
