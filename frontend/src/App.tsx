@@ -203,10 +203,10 @@ function App() {
       <header className="p-4 md:p-6 mb-4 md:mb-8 flex justify-between items-start">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
-            {greeting}, <span className="text-paramo-frailejon">{user?.fullName || 'User'}</span>
+            {greeting}, <span className="text-paramo-frailejon">{user?.fullName?.split(' ')[0] || 'User'}</span>
           </h1>
           <p className="text-paramo-muted mt-2 text-xs md:text-sm uppercase tracking-widest">
-            Habit Tracker • {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
         
