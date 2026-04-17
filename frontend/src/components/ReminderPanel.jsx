@@ -130,10 +130,10 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
               <Bell size={14} /> My Alerts
             </h3>
             <div className="space-y-3">
-              {reminders.filter(r => !r.taskId).length === 0 && (
+              {reminders.filter(r => !r.task_id).length === 0 && (
                 <p className="text-xs text-paramo-muted italic text-center py-2">No active general reminders.</p>
               )}
-              {reminders.filter(r => !r.taskId).map(reminder => (
+              {reminders.filter(r => !r.task_id).map(reminder => (
                 <div key={reminder.id} className={`p-4 rounded-xl border transition-all ${reminder.isActive ? 'bg-paramo-card border-white/10' : 'bg-black/10 border-white/5 opacity-60'}`}>
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
@@ -163,13 +163,13 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
           </div>
 
           {/* Separator for Task Alerts */}
-          {reminders.some(r => r.taskId) && (
+          {reminders.some(r => r.task_id) && (
             <div className="space-y-4 pt-4 border-t border-white/5">
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500/80 flex items-center gap-2">
                 <BellRing size={12} /> Task-Linked Alerts
               </h3>
               <div className="space-y-3">
-                {reminders.filter(r => r.taskId).map(reminder => (
+                {reminders.filter(r => r.task_id).map(reminder => (
                   <div key={reminder.id} className="p-4 rounded-xl border bg-orange-500/5 border-orange-500/20">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">

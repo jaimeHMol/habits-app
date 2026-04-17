@@ -40,7 +40,7 @@ export const ReminderEngine = () => {
         if (!reminder.isActive) return;
 
         // --- Logic A: Interval-based (General Reminders) ---
-        if (!reminder.taskId) {
+        if (!reminder.task_id) {
           const lastTime = lastTriggeredAt[reminder.id] ? new Date(lastTriggeredAt[reminder.id]) : null;
           const diffMinutes = lastTime ? (now - lastTime) / (1000 * 60) : Infinity;
 
@@ -51,7 +51,7 @@ export const ReminderEngine = () => {
         }
 
         // --- Logic B: Slot-based (Task-linked Reminders) ---
-        const task = tasks.find(t => t.id === reminder.taskId);
+        const task = tasks.find(t => t.id === reminder.task_id);
         if (!task || task.completed) return;
 
         // Verify if today is the target day

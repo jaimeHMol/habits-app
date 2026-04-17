@@ -10,7 +10,7 @@ export const NotificationToast = () => {
   return (
     <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
       {activeAlerts.map(alert => {
-        const isUrgent = !!alert.taskId;
+        const isUrgent = !!alert.task_id;
         return (
           <div 
             key={alert.alertId}
@@ -30,7 +30,7 @@ export const NotificationToast = () => {
               <h4 className="text-sm font-bold text-white uppercase tracking-tight">
                 {isUrgent ? '🌿 Tarea Pendiente' : 'Recuerda'}
               </h4>
-              <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">{alert.title}</p>
+              <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">Recuerda: {alert.title}</p>
             </div>
 
             <button 

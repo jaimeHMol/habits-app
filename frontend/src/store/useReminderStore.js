@@ -80,7 +80,7 @@ export const useReminderStore = create((set, get) => ({
 
   addAlert: (reminder) => {
     const id = Date.now();
-    const isUrgent = !!reminder.taskId;
+    const isUrgent = !!reminder.task_id;
     
     set(state => ({ 
       activeAlerts: [...state.activeAlerts, { ...reminder, alertId: id, isUrgent }] 

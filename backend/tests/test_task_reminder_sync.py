@@ -23,7 +23,7 @@ def test_task_reminder_sync_create(client):
 
     task_reminder = next((r for r in reminders if r["task_id"] == task_id), None)
     assert task_reminder is not None
-    assert task_reminder["title"] == "Recuerda: Monthly Habit"
+    assert task_reminder["title"] == "Monthly Habit"
 
 
 def test_task_reminder_sync_update_title(client):
@@ -44,7 +44,7 @@ def test_task_reminder_sync_update_title(client):
     reminders_res = client.get("/reminders/")
     reminders = reminders_res.json()
     task_reminder = next((r for r in reminders if r["task_id"] == task_id), None)
-    assert task_reminder["title"] == "Recuerda: New Title"
+    assert task_reminder["title"] == "New Title"
 
 
 def test_task_reminder_sync_remove_date(client):

@@ -56,7 +56,7 @@ describe('ReminderEngine', () => {
 
     useReminderStore.mockReturnValue({
       reminders: [
-        { id: 1, title: 'Task Alert', taskId: 101, isActive: true }
+        { id: 1, title: 'Task Alert', task_id: 101, isActive: true }
       ],
       userSettings: { dayStartTime: '08:00', dayEndTime: '20:00' },
       lastTriggeredAt: {},

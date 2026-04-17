@@ -155,7 +155,7 @@ class TaskService:
         )
 
         if should_have_reminder:
-            reminder_title = f"Recuerda: {task.title}"
+            reminder_title = task.title
             if existing_reminder:
                 # Update if title changed
                 if existing_reminder.title != reminder_title:
