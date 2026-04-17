@@ -42,6 +42,11 @@ lint-front: ## Run ESLint on frontend
 	@echo "Running ESLint..."
 	cd frontend && npm run lint
 
+# --- Gestión de Usuarios ---
+manage-admin: ## Create or update the admin user from environment variables
+	@echo "Managing admin user..."
+	cd backend && . venv/bin/activate && python3 src/manage_admin.py
+
 # --- Utilidades de Base de Datos ---
 clean-db: ## Empty the local SQLite database without deleting the file
 	@echo "Cleaning SQLite database..."

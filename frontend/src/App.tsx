@@ -200,7 +200,7 @@ function App() {
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
       
-      <header className="p-4 md:p-6 mb-4 md:mb-8 flex justify-between items-start">
+      <header className="p-4 md:p-6 mb-2 md:mb-4 flex justify-between items-start">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
             {greeting}, <span className="text-paramo-frailejon">{(user?.full_name || user?.fullName || 'User').split(' ')[0]}</span>

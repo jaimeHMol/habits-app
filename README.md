@@ -72,6 +72,10 @@ Use the included `Makefile` to simplify common tasks:
    ```bash
    make dev-front
    ```
+4. **Admin Management**: Create or update the admin user using credentials from environment variables.
+   ```bash
+   make manage-admin
+   ```
 
 ## 🧪 Testing & Quality
 
