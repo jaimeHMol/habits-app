@@ -194,18 +194,18 @@ function App() {
 
   // --- MAIN DASHBOARD ---
   return (
-    <div className="min-h-screen h-full font-sans selection:bg-paramo-frailejon/30 flex flex-col pb-24 md:pb-0">
+    <div className="min-h-screen font-sans selection:bg-paramo-frailejon/30 flex flex-col pb-24 md:pb-6">
       {showReviewModal && <PeriodicReviewModal />}
       <NotificationToast />
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
       
-      <header className="p-4 md:p-6 mb-2 md:mb-4 flex justify-between items-start">
+      <header className="p-4 md:p-6 mb-1 md:mb-2 flex justify-between items-start">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
             {greeting}, <span className="text-paramo-frailejon">{(user?.full_name || user?.fullName || 'User').split(' ')[0]}</span>
           </h1>
-          <p className="text-paramo-muted mt-2 text-xs md:text-sm uppercase tracking-widest">
+          <p className="text-paramo-muted mt-1 text-xs md:text-sm uppercase tracking-widest">
             {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
         </div>
@@ -255,7 +255,7 @@ function App() {
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 flex gap-0 md:gap-6 overflow-x-hidden md:overflow-x-auto items-start w-full px-4 md:px-6 pb-10">
+        <div className="flex gap-0 md:gap-6 overflow-x-hidden md:overflow-x-auto items-start w-full px-4 md:px-6 pb-10">
           {columns.map(column => (
             <Column key={column.id} column={column} isActiveOnMobile={activeMobileColumn === column.id} />
           ))}

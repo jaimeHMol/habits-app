@@ -206,12 +206,6 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
           )}
         </section>
       </div>
-
-      <div className="p-6 bg-black/20 border-t border-white/5">
-        <p className="text-[10px] text-center text-paramo-muted leading-relaxed italic">
-          Las notificaciones sonarán solo si la app está abierta (pestaña activa o en segundo plano).
-        </p>
-      </div>
     </div>
   );
 };
