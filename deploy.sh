@@ -10,7 +10,7 @@ echo "📥 Downloading the latest version of the code..."
 git pull origin main
 
 # 3. Rebuild and start the containers in the background
-echo "🏗️ Building images and starting services..."
+echo "🏗️ Building images and starting services (Automatic migrations included)..."
 # We use sudo because docker commands require it on your server
 sudo docker compose up -d --build
 

@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "admin123"
 
+    # Database
+    database_url: str = "sqlite:///habits.db"
+
     model_config = ConfigDict(env_file=".env")
 
 

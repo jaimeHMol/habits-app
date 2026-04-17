@@ -9,8 +9,7 @@ from src.api.auth_router import router as auth_router
 # Lifespan context manager runs code before the app starts accepting requests
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize SQLite database and tables
-    create_db_and_tables()
+    # Database initialization is now handled via migrations
     yield
     # Code here runs on app shutdown (not needed for SQLite)
 
