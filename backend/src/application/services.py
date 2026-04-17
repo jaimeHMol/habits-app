@@ -91,6 +91,9 @@ class TaskService:
         else:
             self.repository.remove_last_completion_log(updated_task)
 
+        # Sync Reminder
+        self._sync_task_reminder(updated_task)
+
         return updated_task
 
     def increment_task(
@@ -99,13 +102,19 @@ class TaskService:
         """
         Orchestrates the increment of a counter task.
         """
-        return self.repository.increment_task(task_id, user_id, is_retroactive)
+        updated_task = self.repository.increment_task(task_id, user_id, is_retroactive)
+        if updated_task:
+            self._sync_task_reminder(updated_task)
+        return updated_task
 
     def decrement_task(self, task_id: int, user_id: int) -> Optional[Task]:
         """
         Orchestrates the decrement of a counter task.
         """
-        return self.repository.decrement_task(task_id, user_id)
+        updated_task = self.repository.decrement_task(task_id, user_id)
+        if updated_task:
+            self._sync_task_reminder(updated_task)
+        return updated_task
 
     def reorder_column(
         self, column_id: ColumnId, task_ids: List[int], user_id: int

@@ -85,3 +85,32 @@ def test_task_reminder_sync_delete_task(client):
     # 3. Verify reminder is gone
     reminders_res = client.get("/reminders/")
     assert not any(r["task_id"] == task_id for r in reminders_res.json())
+
+
+def test_task_reminder_sync_completion(client):
+    # 1. Create task
+    task_payload = {
+        "title": "Completion Test",
+        "column_id": ColumnId.MONTHLY,
+        "target_day": 1,
+    }
+    create_res = client.post("/tasks/", json=task_payload)
+    task_id = create_res.json().get("id")
+
+    # Verify reminder exists
+    reminders_res = client.get("/reminders/")
+    assert any(r["task_id"] == task_id for r in reminders_res.json())
+
+    # 2. Complete task
+    client.patch(f"/tasks/{task_id}/complete")
+
+    # 3. Verify reminder is gone
+    reminders_res = client.get("/reminders/")
+    assert not any(r["task_id"] == task_id for r in reminders_res.json())
+
+    # 4. Uncomplete task
+    client.patch(f"/tasks/{task_id}/complete")
+
+    # 5. Verify reminder is back
+    reminders_res = client.get("/reminders/")
+    assert any(r["task_id"] == task_id for r in reminders_res.json())

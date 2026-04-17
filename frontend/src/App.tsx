@@ -174,7 +174,7 @@ function App() {
               />
               <input 
                 type="text" placeholder="Invitation Code" value={invitationCode} onChange={(e) => setInvitationCode(e.target.value)} required
-                className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors font-mono tracking-widest"
+                className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <button disabled={isProcessing} className="bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold tracking-widest uppercase text-xs p-3 rounded-lg hover:bg-paramo-frailejon/20 transition-all mt-2 flex justify-center">
                 {isProcessing ? 'Creating Account...' : 'Register'}

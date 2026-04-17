@@ -28,9 +28,9 @@ export const NotificationToast = () => {
             
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-bold text-white uppercase tracking-tight">
-                {isUrgent ? '🌿 Tarea Pendiente' : 'Recuerda'}
+                RECUERDA
               </h4>
-              <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">Recuerda: {alert.title}</p>
+              <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">{alert.title}</p>
             </div>
 
             <button 
