@@ -132,7 +132,7 @@ function App() {
               <Lock className="text-paramo-frailejon" size={24} />
             </div>
             <h1 className="text-2xl font-bold italic tracking-tight text-white/90">
-              {authMode === 'login' ? 'Restricted Access' : 'Create Account'}
+              {authMode === 'login' ? 'Habit Tracker' : 'Create Account'}
             </h1>
           </div>
           
@@ -149,11 +149,11 @@ function App() {
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <button disabled={isProcessing} className="bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold tracking-widest uppercase text-xs p-3 rounded-lg hover:bg-paramo-frailejon/20 transition-all mt-2 flex justify-center">
-                {isProcessing ? 'Authenticating...' : 'Enter Hub'}
+                {isProcessing ? 'Authenticating...' : 'Enter'}
               </button>
               <button 
                 type="button" onClick={() => setAuthMode('register')}
-                className="text-[10px] text-paramo-muted hover:text-white uppercase font-black tracking-tighter text-center mt-2"
+                className="text-[10px] text-paramo-muted hover:text-white font-black tracking-tighter text-center mt-2"
               >
                 I have an invitation code
               </button>
@@ -161,7 +161,7 @@ function App() {
           ) : (
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
               <input 
-                type="text" placeholder="Full Name (for display)" value={fullName} onChange={(e) => setFullName(e.target.value)} required
+                type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <input 
@@ -181,7 +181,7 @@ function App() {
               </button>
               <button 
                 type="button" onClick={() => setAuthMode('login')}
-                className="text-[10px] text-paramo-muted hover:text-white uppercase font-black tracking-tighter text-center mt-2"
+                className="text-[10px] text-paramo-muted hover:text-white font-black tracking-tighter text-center mt-2"
               >
                 Back to Login
               </button>
@@ -203,7 +203,7 @@ function App() {
       <header className="p-4 md:p-6 mb-4 md:mb-8 flex justify-between items-start">
         <div className="flex-1">
           <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
-            {greeting}, <span className="text-paramo-frailejon">{user?.fullName?.split(' ')[0] || 'User'}</span>
+            {greeting}, <span className="text-paramo-frailejon">{(user?.full_name || user?.fullName || 'User').split(' ')[0]}</span>
           </h1>
           <p className="text-paramo-muted mt-2 text-xs md:text-sm uppercase tracking-widest">
             {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}

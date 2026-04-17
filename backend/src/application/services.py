@@ -149,9 +149,11 @@ class TaskService:
         # Conditions for having a reminder:
         # 1. Column is Monthly or Annually
         # 2. Has a target_day set
+        # 3. Is NOT completed
         should_have_reminder = (
             task.column_id in [ColumnId.MONTHLY, ColumnId.ANNUALLY]
             and task.target_day is not None
+            and not task.completed
         )
 
         if should_have_reminder:

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
 import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown } from 'lucide-react'
 
@@ -24,6 +24,23 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
   
   const [newTitle, setNewTitle] = useState('');
   const [newInterval, setNewInterval] = useState(60);
+  const panelRef = useRef(null);
+
+  // Close on click outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (panelRef.current && !panelRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -39,7 +56,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full max-w-sm bg-paramo-board border-l border-white/10 z-[150] shadow-2xl animate-slideInRight flex flex-col">
+    <div ref={panelRef} className="fixed inset-y-0 right-0 w-full max-w-sm bg-paramo-board border-l border-white/10 z-[150] shadow-2xl animate-slideInRight flex flex-col">
       <div className="p-6 border-b border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <FingerRibbonIcon className="text-paramo-frailejon" />

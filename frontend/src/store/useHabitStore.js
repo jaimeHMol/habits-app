@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { taskApi } from '../services/api'
+import { useReminderStore } from './useReminderStore'
 
 export const useHabitStore = create((set, get) => ({
   isAuthenticated: !!localStorage.getItem('habit_token'),
@@ -195,6 +196,7 @@ export const useHabitStore = create((set, get) => ({
     }));
     try {
       await taskApi.toggleComplete(taskId, false);
+      useReminderStore.getState().fetchReminders();
     } catch (error) {
       get().fetchTasks(); // Revert on failure
     }
@@ -206,6 +208,7 @@ export const useHabitStore = create((set, get) => ({
     }));
     try {
       await taskApi.increment(taskId, isRetroactive);
+      useReminderStore.getState().fetchReminders();
     } catch (error) {
       get().fetchTasks();
     }
@@ -269,6 +272,7 @@ export const useHabitStore = create((set, get) => ({
     try {
       await taskApi.create(payload);
       get().fetchTasks();
+      useReminderStore.getState().fetchReminders();
       return true;
     } catch (error) {
       return false;
@@ -289,6 +293,7 @@ export const useHabitStore = create((set, get) => ({
     try {
       await taskApi.update(taskId, payload);
       get().fetchTasks();
+      useReminderStore.getState().fetchReminders();
       return true;
     } catch (error) {
       return false;
@@ -299,6 +304,7 @@ export const useHabitStore = create((set, get) => ({
     try {
       await taskApi.delete(taskId);
       set((state) => ({ tasks: state.tasks.filter(t => t.id !== taskId) }));
+      useReminderStore.getState().fetchReminders();
     } catch (error) {
       console.error("Delete failed", error);
     }
