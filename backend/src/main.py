@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.infrastructure.database import create_db_and_tables
 from src.api.routers import router as tasks_router, reminders_router, users_router
 from src.api.auth_router import router as auth_router
 
