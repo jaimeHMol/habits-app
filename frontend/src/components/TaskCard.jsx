@@ -123,7 +123,32 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   <span className="flex items-center gap-2">
                     <span className="text-xl tabular-nums tracking-tighter">{formatTime(activeTimer.remainingSeconds)}</span>
                   </span>
-                ) : task.title}
+                ) : (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    disallowedElements={['p']}
+                    unwrapDisallowed
+                    components={{
+                      a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
+                      text: ({node, value}) => {
+                        // Regex to identify emojis: matches basic emoji ranges
+                        const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+                        const parts = value.split(emojiRegex);
+                        const matches = value.match(emojiRegex) || [];
+                        
+                        return parts.reduce((acc, part, i) => {
+                          acc.push(part);
+                          if (matches[i]) {
+                            acc.push(<span key={i} className="not-italic inline-block mx-0.5">{matches[i]}</span>);
+                          }
+                          return acc;
+                        }, []);
+                      }
+                    }}
+                  >
+                    {task.title}
+                  </ReactMarkdown>
+                )}
               </h3>
             </div>
             
