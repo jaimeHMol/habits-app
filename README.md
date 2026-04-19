@@ -46,7 +46,7 @@ A minimalist, high-performance task and habit tracker built with a focus on simp
 - [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
 - **Optional (for local dev)**: Node.js (22+), Python (3.12+), and `make`.
 
-### Running with Docker (Recommended)
+### Running with Docker
 
 The easiest way to get the app running is using Docker:
 
@@ -54,9 +54,41 @@ The easiest way to get the app running is using Docker:
 docker-compose up --build
 ```
 
-Access the app at `http://localhost`.
+Access the app at `http://localhost` (Local) or your configured domain (Production).
 
-### Local Development
+## 🌐 Production Deployment & SSL
+
+To enable native mobile notifications and PWA features, **HTTPS is mandatory**. This project is optimized for deployment on **Oracle Cloud** using subdomains.
+
+### 1. DNS Configuration (Namecheap)
+- Create an **A Record** in your DNS provider (e.g., Namecheap).
+- **Host**: `habits` (or your preferred subdomain).
+- **Value**: Your server's Public IP.
+
+### 2. Firewall Configuration (Oracle Cloud)
+Oracle Cloud instances require opening ports in two places:
+1. **Cloud Console**: Networking -> VCN -> Security Lists -> Add Ingress Rules for ports `80` and `443` (TCP, Source `0.0.0.0/0`).
+2. **Instance OS (iptables)**: Force the ports open at the top of the chain to bypass default reject rules:
+   ```bash
+   sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+   sudo iptables -I INPUT 1 -p tcp --dport 443 -j ACCEPT
+   sudo apt-get install iptables-persistent && sudo netfilter-persistent save
+   ```
+
+### 3. SSL Certificate (Certbot Standalone)
+Since Nginx runs inside Docker, use Certbot's standalone mode on the host to generate certificates:
+1. Stop the Nginx container: `sudo docker compose stop nginx`
+2. Run Certbot: 
+   ```bash
+   sudo certbot certonly --standalone -d habits.your-domain.com
+   ```
+3. Restart Nginx: `sudo docker compose up -d --build nginx`
+
+### 4. Nginx SSL Integration
+The `nginx.conf` is configured to look for certificates in `/etc/letsencrypt/live/`. The `docker-compose.yml` mounts this host directory as a read-only volume.
+
+## 🧪 Testing & Quality
+
 
 Use the included `Makefile` to simplify common tasks:
 

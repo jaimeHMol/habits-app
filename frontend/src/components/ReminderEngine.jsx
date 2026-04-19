@@ -104,21 +104,32 @@ export const ReminderEngine = () => {
     };
 
     const triggerNotification = (reminder) => {
-      // Audio
-      audioRef.current.play().catch(e => console.log("Audio play blocked by browser policy"));
-
-      // Browser Notification
-      if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification("🌿 Reminder", {
-          body: reminder.title,
-          icon: '/favicon.svg'
-        });
+      // Audio: Use a fresh instance if needed or handle rapid plays
+      try {
+        const audio = new Audio(SLACK_SOUND_URL);
+        audio.play().catch(e => console.log("Audio play blocked"));
+      } catch (e) {
+        console.error("Audio error", e);
       }
 
-      // In-app Alert
-      addAlert(reminder);
+      // Browser Notification
+      try {
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification("RECUERDA", {
+            body: reminder.title,
+            icon: '/favicon.svg',
+            silent: true // We handle sound ourselves
+          });
+        }
+      } catch (e) {
+        console.error("System notification error", e);
+      }
 
+      // Add to store
+      addAlert(reminder);
       setTriggered(reminder.id);
+    };
+
     };
 
     // Check every minute

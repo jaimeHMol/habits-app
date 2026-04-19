@@ -79,7 +79,7 @@ export const useReminderStore = create((set, get) => ({
   },
 
   addAlert: (reminder) => {
-    const id = Date.now();
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const isUrgent = !!reminder.task_id;
     
     set(state => ({ 
