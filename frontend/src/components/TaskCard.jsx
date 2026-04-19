@@ -115,12 +115,12 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   )}
                 </div>
               )}
-              <h3 className={`text-xs sm:text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wide italic leading-tight break-normal text-balance transition-colors
+              <h3 className={`text-xs sm:text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wide leading-tight break-normal text-balance transition-colors
                 ${task.completed ? 'text-paramo-muted line-through decoration-white/30' : 'text-white/90 group-hover:text-white'}
                 ${isTimerActive ? 'text-paramo-frailejon' : ''}
               `}>
                 {isTimerActive ? (
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-2 italic">
                     <span className="text-xl tabular-nums tracking-tighter">{formatTime(activeTimer.remainingSeconds)}</span>
                   </span>
                 ) : (
@@ -129,20 +129,20 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                     disallowedElements={['p']}
                     unwrapDisallowed
                     components={{
-                      a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
+                      a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors italic" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
                       text: ({node, value}) => {
-                        // Regex to identify emojis: matches basic emoji ranges
-                        const emojiRegex = /(\p{Emoji_Presentation}|\p{Emoji}\uFE0F)/gu;
+                        // Improved Regex for Emojis
+                        const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
                         const parts = value.split(emojiRegex);
-                        const matches = value.match(emojiRegex) || [];
                         
-                        return parts.reduce((acc, part, i) => {
-                          acc.push(part);
-                          if (matches[i]) {
-                            acc.push(<span key={i} className="not-italic inline-block mx-0.5">{matches[i]}</span>);
+                        return parts.map((part, i) => {
+                          if (part.match(emojiRegex)) {
+                            // Emojis: No italic, extra spacing
+                            return <span key={i} className="not-italic font-normal inline-block mx-0.5 select-none">{part}</span>;
                           }
-                          return acc;
-                        }, []);
+                          // Regular text: Force italic here
+                          return <span key={i} className="italic">{part}</span>;
+                        });
                       }
                     }}
                   >

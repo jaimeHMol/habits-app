@@ -68,21 +68,33 @@ export const useHabitStore = create((set, get) => ({
   showReviewModal: false,
   pendingResets: [], // ['daily', 'monthly', 'annually']
   lastUsedDate: localStorage.getItem('last_used_date'),
-  activeTimer: { taskId: null, remainingSeconds: 0 },
+  activeTimer: { 
+    taskId: JSON.parse(localStorage.getItem('active_timer_task_id') || 'null'), 
+    endTime: JSON.parse(localStorage.getItem('active_timer_end_time') || '0'),
+    remainingSeconds: 0 
+  },
 
   startTimer: (taskId, durationMinutes) => {
-    set({ activeTimer: { taskId, remainingSeconds: durationMinutes * 60 } });
+    const endTime = Date.now() + (durationMinutes * 60 * 1000);
+    localStorage.setItem('active_timer_task_id', JSON.stringify(taskId));
+    localStorage.setItem('active_timer_end_time', JSON.stringify(endTime));
+    set({ activeTimer: { taskId, endTime, remainingSeconds: durationMinutes * 60 } });
   },
 
   stopTimer: () => {
-    set({ activeTimer: { taskId: null, remainingSeconds: 0 } });
+    localStorage.removeItem('active_timer_task_id');
+    localStorage.removeItem('active_timer_end_time');
+    set({ activeTimer: { taskId: null, endTime: 0, remainingSeconds: 0 } });
   },
 
   tickTimer: () => {
     const { activeTimer, toggleTaskCompletion, stopTimer } = get();
-    if (!activeTimer.taskId) return;
+    if (!activeTimer.taskId || !activeTimer.endTime) return;
 
-    if (activeTimer.remainingSeconds <= 1) {
+    const now = Date.now();
+    const remaining = Math.round((activeTimer.endTime - now) / 1000);
+
+    if (remaining <= 0) {
       // Time is up!
       const alarm = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       alarm.play().catch(e => console.log("Audio blocked", e));
@@ -93,7 +105,7 @@ export const useHabitStore = create((set, get) => ({
       set({ 
         activeTimer: { 
           ...activeTimer, 
-          remainingSeconds: activeTimer.remainingSeconds - 1 
+          remainingSeconds: remaining 
         } 
       });
     }
