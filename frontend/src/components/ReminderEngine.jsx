@@ -130,8 +130,6 @@ export const ReminderEngine = () => {
       setTriggered(reminder.id);
     };
 
-    };
-
     // Check every minute
     const interval = setInterval(checkReminders, 60000);
     // Also run once on mount
