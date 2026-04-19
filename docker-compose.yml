@@ -4,7 +4,7 @@ services:
     restart: always
     env_file: ./backend/.env
     volumes:
-      - ./backend/habits.db:/app/habits.db # Persists your tasks even if the container restarts
+      - ./backend/habits.db:/app/habits.db
     networks:
       - habit-network
 
@@ -17,9 +17,11 @@ services:
   nginx:
     image: nginx:stable-alpine
     ports:
-      - "80:80" # Opens port 80 to the public internet
+      - "80:80"   # HTTP
+      - "443:443" # HTTPS
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro # Monta los certificados de Let's Encrypt
     depends_on:
       - backend
       - frontend
@@ -41,7 +43,6 @@ services:
       - ./backups:/backups
     networks:
       - habit-network
-    # Install dependencies and setup crontab to run at 4:00 AM
     entrypoint: >
       /bin/sh -c "
       apk add --no-cache sqlite bash tzdata &&
