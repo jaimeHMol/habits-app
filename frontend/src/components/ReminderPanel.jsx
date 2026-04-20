@@ -103,39 +103,42 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
           <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
             <Plus size={14} /> {t.new_reminder}
           </h3>
-          <form onSubmit={handleAdd} className="space-y-3">
+          <form onSubmit={handleAdd} className="bg-black/20 border border-white/5 rounded-xl p-3 space-y-3 focus-within:border-paramo-frailejon/30 transition-all">
             <input 
-              type="text" placeholder={t.ex_reminder} value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
-              className="w-full bg-black/20 border border-white/5 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon"
+              type="text" placeholder={t.reminder_placeholder} value={newTitle} onChange={(e) => setNewTitle(e.target.value)}
+              className="w-full bg-transparent border-b border-white/5 pb-2 text-sm text-white placeholder:text-paramo-muted/30 focus:outline-none focus:border-paramo-frailejon transition-colors"
             />
-            <div className="flex items-center gap-3">
-              <span className="text-xs text-paramo-muted">{t.every}</span>
-              <div className="flex items-center bg-black/20 border border-white/5 rounded-lg overflow-hidden">
-                <input 
-                  type="number" value={newInterval} onChange={(e) => setNewInterval(e.target.value)} min="1"
-                  className="w-10 bg-transparent p-2 text-sm text-white text-center focus:outline-none no-spinner"
-                />
-                <div className="flex flex-col border-l border-white/5">
-                  <button 
-                    type="button"
-                    onClick={() => setNewInterval(prev => Math.max(1, parseInt(prev) + 5))}
-                    className="p-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/5"
-                  >
-                    <ChevronUp size={12} />
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setNewInterval(prev => Math.max(1, parseInt(prev) - 5))}
-                    className="p-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors"
-                  >
-                    <ChevronDown size={12} />
-                  </button>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-black text-paramo-muted/60">{t.every}</span>
+                <div className="flex items-center bg-black/40 border border-white/5 rounded-md overflow-hidden h-6">
+                  <input 
+                    type="number" value={newInterval} onChange={(e) => setNewInterval(e.target.value)} min="1"
+                    className="w-8 bg-transparent px-1 text-[10px] font-bold text-white text-center focus:outline-none no-spinner"
+                  />
+                  <div className="flex flex-col border-l border-white/5">
+                    <button 
+                      type="button"
+                      onClick={() => setNewInterval(prev => Math.max(1, parseInt(prev) + 5))}
+                      className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/5 flex items-center justify-center h-3"
+                    >
+                      <ChevronUp size={8} />
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setNewInterval(prev => Math.max(1, parseInt(prev) - 5))}
+                      className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center h-3"
+                    >
+                      <ChevronDown size={8} />
+                    </button>
+                  </div>
                 </div>
+                <span className="text-[10px] uppercase font-black text-paramo-muted/60">{t.minutes}</span>
               </div>
-              <span className="text-xs text-paramo-muted">{t.minutes}</span>
+              
               <button 
                 type="submit" disabled={!newTitle.trim() || isLoading}
-                className="flex-1 bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold py-2 rounded-lg hover:bg-paramo-frailejon/20 transition-all disabled:opacity-50"
+                className="px-3 py-1 bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-black uppercase tracking-widest text-[9px] rounded-md hover:bg-paramo-frailejon/20 transition-all disabled:opacity-50"
               >
                 {t.add}
               </button>

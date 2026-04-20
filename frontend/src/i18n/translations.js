@@ -66,18 +66,31 @@ export const translations = {
     
     // Form
     title_label: "Title",
-    desc_label: "Description (Markdown supported)",
+    desc_label: "Description",
     priority_label: "Priority",
     type_label: "Type",
     day_label: "Day",
     month_label: "Month",
     duration_label: "Focus Time (min)",
     save_btn: "Save Task",
+    saving_status: "Saving",
+    type_once: "Once",
+    type_counter: "Counter",
+    form_during: "during",
+    title_placeholder: "Task title",
+    desc_placeholder: "Description (optional)",
+    error_title_req: "Title is required",
+    error_day_range: "Day must be between 1 and 31",
+    error_network: "Network error. Try again.",
     
     // Priorities
-    prio_muted: "Muted",
+    prio_muted: "Optional",
     prio_important: "Important",
     prio_critical: "Critical",
+    
+    // Placeholders
+    ex_reminder: "Ex: Drink water, Posture...",
+    reminder_placeholder: "Reminder title...",
   },
   es: {
     // Auth
@@ -146,17 +159,30 @@ export const translations = {
     
     // Form
     title_label: "Título",
-    desc_label: "Descripción (Soporta Markdown)",
+    desc_label: "Descripción",
     priority_label: "Prioridad",
     type_label: "Tipo",
     day_label: "Día",
     month_label: "Mes",
     duration_label: "Tiempo de Foco (min)",
     save_btn: "Guardar Tarea",
+    saving_status: "Guardando",
+    type_once: "Una vez",
+    type_counter: "Contador",
+    form_during: "durante",
+    title_placeholder: "Título de la tarea",
+    desc_placeholder: "Descripción (opcional)",
+    error_title_req: "El título es obligatorio",
+    error_day_range: "El día debe ser entre 1 y 31",
+    error_network: "Error de red. Intenta de nuevo.",
     
     // Priorities
-    prio_muted: "Normal",
+    prio_muted: "Opcional",
     prio_important: "Importante",
     prio_critical: "Crítico",
+    
+    // Placeholders
+    ex_reminder: "Ej: Beber agua, Postura...",
+    reminder_placeholder: "Título del recordatorio...",
   }
 };
