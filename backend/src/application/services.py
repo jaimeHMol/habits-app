@@ -258,6 +258,6 @@ class UserService:
         self.repository = repository
 
     def update_settings(
-        self, user_id: int, start_time: str, end_time: str
+        self, user_id: int, start_time: str, end_time: str, language: str
     ) -> Optional[User]:
-        return self.repository.update_settings(user_id, start_time, end_time)
+        return self.repository.update_settings(user_id, start_time, end_time, language)

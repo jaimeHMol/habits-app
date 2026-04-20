@@ -225,6 +225,7 @@ users_router = APIRouter(
 class UserSettingsUpdate(BaseModel):
     day_start_time: str
     day_end_time: str
+    language: str
 
 
 @users_router.get("/me", response_model=User)
@@ -239,7 +240,10 @@ def update_settings(
     service: UserService = Depends(get_user_service),
 ):
     user = service.update_settings(
-        current_user.id, settings.day_start_time, settings.day_end_time
+        current_user.id,
+        settings.day_start_time,
+        settings.day_end_time,
+        settings.language,
     )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

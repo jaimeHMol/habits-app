@@ -39,10 +39,26 @@ export const useHabitStore = create((set, get) => ({
   fetchUserProfile: async () => {
     try {
       const user = await taskApi.getMe();
-      set({ user });
+      set({ user, language: user.language });
+      localStorage.setItem('habit_lang', user.language);
     } catch (error) {
       console.error("Failed to fetch profile", error);
     }
+  },
+
+  setLanguage: async (lang) => {
+    const { user } = get();
+    const { userSettings } = useReminderStore.getState();
+    
+    if (user && userSettings) {
+      await taskApi.updateSettings({
+        dayStartTime: userSettings.dayStartTime,
+        dayEndTime: userSettings.dayEndTime,
+        language: lang
+      });
+    }
+    localStorage.setItem('habit_lang', lang);
+    set({ language: lang });
   },
 
   generateInvite: async () => {
@@ -68,6 +84,7 @@ export const useHabitStore = create((set, get) => ({
   showReviewModal: false,
   pendingResets: [], // ['daily', 'monthly', 'annually']
   lastUsedDate: localStorage.getItem('last_used_date'),
+  language: localStorage.getItem('habit_lang') || 'en',
   activeTimer: { 
     taskId: JSON.parse(localStorage.getItem('active_timer_task_id') || 'null'), 
     endTime: JSON.parse(localStorage.getItem('active_timer_end_time') || '0'),

@@ -64,7 +64,7 @@ export const useReminderStore = create((set, get) => ({
   updateSettings: async (settings) => {
     try {
       await taskApi.updateSettings(settings);
-      set({ userSettings: settings });
+      set({ userSettings: { dayStartTime: settings.dayStartTime, dayEndTime: settings.dayEndTime } });
       return true;
     } catch (error) {
       return false;

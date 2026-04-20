@@ -293,7 +293,7 @@ class SQLiteUserRepository:
         self.session = session
 
     def update_settings(
-        self, user_id: int, start_time: str, end_time: str
+        self, user_id: int, start_time: str, end_time: str, language: str
     ) -> Optional[User]:
         db_user = self.session.get(User, user_id)
         if not db_user:
@@ -301,6 +301,7 @@ class SQLiteUserRepository:
 
         db_user.day_start_time = start_time
         db_user.day_end_time = end_time
+        db_user.language = language
 
         self.session.add(db_user)
         self.session.commit()

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
+import { translations } from '../i18n/translations'
 import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarClock, CalendarRange, Minus, Plus } from 'lucide-react'
 
 export const PeriodicReviewModal = () => {
-  const { tasks, pendingResets, confirmReview, isLoading, incrementTask, decrementTask } = useHabitStore();
-  
+  const { tasks, pendingResets, confirmReview, isLoading, incrementTask, decrementTask, language } = useHabitStore();
+  const t = translations[language] || translations.en;
+
   // Tasks to review from all pending reset columns
   const tasksToReview = tasks.filter(t => pendingResets.includes(t.columnId) && !t.completed);
   
@@ -54,7 +56,7 @@ export const PeriodicReviewModal = () => {
                 >
                   <div className="flex-1 min-w-0">
                     <span className="text-sm font-medium line-clamp-1 italic">{task.title}</span>
-                    <span className="text-[10px] text-paramo-muted uppercase font-black">Added this cycle: {task.currentCount}</span>
+                    <span className="text-[10px] text-paramo-muted uppercase font-black">{t.review_cycle_added}: {task.currentCount}</span>
                   </div>
                   <div className="flex items-center gap-1 bg-black/20 rounded-lg p-1 border border-white/5">
                     <button 
@@ -109,25 +111,25 @@ export const PeriodicReviewModal = () => {
           <div className="bg-paramo-frailejon/10 p-4 rounded-full text-paramo-frailejon mb-2">
             <PartyPopper size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-white tracking-tight italic">Cycles Renewed!</h2>
-          <p className="text-sm text-paramo-muted">Time to review your progress. Did you complete any of these before the reset?</p>
+          <h2 className="text-2xl font-bold text-white tracking-tight italic">{t.review_title}</h2>
+          <p className="text-sm text-paramo-muted">{t.review_subtitle}</p>
         </div>
 
         <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-8">
           <Section 
-            title="Daily Tasks" 
+            title={t.review_daily} 
             icon={CalendarClock} 
             tasks={groupedTasks.daily} 
             colorClass="text-paramo-frailejon"
           />
           <Section 
-            title="Monthly Goals" 
+            title={t.review_monthly} 
             icon={CalendarDays} 
             tasks={groupedTasks.monthly} 
             colorClass="text-paramo-tierra"
           />
           <Section 
-            title="Annual Milestones" 
+            title={t.review_annually} 
             icon={CalendarRange} 
             tasks={groupedTasks.annually} 
             colorClass="text-white/40"
@@ -140,10 +142,10 @@ export const PeriodicReviewModal = () => {
           className="w-full bg-paramo-frailejon hover:bg-teal-500 disabled:opacity-50 disabled:cursor-not-allowed text-paramo-bg font-black uppercase tracking-widest text-xs py-4 rounded-xl flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-paramo-frailejon/20 group"
         >
           {isLoading ? (
-            <span className="animate-pulse">Syncing...</span>
+            <span className="animate-pulse">{t.review_syncing}</span>
           ) : (
             <>
-              Start New Cycle
+              {t.review_start}
               <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </>
           )}

@@ -231,7 +231,8 @@ export const taskApi = {
       headers: getHeaders(),
       body: JSON.stringify({
         day_start_time: settings.dayStartTime,
-        day_end_time: settings.dayEndTime
+        day_end_time: settings.dayEndTime,
+        language: settings.language
       }),
     });
     return handleResponse(response);

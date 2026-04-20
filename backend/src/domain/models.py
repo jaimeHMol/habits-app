@@ -69,6 +69,7 @@ class UserBase(SQLModel):
     is_active: bool = Field(default=True)
     day_start_time: str = Field(default="08:00")
     day_end_time: str = Field(default="20:00")
+    language: str = Field(default="en")
 
 
 class User(UserBase, table=True):

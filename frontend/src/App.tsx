@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useHabitStore } from './store/useHabitStore'
 import { useReminderStore } from './store/useReminderStore'
+import { translations } from './i18n/translations'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { Column } from './components/Column'
 import { PeriodicReviewModal } from './components/PeriodicReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
 import { NotificationToast } from './components/NotificationToast'
-import { LogOut, Lock, UserPlus, Copy, Check } from 'lucide-react'
+import { LogOut, Lock, UserPlus, Copy, Check, Globe } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -25,24 +26,24 @@ const FingerRibbonIcon = ({ size = 24, className = "" }) => (
   </svg>
 );
 
-const getGreeting = () => {
+const getGreetingKey = () => {
   const hour = new Date().getHours()
-  if (hour < 12) return "Good morning"
-  if (hour < 18) return "Good afternoon"
-  return "Good evening"
+  if (hour < 12) return "morning"
+  if (hour < 18) return "afternoon"
+  return "evening"
 }
 
 function App() {
   const { 
     columns, reorderTasks, fetchTasks, isAuthenticated, user, 
-    login, register, logout, fetchUserProfile, 
+    login, register, logout, fetchUserProfile, language, setLanguage,
     showReviewModal, checkDayChange, activeTimer, tickTimer, generateInvite 
   } = useHabitStore()
   
   const { fetchReminders } = useReminderStore()
   
   const [activeMobileColumn, setActiveMobileColumn] = useState('daily')
-  const [authMode, setAuthMode] = useState('login') // 'login' or 'register'
+  const [authMode, setAuthMode] = useState('login') 
   
   // Auth Form State
   const [username, setUsername] = useState('')
@@ -58,7 +59,8 @@ function App() {
   const [generatedInvite, setGeneratedInvite] = useState('')
   const [copied, setCopied] = useState(false)
 
-  const greeting = getGreeting()
+  const t = translations[language] || translations.en;
+  const greeting = t[getGreetingKey()];
 
   // Initial and Automatic Refresh Logic
   useEffect(() => {
@@ -73,17 +75,14 @@ function App() {
       fetchReminders();
     };
 
-    // Initial load
     refreshData();
 
-    // Listen for visibility changes (tab switch, minimize, unlock)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         refreshData();
       }
     };
 
-    // Listen for window focus (switching back from another app/window)
     window.addEventListener('visibilitychange', handleVisibilityChange);
     window.addEventListener('focus', refreshData);
 
@@ -115,7 +114,7 @@ function App() {
     setIsProcessing(true);
     setAuthError('');
     const success = await login(username, password);
-    if (!success) setAuthError('Invalid credentials');
+    if (!success) setAuthError(t.auth_failed);
     setIsProcessing(false);
   }
 
@@ -128,7 +127,7 @@ function App() {
       setAuthMode('login');
       setAuthError('');
     } else {
-      setAuthError(result.message || 'Registration failed');
+      setAuthError(result.message || t.reg_failed);
     }
     setIsProcessing(false);
   }
@@ -151,13 +150,22 @@ function App() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-paramo-board border border-white/10 p-8 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-fadeIn">
+        <div className="bg-paramo-board border border-white/10 p-8 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col gap-6 animate-fadeIn relative">
+          {/* Language Toggle in Login Screen */}
+          <button 
+            onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+            className="absolute top-4 right-4 text-paramo-muted hover:text-white flex items-center gap-1.5 text-[10px] font-bold uppercase transition-colors"
+          >
+            <Globe size={12} />
+            {language === 'en' ? 'ES' : 'EN'}
+          </button>
+
           <div className="flex flex-col items-center gap-2 mb-2">
             <div className="h-12 w-12 bg-paramo-card rounded-full flex items-center justify-center border border-white/5 shadow-inner">
               <Lock className="text-paramo-frailejon" size={24} />
             </div>
             <h1 className="text-2xl font-bold italic tracking-tight text-white/90">
-              {authMode === 'login' ? 'Habit Tracker' : 'Create Account'}
+              {authMode === 'login' ? t.login_title : t.register_title}
             </h1>
           </div>
           
@@ -166,49 +174,49 @@ function App() {
           {authMode === 'login' ? (
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
               <input 
-                type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required
+                type="text" placeholder={t.username} value={username} onChange={(e) => setUsername(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <input 
-                type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
+                type="password" placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <button disabled={isProcessing} className="bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold tracking-widest uppercase text-xs p-3 rounded-lg hover:bg-paramo-frailejon/20 transition-all mt-2 flex justify-center">
-                {isProcessing ? 'Authenticating...' : 'Enter'}
+                {isProcessing ? '...' : t.enter_btn}
               </button>
               <button 
                 type="button" onClick={() => setAuthMode('register')}
                 className="text-[10px] text-paramo-muted hover:text-white font-black tracking-tighter text-center mt-2"
               >
-                I have an invitation code
+                {t.have_invite}
               </button>
             </form>
           ) : (
             <form onSubmit={handleRegister} className="flex flex-col gap-4">
               <input 
-                type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required
+                type="text" placeholder={t.full_name} value={fullName} onChange={(e) => setFullName(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <input 
-                type="text" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} required
+                type="text" placeholder={t.username} value={username} onChange={(e) => setUsername(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <input 
-                type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} required
+                type="password" placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <input 
-                type="text" placeholder="Invitation Code" value={invitationCode} onChange={(e) => setInvitationCode(e.target.value)} required
+                type="text" placeholder={t.invitation_code} value={invitationCode} onChange={(e) => setInvitationCode(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
               <button disabled={isProcessing} className="bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold tracking-widest uppercase text-xs p-3 rounded-lg hover:bg-paramo-frailejon/20 transition-all mt-2 flex justify-center">
-                {isProcessing ? 'Creating Account...' : 'Register'}
+                {isProcessing ? '...' : t.register_btn}
               </button>
               <button 
                 type="button" onClick={() => setAuthMode('login')}
                 className="text-[10px] text-paramo-muted hover:text-white font-black tracking-tighter text-center mt-2"
               >
-                Back to Login
+                {t.back_to_login}
               </button>
             </form>
           )}
@@ -234,10 +242,20 @@ function App() {
         
         <div className="flex justify-between items-center w-full">
           <p className="text-paramo-muted text-[10px] md:text-sm uppercase tracking-widest">
-            {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
+            {new Date().toLocaleDateString(language === 'en' ? 'en-US' : 'es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
 
           <div className="flex items-center gap-2">
+            {/* Language Toggle */}
+            <button 
+              onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
+              className="text-paramo-muted hover:text-white bg-paramo-board px-2.5 py-2 rounded-lg border border-white/5 transition-colors text-[10px] font-black tracking-widest flex items-center gap-2"
+              title="Change Language"
+            >
+              <Globe size={16} />
+              <span className="hidden sm:inline">{language === 'en' ? 'ES' : 'EN'}</span>
+            </button>
+
             {user?.role === 'admin' && (
               <div className="relative group">
                 <button
@@ -250,7 +268,7 @@ function App() {
                 
                 {generatedInvite && (
                   <div className="absolute top-full right-0 mt-2 bg-paramo-card border border-white/10 p-3 rounded-xl shadow-2xl w-48 z-[200] animate-fadeIn">
-                    <p className="text-[10px] font-black uppercase text-paramo-muted mb-2 tracking-widest">One-time Code</p>
+                    <p className="text-[10px] font-black uppercase text-paramo-muted mb-2 tracking-widest">{t.invitation_code}</p>
                     <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/5 mb-2">
                       <span className="text-xs font-mono text-white flex-1">{generatedInvite}</span>
                       <button onClick={copyToClipboard} className="text-paramo-muted hover:text-white">
@@ -261,7 +279,7 @@ function App() {
                       onClick={() => setGeneratedInvite('')}
                       className="w-full text-[10px] uppercase font-bold text-paramo-muted hover:text-white pt-1"
                     >
-                      Close
+                      {t.close}
                     </button>
                   </div>
                 )}
@@ -270,7 +288,7 @@ function App() {
 
             <button
               onClick={() => setIsReminderPanelOpen(true)}
-              title="Reminders"
+              title={t.reminders_title}
               className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
             >
               <FingerRibbonIcon size={20} />
@@ -296,7 +314,7 @@ function App() {
             key={col.id} onClick={() => setActiveMobileColumn(col.id)}
             className={`flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all ${activeMobileColumn === col.id ? 'text-paramo-frailejon scale-105' : 'text-paramo-muted hover:text-white/70'}`}
           >
-            <span className="text-[10px] font-black tracking-widest uppercase">{col.title}</span>
+            <span className="text-[10px] font-black tracking-widest uppercase">{t[col.id]}</span>
             <div className={`h-1 w-1 rounded-full ${activeMobileColumn === col.id ? 'bg-paramo-frailejon' : 'bg-transparent'}`}></div>
           </button>
         ))}
