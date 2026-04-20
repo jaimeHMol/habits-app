@@ -1,6 +1,6 @@
 import secrets
 import string
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -29,11 +29,12 @@ class InvitationResponse(BaseModel):
 
 @router.post("/login")
 def login(
+    response: Response,
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session),
 ):
     """
-    Authenticates the user against the database securely.
+    Authenticates the user against the database securely and sets a secure cookie.
     """
     statement = select(User).where(User.username == form_data.username)
     user = session.exec(statement).first()
@@ -46,6 +47,18 @@ def login(
         )
 
     access_token = create_access_token(data={"sub": user.username})
+
+    # Set HttpOnly Cookie for security (Prevents XSS)
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,
+        max_age=60 * 60 * 24 * 7,  # 7 days
+        expires=60 * 60 * 24 * 7,
+        samesite="lax",
+        secure=True,  # Only via HTTPS
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
@@ -55,6 +68,15 @@ def login(
             "role": user.role,
         },
     }
+
+
+@router.post("/logout")
+def logout(response: Response):
+    """
+    Clears the authentication cookie.
+    """
+    response.delete_cookie("access_token")
+    return {"message": "Logged out successfully"}
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)

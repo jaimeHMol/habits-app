@@ -1,19 +1,19 @@
 from datetime import datetime, timedelta, timezone
 import jwt
-import bcrypt  # NEW: Using bcrypt directly instead of passlib
-from fastapi import Depends, HTTPException, status
+import bcrypt
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 from src.core.config import settings
 from src.infrastructure.database import get_session
 from src.domain.models import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+# auto_error=False allows us to manually handle the error if the token is missing from the header
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verifies if the plain password matches the salted hash using pure bcrypt."""
-    # bcrypt requires bytes, so we encode the strings
     password_bytes = plain_password.encode("utf-8")
     hash_bytes = hashed_password.encode("utf-8")
     return bcrypt.checkpw(password_bytes, hash_bytes)
@@ -24,7 +24,6 @@ def get_password_hash(password: str) -> str:
     password_bytes = password.encode("utf-8")
     salt = bcrypt.gensalt()
     hashed_bytes = bcrypt.hashpw(password_bytes, salt)
-    # Decode back to string so we can store it in the database
     return hashed_bytes.decode("utf-8")
 
 
@@ -38,13 +37,25 @@ def create_access_token(data: dict) -> str:
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)
+    request: Request,
+    token: str = Depends(oauth2_scheme),
+    session: Session = Depends(get_session),
 ) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    # If token is not in header (oauth2_scheme), try HttpOnly cookie
+    if not token:
+        token_cookie = request.cookies.get("access_token")
+        if token_cookie and token_cookie.startswith("Bearer "):
+            token = token_cookie.split(" ")[1]
+
+    if not token:
+        raise credentials_exception
+
     try:
         payload = jwt.decode(
             token, settings.secret_key, algorithms=[settings.algorithm]

@@ -5,20 +5,18 @@
 const BASE_URL = ''; 
 const API_URL = `/tasks/`;
 
-// Helper function to dynamically attach the JWT token if it exists
+// Helper function for headers
 const getHeaders = () => {
-  const token = localStorage.getItem('habit_token');
   return {
-    'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
+    'Content-Type': 'application/json'
   };
 };
 
 // Helper function to handle 401 Unauthorized responses
 const handleResponse = async (response) => {
   if (response.status === 401) {
-    localStorage.removeItem('habit_token');
-    window.location.reload(); // Force reload to clear state and show login
+    // If the server returns 401, the cookie might be invalid or expired
+    window.location.reload(); 
     throw new Error('Session expired');
   }
   if (!response.ok) {
@@ -30,7 +28,6 @@ const handleResponse = async (response) => {
 
 export const taskApi = {
   login: async (username, password) => {
-    // FastAPI OAuth2 strictly expects form-urlencoded data, not a JSON payload
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
@@ -39,22 +36,32 @@ export const taskApi = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData,
+      credentials: 'include' // Allow receiving the HttpOnly cookie
     });
 
     if (!response.ok) throw new Error('Invalid credentials');
     return response.json();
   },
 
+  logout: async () => {
+    const response = await fetch(`${BASE_URL}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
   register: async (data) => {
     const response = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({
         full_name: data.fullName,
         username: data.username,
         password: data.password,
         invitation_code: data.invitationCode
       }),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -63,15 +70,18 @@ export const taskApi = {
     const response = await fetch(`${BASE_URL}/auth/invitations/generate`, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
 
   getAll: async () => {
-    const response = await fetch(API_URL, { headers: getHeaders() });
+    const response = await fetch(API_URL, { 
+      headers: getHeaders(),
+      credentials: 'include'
+    });
     const data = await handleResponse(response);
     
-    // Map backend snake_case to frontend camelCase
     return data.map(task => ({
       ...task,
       columnId: task.column_id,
@@ -89,6 +99,7 @@ export const taskApi = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(taskData),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -98,6 +109,7 @@ export const taskApi = {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify(taskData),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -106,6 +118,7 @@ export const taskApi = {
     const response = await fetch(`${API_URL}${taskId}`, {
       method: 'DELETE',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -114,6 +127,7 @@ export const taskApi = {
     const response = await fetch(`${API_URL}${taskId}/complete?is_retroactive=${isRetroactive}`, {
       method: 'PATCH',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -122,6 +136,7 @@ export const taskApi = {
     const response = await fetch(`${API_URL}${taskId}/increment?is_retroactive=${isRetroactive}`, {
       method: 'PATCH',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -130,6 +145,7 @@ export const taskApi = {
     const response = await fetch(`${API_URL}${taskId}/decrement`, {
       method: 'PATCH',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -140,6 +156,7 @@ export const taskApi = {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ column_id: columnId, task_ids: taskIds }),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -148,6 +165,7 @@ export const taskApi = {
     const response = await fetch(`${BASE_URL}/tasks/reset-daily`, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -156,6 +174,7 @@ export const taskApi = {
     const response = await fetch(`${BASE_URL}/tasks/reset-monthly`, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -164,13 +183,17 @@ export const taskApi = {
     const response = await fetch(`${BASE_URL}/tasks/reset-annually`, {
       method: 'POST',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
 
   // --- Reminders ---
   getReminders: async () => {
-    const response = await fetch(`${BASE_URL}/reminders/`, { headers: getHeaders() });
+    const response = await fetch(`${BASE_URL}/reminders/`, { 
+      headers: getHeaders(),
+      credentials: 'include'
+    });
     const data = await handleResponse(response);
     return data.map(r => ({
       ...r,
@@ -188,6 +211,7 @@ export const taskApi = {
         interval_minutes: reminderData.intervalMinutes,
         is_active: true
       }),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -201,6 +225,7 @@ export const taskApi = {
         interval_minutes: reminderData.intervalMinutes,
         is_active: reminderData.isActive
       }),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
@@ -209,13 +234,17 @@ export const taskApi = {
     const response = await fetch(`${BASE_URL}/reminders/${reminderId}`, {
       method: 'DELETE',
       headers: getHeaders(),
+      credentials: 'include'
     });
     return handleResponse(response);
   },
 
   // --- User / Settings ---
   getMe: async () => {
-    const response = await fetch(`${BASE_URL}/users/me`, { headers: getHeaders() });
+    const response = await fetch(`${BASE_URL}/users/me`, { 
+      headers: getHeaders(),
+      credentials: 'include'
+    });
     const data = await handleResponse(response);
     return {
       ...data,
@@ -234,6 +263,7 @@ export const taskApi = {
         day_end_time: settings.dayEndTime,
         language: settings.language
       }),
+      credentials: 'include'
     });
     return handleResponse(response);
   }

@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from src.core.config import settings
 from src.api.routers import router as tasks_router, reminders_router, users_router
 from src.api.auth_router import router as auth_router
 
@@ -21,7 +22,7 @@ app = FastAPI(
 )
 
 # Configure CORS so the React frontend can communicate with the API
-origins = ["*"]
+origins = settings.cors_origins
 
 app.add_middleware(
     CORSMiddleware,
