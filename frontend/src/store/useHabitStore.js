@@ -3,13 +3,13 @@ import { taskApi } from '../services/api'
 import { useReminderStore } from './useReminderStore'
 
 export const useHabitStore = create((set, get) => ({
-  isAuthenticated: !!localStorage.getItem('habit_token'),
+  isAuthenticated: true, // Assume true to try initial data fetch, but will be set to false on 401
   user: null, // { username, fullName, role }
   
   login: async (username, password) => {
     try {
       const data = await taskApi.login(username, password);
-      localStorage.setItem('habit_token', data.access_token);
+      // No token in localStorage, it's in an HttpOnly cookie now
       set({ 
         isAuthenticated: true, 
         user: data.user, 
@@ -31,17 +31,22 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
-  logout: () => {
-    localStorage.removeItem('habit_token');
+  logout: async () => {
+    try {
+      await taskApi.logout();
+    } catch (e) {
+      console.error("Logout failed on server", e);
+    }
     set({ isAuthenticated: false, user: null, tasks: [] });
   },
 
   fetchUserProfile: async () => {
     try {
       const user = await taskApi.getMe();
-      set({ user, language: user.language });
+      set({ user, isAuthenticated: true, language: user.language });
       localStorage.setItem('habit_lang', user.language);
     } catch (error) {
+      set({ isAuthenticated: false, user: null });
       console.error("Failed to fetch profile", error);
     }
   },
@@ -200,9 +205,13 @@ export const useHabitStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const tasks = await taskApi.getAll();
-      set({ tasks, isLoading: false });
+      set({ tasks, isLoading: false, isAuthenticated: true });
     } catch (error) {
-      set({ error: error.message, isLoading: false });
+      if (error.message === 'Session expired') {
+        set({ isAuthenticated: false, user: null, isLoading: false });
+      } else {
+        set({ error: error.message, isLoading: false });
+      }
     }
   },
 

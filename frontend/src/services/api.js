@@ -15,8 +15,7 @@ const getHeaders = () => {
 // Helper function to handle 401 Unauthorized responses
 const handleResponse = async (response) => {
   if (response.status === 401) {
-    // If the server returns 401, the cookie might be invalid or expired
-    window.location.reload(); 
+    // Return null or throw a specific error that the UI can catch without reloading
     throw new Error('Session expired');
   }
   if (!response.ok) {
