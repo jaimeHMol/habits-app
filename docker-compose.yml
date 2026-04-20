@@ -4,27 +4,42 @@ services:
     restart: always
     env_file: ./backend/.env
     volumes:
-      - ./backend/habits.db:/app/habits.db
+      - habit_data:/app/data
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
     networks:
       - habit-network
 
   frontend:
     build: ./frontend
     restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
     networks:
       - habit-network
 
   nginx:
     image: nginx:stable-alpine
     ports:
-      - "80:80"   # HTTP
-      - "443:443" # HTTPS
+      - "80:80"
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro # Monta los certificados de Let's Encrypt
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
       - frontend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: 128M
     networks:
       - habit-network
 
@@ -35,12 +50,17 @@ services:
     environment:
       - TZ=America/Bogota
       - DB_TYPE=sqlite
-      - DB_FILE=/app/habits.db
+      - DB_FILE=/app/data/habits.db
       - BACKUP_DIR=/backups
     volumes:
-      - ./backend/habits.db:/app/habits.db:ro
+      - habit_data:/app/data:ro
       - ./backend/scripts/backup.sh:/usr/local/bin/backup.sh:ro
       - ./backups:/backups
+    deploy:
+      resources:
+        limits:
+          cpus: '0.10'
+          memory: 64M
     networks:
       - habit-network
     entrypoint: >
@@ -52,6 +72,9 @@ services:
       echo 'Backup service started. Cron schedule: 4 AM (America/Bogota)' &&
       crond -f -l 2
       "
+
+volumes:
+  habit_data:
 
 networks:
   habit-network:

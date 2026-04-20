@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     admin_password: str  # Mandatory: No default value
 
     # Database
-    database_url: str = "sqlite:///habits.db"
+    database_url: str = "sqlite:///data/habits.db"
 
     # CORS configuration
     # Example: "https://habits.jaimehmol.me,http://localhost:5173"
