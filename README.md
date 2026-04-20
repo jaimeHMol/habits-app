@@ -138,21 +138,50 @@ The project uses **Alembic** to manage database schema changes safely and reliab
    make migrate-undo
    ```
 
-## 💾 Database Persistence
+## 🔐 Security & Infrastructure Improvements
 
-The SQLite database is stored at `backend/habits.db`. When using Docker, this file is mounted as a volume to ensure your data persists across container restarts.
+The application has been hardened following industry best practices to ensure data integrity and protection against common web vulnerabilities.
 
-## 🛡️ Database Backups
+### Security Features
+- **XSS Protection (HttpOnly Cookies):** Authentication tokens are no longer stored in `localStorage`. They are now handled via `HttpOnly`, `Secure`, and `SameSite=Lax` cookies, making them inaccessible to malicious scripts.
+- **Brute Force Protection:** Nginx is configured with `limit_req` to rate-limit requests to the `/auth/` endpoints.
+- **OWASP Headers:** Essential security headers (HSTS, X-Frame-Options, X-Content-Type-Options) are enforced via Nginx.
+- **Restricted CORS:** Cross-Origin Resource Sharing is restricted to authorized domains only (configured via `CORS_ORIGINS_STR` in `.env`).
+- **Secret Enforcement:** The backend will fail to start if `SECRET_KEY` or `ADMIN_PASSWORD` are not explicitly provided in the environment.
 
-The application includes an automated backup system:
-- **Schedule**: Runs daily at **4:00 AM** (Colombia Time - `America/Bogota`).
-- **Retention**: Keeps backups for **30 days**.
-- **Location**: Backups are stored in the `./backups` directory on the host.
+### Infrastructure & Stability
+- **Docker Resource Limits:** Containers are restricted in CPU and RAM (e.g., Backend limited to 512MB, Frontend 256MB) to prevent server-wide crashes due to resource exhaustion.
+- **Named Volumes:** The SQLite database is stored in a managed Docker volume (`habit_data`) mapped to `/app/data/` inside the container. This improves performance and prevents host-level file permission issues.
+- **Automated Backups:** A dedicated backup service performs an atomic copy of the SQLite database daily at **4:00 AM** (America/Bogota) and keeps a **30-day rotation**. Backups are stored in the `./backups` directory on the host.
 
-To trigger a backup manually:
+---
+
+## 🛠 Maintenance & Troubleshooting
+
+### Viewing Logs
 ```bash
-make backup-manual
+# General logs
+sudo docker compose logs -f
+
+# Auth/Nginx rate limit logs
+sudo docker compose logs -f nginx
 ```
+
+### Accessing the Database
+Since the database is now in a managed volume, you can access it via the container:
+```bash
+sudo docker compose exec backend sqlite3 /app/data/habits.db
+```
+
+### Manual Backup
+```bash
+sudo docker compose exec backup /usr/local/bin/backup.sh
+```
+
+### Future Considerations
+1. **CSP Policy:** If adding external scripts to the frontend, the Content-Security-Policy header in `nginx.conf` may need adjustment.
+2. **Database Migrations:** Always run `make migration-create msg="description"` after changing models and test the migration locally before deploying.
+3. **Environment Variables:** Ensure `.env` is never committed to version control and contains strong secrets in production.
 
 ---
 *Built with care for productivity enthusiasts.*

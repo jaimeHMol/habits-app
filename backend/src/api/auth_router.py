@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 from src.infrastructure.database import get_session
 from src.domain.models import User, InvitationCode
+from src.core.config import settings
 from src.api.security import (
     create_access_token,
     verify_password,
@@ -56,7 +57,7 @@ def login(
         max_age=60 * 60 * 24 * 7,  # 7 days
         expires=60 * 60 * 24 * 7,
         samesite="lax",
-        secure=True,  # Only via HTTPS
+        secure=settings.cookie_secure,  # False in dev (HTTP), True in prod (HTTPS)
     )
 
     return {

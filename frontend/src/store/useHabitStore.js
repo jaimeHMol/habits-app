@@ -9,11 +9,11 @@ export const useHabitStore = create((set, get) => ({
   login: async (username, password) => {
     try {
       const data = await taskApi.login(username, password);
-      // No token in localStorage, it's in an HttpOnly cookie now
       set({ 
         isAuthenticated: true, 
         user: data.user, 
-        error: null 
+        error: null,
+        lastUsedDate: data.user.last_period_reset_date
       });
       get().fetchTasks(); // Load data immediately after login
       return true;
@@ -37,13 +37,18 @@ export const useHabitStore = create((set, get) => ({
     } catch (e) {
       console.error("Logout failed on server", e);
     }
-    set({ isAuthenticated: false, user: null, tasks: [] });
+    set({ isAuthenticated: false, user: null, tasks: [], lastUsedDate: null });
   },
 
   fetchUserProfile: async () => {
     try {
       const user = await taskApi.getMe();
-      set({ user, isAuthenticated: true, language: user.language });
+      set({ 
+        user, 
+        isAuthenticated: true, 
+        language: user.language,
+        lastUsedDate: user.last_period_reset_date 
+      });
       localStorage.setItem('habit_lang', user.language);
     } catch (error) {
       set({ isAuthenticated: false, user: null });
@@ -77,7 +82,6 @@ export const useHabitStore = create((set, get) => ({
   },
 
   columns: [
-    // Added viewMode to each column state
     { id: 'daily', title: 'Daily', type: 'daily', viewMode: 'active' },
     { id: 'monthly', title: 'Monthly', type: 'monthly', viewMode: 'active' },
     { id: 'annually', title: 'Annually', type: 'annually', viewMode: 'active' },
@@ -87,8 +91,8 @@ export const useHabitStore = create((set, get) => ({
   isLoading: false,
   error: null,
   showReviewModal: false,
-  pendingResets: [], // ['daily', 'monthly', 'annually']
-  lastUsedDate: localStorage.getItem('last_used_date'),
+  pendingResets: [], 
+  lastUsedDate: null, 
   language: localStorage.getItem('habit_lang') || 'en',
   activeTimer: { 
     taskId: JSON.parse(localStorage.getItem('active_timer_task_id') || 'null'), 
@@ -117,7 +121,6 @@ export const useHabitStore = create((set, get) => ({
     const remaining = Math.round((activeTimer.endTime - now) / 1000);
 
     if (remaining <= 0) {
-      // Time is up!
       const alarm = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       alarm.play().catch(e => console.log("Audio blocked", e));
       
@@ -134,12 +137,12 @@ export const useHabitStore = create((set, get) => ({
   },
 
   checkDayChange: () => {
-    const lastDateStr = get().lastUsedDate;
+    const { lastUsedDate, tasks } = get();
     const today = new Date();
     const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
-    if (lastDateStr && lastDateStr !== todayStr) {
-      const lastDate = new Date(lastDateStr + 'T00:00:00'); // Use ISO-like for consistent parsing
+    if (lastUsedDate && lastUsedDate !== todayStr) {
+      const lastDate = new Date(lastUsedDate + 'T00:00:00'); 
       
       const resets = ['daily'];
       if (today.getMonth() !== lastDate.getMonth() || today.getFullYear() !== lastDate.getFullYear()) {
@@ -149,19 +152,17 @@ export const useHabitStore = create((set, get) => ({
         resets.push('annually');
       }
 
-      // Check if there are tasks to review in these columns
-      const hasTasksToReview = get().tasks.some(t => resets.includes(t.columnId));
+      const hasTasksToReview = tasks.some(t => resets.includes(t.columnId));
       
       if (hasTasksToReview) {
         set({ pendingResets: resets, showReviewModal: true });
       } else {
-        // Just update the date if no tasks
-        localStorage.setItem('last_used_date', todayStr);
         set({ lastUsedDate: todayStr, pendingResets: [] });
+        taskApi.confirmReset(todayStr).catch(e => console.error("Sync failed", e));
       }
-    } else if (!lastDateStr) {
-      localStorage.setItem('last_used_date', todayStr);
+    } else if (!lastUsedDate) {
       set({ lastUsedDate: todayStr });
+      taskApi.confirmReset(todayStr).catch(e => console.error("Sync failed", e));
     }
   },
 
@@ -170,7 +171,6 @@ export const useHabitStore = create((set, get) => ({
     try {
       const { pendingResets, tasks } = get();
 
-      // 1. Mark tasks as completed (the ones user said they finished)
       for (const id of completedTaskIds) {
         const task = tasks.find(t => t.id === id);
         if (task && !task.completed) {
@@ -178,14 +178,12 @@ export const useHabitStore = create((set, get) => ({
         }
       }
       
-      // 2. Perform resets in backend for each pending column
       if (pendingResets.includes('daily')) await taskApi.resetDaily();
       if (pendingResets.includes('monthly')) await taskApi.resetMonthly();
       if (pendingResets.includes('annually')) await taskApi.resetAnnually();
       
-      // 3. Update local state
       const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-      localStorage.setItem('last_used_date', todayStr);
+      await taskApi.confirmReset(todayStr);
       
       set({ 
         showReviewModal: false, 
@@ -206,6 +204,8 @@ export const useHabitStore = create((set, get) => ({
     try {
       const tasks = await taskApi.getAll();
       set({ tasks, isLoading: false, isAuthenticated: true });
+      // Trigger day change check after tasks are loaded
+      get().checkDayChange();
     } catch (error) {
       if (error.message === 'Session expired') {
         set({ isAuthenticated: false, user: null, isLoading: false });
@@ -215,7 +215,6 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
-  // New action to change the view mode globally
   setViewMode: (columnId, mode) => set((state) => ({
     columns: state.columns.map(c => c.id === columnId ? { ...c, viewMode: mode } : c)
   })),
@@ -236,7 +235,7 @@ export const useHabitStore = create((set, get) => ({
       await taskApi.toggleComplete(taskId, false);
       useReminderStore.getState().fetchReminders();
     } catch (error) {
-      get().fetchTasks(); // Revert on failure
+      get().fetchTasks();
     }
   },
 
@@ -263,27 +262,16 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
-  // FIXED: Reorder logic now accounts for the current view subset
   reorderTasks: async (columnId, startIndex, endIndex) => {
     const state = get();
     const column = state.columns.find(c => c.id === columnId);
     const isDoneView = column.viewMode === 'done';
-
-    // 1. Separate the tasks that are currently visible from those that are not
     const visibleTasks = state.tasks.filter(t => t.columnId === columnId && t.completed === isDoneView);
     const hiddenTasks = state.tasks.filter(t => !(t.columnId === columnId && t.completed === isDoneView));
-
-    // 2. Perform the reorder only on the visible subset
     const [removedTask] = visibleTasks.splice(startIndex, 1);
     visibleTasks.splice(endIndex, 0, removedTask);
-
-    // 3. Recombine all tasks
     const newTaskArray = [...hiddenTasks, ...visibleTasks];
-    
-    // Optimistic Update
     set({ tasks: newTaskArray });
-
-    // 4. Persist only the new order of the visible subset to the backend
     const orderedIds = visibleTasks.map(t => t.id);
     try {
       await taskApi.reorderColumn(columnId, orderedIds);

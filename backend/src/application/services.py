@@ -261,3 +261,9 @@ class UserService:
         self, user_id: int, start_time: str, end_time: str, language: str
     ) -> Optional[User]:
         return self.repository.update_settings(user_id, start_time, end_time, language)
+
+    def confirm_period_resets(self, user_id: int, date_str: str) -> bool:
+        """
+        Updates the last_period_reset_date in the database.
+        """
+        return self.repository.update_last_reset_date(user_id, date_str)

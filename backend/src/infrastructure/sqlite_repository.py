@@ -103,7 +103,7 @@ class SQLiteTaskRepository(ITaskRepository):
             statement = select(Task).where(
                 Task.column_id == ColumnId.DAILY, Task.user_id == user_id
             )
-            results = self.session.exec(statement)
+            results = self.session.exec(statement).all()
             for task in results:
                 task.completed = False
                 self.session.add(task)
@@ -122,12 +122,30 @@ class SQLiteTaskRepository(ITaskRepository):
             statement = select(Task).where(
                 Task.column_id == ColumnId.MONTHLY, Task.user_id == user_id
             )
-            results = self.session.exec(statement)
+            results = self.session.exec(statement).all()
             for task in results:
                 if task.task_type == TaskType.COUNTER:
                     task.current_count = 0
                 else:
                     task.completed = False
+                self.session.add(task)
+            self.session.commit()
+            return True
+        except Exception:
+            self.session.rollback()
+            return False
+
+    def reset_annually_tasks(self, user_id: int) -> bool:
+        """
+        Sets completed=False for all tasks in the annually column.
+        """
+        try:
+            statement = select(Task).where(
+                Task.column_id == ColumnId.ANNUALLY, Task.user_id == user_id
+            )
+            results = self.session.exec(statement).all()
+            for task in results:
+                task.completed = False
                 self.session.add(task)
             self.session.commit()
             return True
@@ -170,24 +188,6 @@ class SQLiteTaskRepository(ITaskRepository):
             self.remove_last_completion_log(task)
 
         return task
-
-    def reset_annually_tasks(self, user_id: int) -> bool:
-        """
-        Sets completed=False for all tasks in the annually column.
-        """
-        try:
-            statement = select(Task).where(
-                Task.column_id == ColumnId.ANNUALLY, Task.user_id == user_id
-            )
-            results = self.session.exec(statement)
-            for task in results:
-                task.completed = False
-                self.session.add(task)
-            self.session.commit()
-            return True
-        except Exception:
-            self.session.rollback()
-            return False
 
     def log_completion(self, task: Task, is_retroactive: bool) -> None:
         """
@@ -307,3 +307,15 @@ class SQLiteUserRepository:
         self.session.commit()
         self.session.refresh(db_user)
         return db_user
+
+    def update_last_reset_date(self, user_id: int, date_str: str) -> bool:
+        """
+        Updates the date when the user confirmed the period resets.
+        """
+        db_user = self.session.get(User, user_id)
+        if not db_user:
+            return False
+        db_user.last_period_reset_date = date_str
+        self.session.add(db_user)
+        self.session.commit()
+        return True

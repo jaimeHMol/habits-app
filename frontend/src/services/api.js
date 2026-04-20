@@ -1,9 +1,7 @@
-// For local execution
-// const BASE_URL = 'http://localhost:8000';
-// const API_URL = `${BASE_URL}/tasks/`;
+// Dynamic BASE_URL: localhost for dev, relative path for production
+const BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : '';
+const API_URL = `${BASE_URL}/tasks/`;
 
-const BASE_URL = ''; 
-const API_URL = `/tasks/`;
 
 // Helper function for headers
 const getHeaders = () => {
@@ -262,6 +260,16 @@ export const taskApi = {
         day_end_time: settings.dayEndTime,
         language: settings.language
       }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  confirmReset: async (dateStr) => {
+    const response = await fetch(`${BASE_URL}/users/confirm-reset`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ date_str: dateStr }),
       credentials: 'include'
     });
     return handleResponse(response);

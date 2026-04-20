@@ -70,6 +70,7 @@ class UserBase(SQLModel):
     day_start_time: str = Field(default="08:00")
     day_end_time: str = Field(default="20:00")
     language: str = Field(default="en")
+    last_period_reset_date: Optional[str] = Field(default=None)
 
 
 class User(UserBase, table=True):

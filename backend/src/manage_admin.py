@@ -10,6 +10,10 @@ from src.domain.models import User
 from src.api.security import get_password_hash
 from src.core.config import settings
 
+# Debug: Print which DB we are using
+print(f"DEBUG: Using database at {settings.database_url}")
+print(f"DEBUG: Admin username from config: {settings.admin_username}")
+
 
 def upsert_admin_user():
     """

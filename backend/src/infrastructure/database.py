@@ -1,8 +1,7 @@
 from sqlmodel import SQLModel, create_engine, Session
+from src.core.config import settings
 
-# The SQLite database file will be created in the root of the backend folder
-SQLITE_FILE_NAME = "habits.db"
-DATABASE_URL = f"sqlite:///{SQLITE_FILE_NAME}"
+DATABASE_URL = settings.database_url
 
 # check_same_thread=False is needed in FastAPI for SQLite
 engine = create_engine(

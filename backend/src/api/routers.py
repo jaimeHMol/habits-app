@@ -22,7 +22,7 @@ from src.api.security import get_current_user
 router = APIRouter(
     prefix="/tasks",
     tags=["Tasks"],
-    dependencies=[Depends(get_current_user)],  # The lock
+    dependencies=[Depends(get_current_user)],
 )
 
 
@@ -228,6 +228,10 @@ class UserSettingsUpdate(BaseModel):
     language: str
 
 
+class ResetConfirmationRequest(BaseModel):
+    date_str: str
+
+
 @users_router.get("/me", response_model=User)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
@@ -248,3 +252,15 @@ def update_settings(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@users_router.post("/confirm-reset")
+def confirm_reset(
+    request: ResetConfirmationRequest,
+    current_user: User = Depends(get_current_user),
+    service: UserService = Depends(get_user_service),
+):
+    success = service.confirm_period_resets(current_user.id, request.date_str)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update reset date")
+    return {"message": "Reset confirmed"}
