@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useHabitStore } from './store/useHabitStore'
+import { useReminderStore } from './store/useReminderStore'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { Column } from './components/Column'
 import { PeriodicReviewModal } from './components/PeriodicReviewModal'
@@ -38,6 +39,8 @@ function App() {
     showReviewModal, checkDayChange, activeTimer, tickTimer, generateInvite 
   } = useHabitStore()
   
+  const { fetchReminders } = useReminderStore()
+  
   const [activeMobileColumn, setActiveMobileColumn] = useState('daily')
   const [authMode, setAuthMode] = useState('login') // 'login' or 'register'
   
@@ -57,14 +60,38 @@ function App() {
 
   const greeting = getGreeting()
 
+  // Initial and Automatic Refresh Logic
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+
+    const refreshData = () => {
+      console.log("🔄 Syncing data with server...");
       if (!user) fetchUserProfile();
       fetchTasks().then(() => {
         checkDayChange();
       });
-    }
-  }, [fetchTasks, isAuthenticated, checkDayChange, user, fetchUserProfile]);
+      fetchReminders();
+    };
+
+    // Initial load
+    refreshData();
+
+    // Listen for visibility changes (tab switch, minimize, unlock)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshData();
+      }
+    };
+
+    // Listen for window focus (switching back from another app/window)
+    window.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', refreshData);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', refreshData);
+    };
+  }, [fetchTasks, fetchReminders, isAuthenticated, checkDayChange, user, fetchUserProfile]);
 
   // Timer loop for Focus Mode
   useEffect(() => {
@@ -98,10 +125,8 @@ function App() {
     setAuthError('');
     const result = await register({ fullName, username, password, invitationCode });
     if (result.success) {
-      // Switch to login
       setAuthMode('login');
       setAuthError('');
-      // Show success message or just wait for login
     } else {
       setAuthError(result.message || 'Registration failed');
     }
