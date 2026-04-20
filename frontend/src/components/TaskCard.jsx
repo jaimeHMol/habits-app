@@ -35,7 +35,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
         borderLeftColor: isTimerActive ? '#0d9488' : (task.completed ? '#a8a29e' : (task.priority === 'frailejon' ? '#0d9488' : task.priority === 'tierra' ? '#b45309' : '#a8a29e')) 
       }}
     >
-      <div className="p-3 md:p-4 flex items-start gap-2 md:gap-3">
+      <div className={`p-3 md:p-4 flex gap-2 md:gap-3 ${task.isCollapsed ? 'items-center' : 'items-start'}`}>
         <div className="flex flex-col items-center gap-2 flex-shrink-0">
           {task.taskType === 'counter' ? (
             <div className="flex flex-col items-center gap-2">
@@ -45,7 +45,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   e.stopPropagation();
                   incrementTask(task.id);
                 }}
-                className="mt-0.5 text-paramo-muted hover:text-paramo-frailejon transition-colors"
+                className="text-paramo-muted hover:text-paramo-frailejon transition-colors"
               >
                 <Plus size={20} strokeWidth={1.5} />
               </button>
@@ -68,7 +68,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   e.stopPropagation();
                   toggleTaskCompletion(task.id);
                 }}
-                className={`mt-0.5 transition-colors
+                className={`transition-colors
                   ${task.completed ? 'text-paramo-frailejon hover:text-white' : 'text-paramo-muted hover:text-paramo-frailejon'}
                 `}
               >

@@ -200,57 +200,60 @@ function App() {
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
       
-      <header className="p-4 md:p-6 mb-1 md:mb-2 flex justify-between items-start">
-        <div className="flex-1">
-          <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic">
+      <header className="p-4 md:p-6 mb-1 md:mb-2 flex flex-col gap-2">
+        <div className="w-full">
+          <h1 className="text-3xl md:text-4xl font-bold text-paramo-text tracking-tight italic truncate">
             {greeting}, <span className="text-paramo-frailejon">{(user?.full_name || user?.fullName || 'User').split(' ')[0]}</span>
           </h1>
-          <p className="text-paramo-muted mt-1 text-xs md:text-sm uppercase tracking-widest">
-            {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
-          </p>
         </div>
         
-        <div className="flex items-center gap-2">
-          {user?.role === 'admin' && (
-            <div className="relative group">
-              <button
-                onClick={handleGenerateInvite}
-                title="Generate Invitation"
-                className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors"
-              >
-                <UserPlus size={18} />
-              </button>
-              
-              {generatedInvite && (
-                <div className="absolute top-full right-0 mt-2 bg-paramo-card border border-white/10 p-3 rounded-xl shadow-2xl w-48 z-[200] animate-fadeIn">
-                  <p className="text-[10px] font-black uppercase text-paramo-muted mb-2 tracking-widest">One-time Code</p>
-                  <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/5 mb-2">
-                    <span className="text-xs font-mono text-white flex-1">{generatedInvite}</span>
-                    <button onClick={copyToClipboard} className="text-paramo-muted hover:text-white">
-                      {copied ? <Check size={14} className="text-paramo-frailejon" /> : <Copy size={14} />}
+        <div className="flex justify-between items-center w-full">
+          <p className="text-paramo-muted text-[10px] md:text-sm uppercase tracking-widest">
+            {new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+
+          <div className="flex items-center gap-2">
+            {user?.role === 'admin' && (
+              <div className="relative group">
+                <button
+                  onClick={handleGenerateInvite}
+                  title="Generate Invitation"
+                  className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors"
+                >
+                  <UserPlus size={18} />
+                </button>
+                
+                {generatedInvite && (
+                  <div className="absolute top-full right-0 mt-2 bg-paramo-card border border-white/10 p-3 rounded-xl shadow-2xl w-48 z-[200] animate-fadeIn">
+                    <p className="text-[10px] font-black uppercase text-paramo-muted mb-2 tracking-widest">One-time Code</p>
+                    <div className="flex items-center gap-2 bg-black/40 p-2 rounded-lg border border-white/5 mb-2">
+                      <span className="text-xs font-mono text-white flex-1">{generatedInvite}</span>
+                      <button onClick={copyToClipboard} className="text-paramo-muted hover:text-white">
+                        {copied ? <Check size={14} className="text-paramo-frailejon" /> : <Copy size={14} />}
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => setGeneratedInvite('')}
+                      className="w-full text-[10px] uppercase font-bold text-paramo-muted hover:text-white pt-1"
+                    >
+                      Close
                     </button>
                   </div>
-                  <button 
-                    onClick={() => setGeneratedInvite('')}
-                    className="w-full text-[10px] uppercase font-bold text-paramo-muted hover:text-white pt-1"
-                  >
-                    Close
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          <button
-            onClick={() => setIsReminderPanelOpen(true)}
-            title="Reminders"
-            className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
-          >
-            <FingerRibbonIcon size={20} />
-          </button>          
-          <button onClick={logout} title="Logout" className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
-            <LogOut size={18} />
-          </button>
+            <button
+              onClick={() => setIsReminderPanelOpen(true)}
+              title="Reminders"
+              className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
+            >
+              <FingerRibbonIcon size={20} />
+            </button>          
+            <button onClick={logout} title="Logout" className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
+              <LogOut size={18} />
+            </button>
+          </div>
         </div>
       </header>
 
