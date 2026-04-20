@@ -1,5 +1,6 @@
 import React from 'react'
 import { useReminderStore } from '../store/useReminderStore'
+import { stripMarkdown } from '../utils/textUtils'
 import { X, BellRing } from 'lucide-react'
 
 export const NotificationToast = () => {
@@ -30,7 +31,7 @@ export const NotificationToast = () => {
               <h4 className="text-sm font-bold text-white uppercase tracking-tight">
                 RECUERDA
               </h4>
-              <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">{alert.title}</p>
+              <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">{stripMarkdown(alert.title)}</p>
             </div>
 
             <button 

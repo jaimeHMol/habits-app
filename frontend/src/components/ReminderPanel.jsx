@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
 import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
+import { stripMarkdown } from '../utils/textUtils'
 import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
@@ -48,7 +49,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
   const handleAdd = (e) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    addReminder({ title: newTitle, intervalMinutes: parseInt(newInterval) });
+    addReminder({ title: stripMarkdown(newTitle), intervalMinutes: parseInt(newInterval) });
     setNewTitle('');
   };
 
@@ -160,7 +161,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
                 <div key={reminder.id} className={`p-4 rounded-xl border transition-all ${reminder.isActive ? 'bg-paramo-card border-white/10' : 'bg-black/10 border-white/5 opacity-60'}`}>
                   <div className="flex justify-between items-start gap-3">
                     <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-bold truncate ${reminder.isActive ? 'text-white' : 'text-paramo-muted'}`}>{reminder.title}</h4>
+                      <h4 className={`text-sm font-bold truncate ${reminder.isActive ? 'text-white' : 'text-paramo-muted'}`}>{stripMarkdown(reminder.title)}</h4>
                       <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">{t.every} {reminder.intervalMinutes} {t.minutes}</p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -196,7 +197,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
                   <div key={reminder.id} className="p-4 rounded-xl border bg-orange-500/5 border-orange-500/20">
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-bold text-white/90 truncate italic">{reminder.title}</h4>
+                        <h4 className="text-sm font-bold text-white/90 truncate italic">{stripMarkdown(reminder.title)}</h4>
                         <p className="text-[9px] text-orange-500/60 uppercase font-black mt-1 tracking-wider">{t.alerts_on_day}</p>
                       </div>
                       <div className="flex items-center gap-1">

@@ -10,6 +10,7 @@ from src.domain.models import (
     User,
 )
 from src.application.interfaces import ITaskRepository, IReminderRepository
+from src.application.utils import strip_markdown
 
 
 class TaskService:
@@ -166,7 +167,7 @@ class TaskService:
         )
 
         if should_have_reminder:
-            reminder_title = task.title
+            reminder_title = strip_markdown(task.title)
             if existing_reminder:
                 # Update if title changed
                 if existing_reminder.title != reminder_title:

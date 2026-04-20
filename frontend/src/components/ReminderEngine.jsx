@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
 import { useHabitStore } from '../store/useHabitStore'
+import { stripMarkdown } from '../utils/textUtils'
 
 const SLACK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'; // A clean "pop" sound
 
@@ -104,6 +105,8 @@ export const ReminderEngine = () => {
     };
 
     const triggerNotification = (reminder) => {
+      const plainTitle = stripMarkdown(reminder.title);
+
       // Audio: Use a fresh instance if needed or handle rapid plays
       try {
         const audio = new Audio(SLACK_SOUND_URL);
@@ -116,7 +119,7 @@ export const ReminderEngine = () => {
       try {
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification("RECUERDA", {
-            body: reminder.title,
+            body: plainTitle,
             icon: '/favicon.svg',
             silent: true // We handle sound ourselves
           });
@@ -126,7 +129,7 @@ export const ReminderEngine = () => {
       }
 
       // Add to store
-      addAlert(reminder);
+      addAlert({ ...reminder, title: plainTitle });
       setTriggered(reminder.id);
     };
 
