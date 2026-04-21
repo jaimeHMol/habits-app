@@ -136,7 +136,7 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
-  checkDayChange: () => {
+  checkDayChange: async () => {
     const { lastUsedDate, tasks } = get();
     const today = new Date();
     const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -152,13 +152,18 @@ export const useHabitStore = create((set, get) => ({
         resets.push('annually');
       }
 
-      const hasTasksToReview = tasks.some(t => resets.includes(t.columnId));
+      // We only show the modal if there are INCOMPLETE non-counter tasks to review.
+      // Counter tasks are reset automatically without requiring review if everything else is done.
+      const hasTasksToReview = tasks.some(t => 
+        resets.includes(t.columnId) && t.taskType !== 'counter' && !t.completed
+      );
       
       if (hasTasksToReview) {
         set({ pendingResets: resets, showReviewModal: true });
       } else {
-        set({ lastUsedDate: todayStr, pendingResets: [] });
-        taskApi.confirmReset(todayStr).catch(e => console.error("Sync failed", e));
+        // Skip modal but still perform resets for all pending columns
+        set({ pendingResets: resets });
+        await get().confirmReview([]);
       }
     } else if (!lastUsedDate) {
       set({ lastUsedDate: todayStr });

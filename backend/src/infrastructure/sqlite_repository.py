@@ -98,6 +98,7 @@ class SQLiteTaskRepository(ITaskRepository):
     def reset_daily_tasks(self, user_id: int) -> bool:
         """
         Sets completed=False for all tasks in the daily column.
+        For COUNTER tasks, resets current_count to 0.
         """
         try:
             statement = select(Task).where(
@@ -105,7 +106,10 @@ class SQLiteTaskRepository(ITaskRepository):
             )
             results = self.session.exec(statement).all()
             for task in results:
-                task.completed = False
+                if task.task_type == TaskType.COUNTER:
+                    task.current_count = 0
+                else:
+                    task.completed = False
                 self.session.add(task)
             self.session.commit()
             return True
@@ -138,6 +142,7 @@ class SQLiteTaskRepository(ITaskRepository):
     def reset_annually_tasks(self, user_id: int) -> bool:
         """
         Sets completed=False for all tasks in the annually column.
+        For COUNTER tasks, resets current_count to 0.
         """
         try:
             statement = select(Task).where(
@@ -145,7 +150,10 @@ class SQLiteTaskRepository(ITaskRepository):
             )
             results = self.session.exec(statement).all()
             for task in results:
-                task.completed = False
+                if task.task_type == TaskType.COUNTER:
+                    task.current_count = 0
+                else:
+                    task.completed = False
                 self.session.add(task)
             self.session.commit()
             return True

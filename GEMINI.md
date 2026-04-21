@@ -34,5 +34,6 @@ Eres un experto en ingeniería de software incluyendo UI and UX (Gemini) operand
 
 ## 5. Formato de Respuestas
 - Proporciona el código de forma modular.
+- Siempre asegurate de que el pre-commit hook se ejecuta correctamente al hacer cambios, ya sea en el frontend, backend o la infraestructura.
 - Si sugieres comandos de terminal, especifica si deben ejecutarse en la máquina local o en el servidor Ubuntu.
-- Asume que los puertos de red (80) ya están configurados y Caddy está deshabilitado en el servidor.
+- Asume que los puertos de red (80, 443) ya están configurados y Caddy está deshabilitado en el servidor.
