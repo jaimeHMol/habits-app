@@ -1,8 +1,12 @@
 import { taskApi } from './api';
 
 const urlBase64ToUint8Array = (base64String) => {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
+  // 1. Clean the string: remove whitespace, quotes, or newlines
+  const cleanedString = base64String.trim().replace(/["']/g, '');
+  
+  // 2. Standardize Base64URL to Base64
+  const padding = '='.repeat((4 - (cleanedString.length % 4)) % 4);
+  const base64 = (cleanedString + padding)
     .replace(/-/g, '+')
     .replace(/_/g, '/');
 
