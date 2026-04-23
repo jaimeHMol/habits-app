@@ -107,7 +107,7 @@ export const ReminderEngine = () => {
     const triggerNotification = (reminder) => {
       const plainTitle = stripMarkdown(reminder.title);
 
-      // Audio: Use a fresh instance if needed or handle rapid plays
+      // 1. Audio: Pop sound
       try {
         const audio = new Audio(SLACK_SOUND_URL);
         audio.play().catch(e => console.log("Audio play blocked"));
@@ -115,20 +115,7 @@ export const ReminderEngine = () => {
         console.error("Audio error", e);
       }
 
-      // Browser Notification
-      try {
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification("RECUERDA", {
-            body: plainTitle,
-            icon: '/favicon.svg',
-            silent: true // We handle sound ourselves
-          });
-        }
-      } catch (e) {
-        console.error("System notification error", e);
-      }
-
-      // Add to store
+      // 2. Add to store (This triggers the NotificationToast UI)
       addAlert({ ...reminder, title: plainTitle });
       setTriggered(reminder.id);
     };

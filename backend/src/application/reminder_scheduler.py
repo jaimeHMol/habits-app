@@ -96,7 +96,8 @@ class ReminderScheduler:
         else:
             diff_minutes = 999999  # First time
 
-        if diff_minutes >= reminder.interval_minutes:
+        # Give a small 10-second margin (0.16 min) to avoid missing cycles due to millisecond delays
+        if diff_minutes >= (reminder.interval_minutes - 0.16):
             self.push_service.send_notification(
                 user_id=user.id, title="RECUERDA", body=reminder.title
             )

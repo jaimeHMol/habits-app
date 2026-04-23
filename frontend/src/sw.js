@@ -16,26 +16,25 @@ self.addEventListener('push', (event) => {
       icon: payload.icon || '/favicon.svg',
       badge: payload.badge || '/pwa-192x192.png',
       data: payload.data || {},
-      vibrate: [200, 100, 200],
-      tag: 'habit-reminder', // Evita duplicados apilando bajo el mismo tag
-      renotify: true         // Fuerza vibración aunque el tag sea el mismo
+      vibrate: [300, 100, 400],
+      tag: 'habit-reminder',
+      renotify: true,
+      requireInteraction: false // En Android, esto ayuda a que no se quede "stuck"
     };
 
-    // HYBRID APPROACH mejorado:
     event.waitUntil(
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // Solo consideramos que la app está "Abierta" si al menos una ventana está VISIBLE y ENFOCADA
-        const isAppVisible = clientList.some(client => client.visibilityState === 'visible' && client.focused);
+        // ¿Hay alguna ventana de la app abierta y visible?
+        const isAppOpen = clientList.some(client => client.visibilityState === 'visible');
 
-        if (isAppVisible) {
-          // Enviar mensaje a la app para mostrar Toast interno + Sonido
+        if (isAppOpen) {
+          // Solo mandamos el mensaje interno
           channel.postMessage({
             type: 'PUSH_RECEIVED',
             payload: { title, ...options }
           });
-          // No mostramos notificación nativa para no molestar si el usuario ya está dentro
         } else {
-          // La app está en segundo plano, cerrada o bloqueada. Mostrar banner nativo.
+          // App cerrada o en background: Mostrar notificación obligatoria
           return self.registration.showNotification(title, options);
         }
       })
@@ -50,16 +49,10 @@ self.addEventListener('notificationclick', (event) => {
   
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Si hay una ventana abierta, enfocarla
-      for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
-        }
+      if (clientList.length > 0) {
+        return clientList[0].focus();
       }
-      // Si no, abrir una nueva
-      if (self.clients.openWindow) {
-        return self.clients.openWindow('/');
-      }
+      return self.clients.openWindow('/');
     })
   );
 });
