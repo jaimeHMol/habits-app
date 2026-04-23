@@ -17,24 +17,25 @@ self.addEventListener('push', (event) => {
       badge: payload.badge || '/pwa-192x192.png',
       data: payload.data || {},
       vibrate: [200, 100, 200],
+      tag: 'habit-reminder', // Evita duplicados apilando bajo el mismo tag
+      renotify: true         // Fuerza vibración aunque el tag sea el mismo
     };
 
-    // HYBRID APPROACH:
-    // Check if any client (window) is currently open and focused
+    // HYBRID APPROACH mejorado:
     event.waitUntil(
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        const isAppOpen = clientList.some(client => client.focused);
+        // Solo consideramos que la app está "Abierta" si al menos una ventana está VISIBLE y ENFOCADA
+        const isAppVisible = clientList.some(client => client.visibilityState === 'visible' && client.focused);
 
-        if (isAppOpen) {
-          // Send message to the app to show an in-app toast instead of a system notification
+        if (isAppVisible) {
+          // Enviar mensaje a la app para mostrar Toast interno + Sonido
           channel.postMessage({
             type: 'PUSH_RECEIVED',
             payload: { title, ...options }
           });
-          // We still might want to show the notification if the user explicitly wants both,
-          // but per plan, we avoid duplicates.
+          // No mostramos notificación nativa para no molestar si el usuario ya está dentro
         } else {
-          // App is closed or in background, show native notification
+          // La app está en segundo plano, cerrada o bloqueada. Mostrar banner nativo.
           return self.registration.showNotification(title, options);
         }
       })
@@ -47,13 +48,18 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  // Open the app when notification is clicked
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) {
-        return clientList[0].focus();
+      // Si hay una ventana abierta, enfocarla
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
       }
-      return self.clients.openWindow('/');
+      // Si no, abrir una nueva
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
     })
   );
 });

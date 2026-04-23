@@ -21,56 +21,31 @@ const urlBase64ToUint8Array = (base64String) => {
 
 export const subscribeToPush = async () => {
   try {
-    // A. Verificar soporte
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('Error: Su navegador no soporta Notificaciones Push.');
       return null;
     }
 
-    // B. Obtener SW (sin esperar infinitamente .ready)
     const registration = await navigator.serviceWorker.getRegistration();
-    if (!registration) {
-      alert('Error: No se encontró el Service Worker. ¿Añadió la app a Inicio?');
-      return null;
-    }
+    if (!registration) return null;
     
-    // C. Pedir Permiso (Esto DEBE ser lo primero tras el click)
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      alert('Permiso Denegado. Por favor, habilite notificaciones para este sitio en los ajustes de Chrome.');
-      return null;
-    }
+    if (permission !== 'granted') return null;
 
-    // D. Obtener Llave Pública del Servidor
-    let vapidPublicKey;
-    try {
-      const response = await taskApi.getVapidPublicKey();
-      vapidPublicKey = response.public_key;
-    } catch (e) {
-      alert('Error de Red: No se pudo obtener la llave del servidor. ' + e.message);
-      return null;
-    }
+    const response = await taskApi.getVapidPublicKey();
+    const vapidPublicKey = response.public_key;
     
-    if (!vapidPublicKey) {
-      alert('Error Backend: Llave VAPID vacía. Revise el .env del servidor.');
-      return null;
-    }
+    if (!vapidPublicKey) return null;
 
-    // E. Suscribir
-    alert('Suscribiendo dispositivo... por favor espere.');
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
 
-    // F. Enviar al Backend
     await taskApi.subscribePush(subscription);
-    alert('¡Notificaciones Push activadas con éxito!');
     return subscription;
 
   } catch (error) {
-    alert('Falla en suscripción: ' + error.name + ' - ' + error.message);
-    console.error(error);
+    console.error('Push subscription failed:', error);
     return null;
   }
 };

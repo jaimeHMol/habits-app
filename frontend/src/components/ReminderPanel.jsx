@@ -53,14 +53,13 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
         await unsubscribeFromPush();
         setIsPushEnabled(false);
       } else {
-        // subscribeToPush ahora manejará sus propios avisos internos
         const sub = await subscribeToPush();
         if (sub) {
           setIsPushEnabled(true);
         }
       }
     } catch (err) {
-      alert('Critical Toggle Error: ' + err.message);
+      console.error('Toggle error:', err);
     }
   };
 
