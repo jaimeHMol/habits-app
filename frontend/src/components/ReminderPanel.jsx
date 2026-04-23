@@ -48,12 +48,21 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   const handlePushToggle = async () => {
-    if (isPushEnabled) {
-      await unsubscribeFromPush();
-      setIsPushEnabled(false);
-    } else {
-      const sub = await subscribeToPush();
-      if (sub) setIsPushEnabled(true);
+    try {
+      if (isPushEnabled) {
+        await unsubscribeFromPush();
+        setIsPushEnabled(false);
+      } else {
+        const sub = await subscribeToPush();
+        if (sub) {
+          setIsPushEnabled(true);
+        } else {
+          // El sub ya muestra sus propios errores internos
+        }
+      }
+    } catch (err) {
+      console.error('Toggle error:', err);
+      alert('Toggle Error: ' + err.message);
     }
   };
 

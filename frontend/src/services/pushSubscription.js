@@ -17,20 +17,36 @@ const urlBase64ToUint8Array = (base64String) => {
 
 export const subscribeToPush = async () => {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn('Push notifications are not supported in this browser.');
+    alert('Push not supported by browser');
     return null;
   }
 
   try {
-    const registration = await navigator.serviceWorker.ready;
-    
-    // Get VAPID public key from backend
-    const { public_key: vapidPublicKey } = await taskApi.getVapidPublicKey();
-    if (!vapidPublicKey) {
-      console.warn('VAPID Public Key not found in backend.');
+    // 1. Check Service Worker Status
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      alert('No Service Worker found. Try reloading or re-installing the PWA.');
       return null;
     }
 
+    // 2. Request Permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('Notification permission denied. Please enable it in browser settings.');
+      return null;
+    }
+    
+    // 3. Get VAPID public key
+    const response = await taskApi.getVapidPublicKey();
+    const vapidPublicKey = response.public_key;
+    
+    if (!vapidPublicKey || vapidPublicKey === '') {
+      alert('Backend Error: VAPID public key is empty. Check .env in server.');
+      return null;
+    }
+
+    // 4. Subscribe
+    console.log('Subscribing with key:', vapidPublicKey);
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
