@@ -31,7 +31,7 @@ export const translations = {
     
     // Reminders
     reminders_title: "Reminders",
-    activity_window: "Activity Window",
+    activity_window: "Activity Window BORRAR",
     start: "Start",
     end: "End",
     new_reminder: "New Reminder",

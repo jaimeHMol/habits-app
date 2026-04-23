@@ -16,27 +16,36 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 export const subscribeToPush = async () => {
+  console.log('Starting subscribeToPush process...');
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('Push not supported by browser');
+    alert('Browser error: PushManager or SW not found');
     return null;
   }
 
   try {
     // 1. Check Service Worker Status
-    const registration = await navigator.serviceWorker.getRegistration();
+    let registration = await navigator.serviceWorker.getRegistration();
+    
     if (!registration) {
-      alert('No Service Worker found. Try reloading or re-installing the PWA.');
+      console.log('No registration found, waiting for ready...');
+      registration = await navigator.serviceWorker.ready;
+    }
+
+    if (!registration) {
+      alert('SW Error: Still no registration found.');
       return null;
     }
 
     // 2. Request Permission
+    console.log('Requesting permission...');
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      alert('Notification permission denied. Please enable it in browser settings.');
+      alert('Permission denied. Go to Android Settings > Apps > Chrome > Notifications to enable.');
       return null;
     }
     
     // 3. Get VAPID public key
+    console.log('Fetching public key from API...');
     const response = await taskApi.getVapidPublicKey();
     const vapidPublicKey = response.public_key;
     
