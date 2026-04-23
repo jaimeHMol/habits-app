@@ -16,57 +16,57 @@ const urlBase64ToUint8Array = (base64String) => {
 };
 
 export const subscribeToPush = async () => {
-  console.log('Starting subscribeToPush process...');
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    alert('Browser error: PushManager or SW not found');
-    return null;
-  }
-
   try {
-    // 1. Check Service Worker Status
-    let registration = await navigator.serviceWorker.getRegistration();
-    
-    if (!registration) {
-      console.log('No registration found, waiting for ready...');
-      registration = await navigator.serviceWorker.ready;
-    }
-
-    if (!registration) {
-      alert('SW Error: Still no registration found.');
+    // A. Verificar soporte
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('Error: Su navegador no soporta Notificaciones Push.');
       return null;
     }
 
-    // 2. Request Permission
-    console.log('Requesting permission...');
+    // B. Obtener SW (sin esperar infinitamente .ready)
+    const registration = await navigator.serviceWorker.getRegistration();
+    if (!registration) {
+      alert('Error: No se encontró el Service Worker. ¿Añadió la app a Inicio?');
+      return null;
+    }
+    
+    // C. Pedir Permiso (Esto DEBE ser lo primero tras el click)
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
-      alert('Permission denied. Go to Android Settings > Apps > Chrome > Notifications to enable.');
-      return null;
-    }
-    
-    // 3. Get VAPID public key
-    console.log('Fetching public key from API...');
-    const response = await taskApi.getVapidPublicKey();
-    const vapidPublicKey = response.public_key;
-    
-    if (!vapidPublicKey || vapidPublicKey === '') {
-      alert('Backend Error: VAPID public key is empty. Check .env in server.');
+      alert('Permiso Denegado. Por favor, habilite notificaciones para este sitio en los ajustes de Chrome.');
       return null;
     }
 
-    // 4. Subscribe
-    console.log('Subscribing with key:', vapidPublicKey);
+    // D. Obtener Llave Pública del Servidor
+    let vapidPublicKey;
+    try {
+      const response = await taskApi.getVapidPublicKey();
+      vapidPublicKey = response.public_key;
+    } catch (e) {
+      alert('Error de Red: No se pudo obtener la llave del servidor. ' + e.message);
+      return null;
+    }
+    
+    if (!vapidPublicKey) {
+      alert('Error Backend: Llave VAPID vacía. Revise el .env del servidor.');
+      return null;
+    }
+
+    // E. Suscribir
+    alert('Suscribiendo dispositivo... por favor espere.');
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
     });
 
-    // Send subscription to backend
+    // F. Enviar al Backend
     await taskApi.subscribePush(subscription);
-    console.log('Successfully subscribed to Push Notifications');
+    alert('¡Notificaciones Push activadas con éxito!');
     return subscription;
+
   } catch (error) {
-    console.error('Failed to subscribe to push notifications:', error);
+    alert('Falla en suscripción: ' + error.name + ' - ' + error.message);
+    console.error(error);
     return null;
   }
 };
