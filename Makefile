@@ -80,3 +80,8 @@ backup-manual: ## Run a manual database backup
 	@echo "Running manual backup..."
 	@mkdir -p backups
 	DB_FILE=backend/habits.db BACKUP_DIR=backups ./backend/scripts/backup.sh
+
+# --- Utilidades de Seguridad ---
+vapid-gen: ## Generate VAPID keys for Push Notifications
+	@echo "Generating VAPID keys..."
+	@cd backend && . venv/bin/activate && python3 -c "import base64; from cryptography.hazmat.primitives import serialization; from cryptography.hazmat.primitives.asymmetric import ec; priv = ec.generate_private_key(ec.SECP256R1()); pub = priv.public_key(); priv_bytes = priv.private_numbers().private_value.to_bytes(32, 'big'); pub_bytes = pub.public_bytes(serialization.Encoding.X962, serialization.PublicFormat.UncompressedPoint); print('\n--- COPY TO YOUR .ENV ---'); print(f'VAPID_PRIVATE_KEY={base64.urlsafe_b64encode(priv_bytes).decode().strip(\"=\")}'); print(f'VAPID_PUBLIC_KEY={base64.urlsafe_b64encode(pub_bytes).decode().strip(\"=\")}')"
