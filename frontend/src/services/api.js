@@ -273,5 +273,45 @@ export const taskApi = {
       credentials: 'include'
     });
     return handleResponse(response);
+  },
+
+  // --- Push Notifications ---
+  getVapidPublicKey: async () => {
+    const response = await fetch(`${BASE_URL}/push/vapid-public-key`, {
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  subscribePush: async (subscription) => {
+    // subscription is the PushSubscription object from the browser
+    const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh'))));
+    const auth = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))));
+    
+    const response = await fetch(`${BASE_URL}/push/subscribe`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        p256dh: p256dh,
+        auth: auth
+      }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  unsubscribePush: async (subscription) => {
+    const response = await fetch(`${BASE_URL}/push/unsubscribe`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        endpoint: subscription.endpoint,
+        p256dh: '', // Not needed for delete
+        auth: ''
+      }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
   }
 };

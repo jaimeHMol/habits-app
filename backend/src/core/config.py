@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str  # Mandatory
 
+    # Web Push (VAPID)
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:admin@example.com"
+
     # Database
     @property
     def database_url(self) -> str:

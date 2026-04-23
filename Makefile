@@ -34,13 +34,13 @@ test-front: ## Run frontend tests
 	@echo "Starting test suite in React..."
 	cd frontend && npm run test
 
-lint-back: ## Run Ruff linter and formatter check on backend
-	@echo "Running Ruff (linter/formatter)..."
-	cd backend && . venv/bin/activate && ruff check . && ruff format --check .
+lint-back: ## Run Ruff linter and formatter, fixing auto-fixable issues
+	@echo "Running Ruff (linter/formatter) with auto-fix..."
+	cd backend && . venv/bin/activate && ruff check --fix . && ruff format .
 
-lint-front: ## Run ESLint on frontend
-	@echo "Running ESLint..."
-	cd frontend && npm run lint
+lint-front: ## Run ESLint and fix auto-fixable issues
+	@echo "Running ESLint with auto-fix..."
+	cd frontend && npm run lint:fix
 
 # --- Gestión de Usuarios ---
 manage-admin: ## Create or update the admin user from environment variables

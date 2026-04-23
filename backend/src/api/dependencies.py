@@ -1,13 +1,19 @@
 from fastapi import Depends
 from sqlmodel import Session
 from src.infrastructure.database import get_session
-from src.application.interfaces import ITaskRepository, IReminderRepository
+from src.application.interfaces import (
+    ITaskRepository,
+    IReminderRepository,
+    IPushSubscriptionRepository,
+)
 from src.infrastructure.sqlite_repository import (
     SQLiteTaskRepository,
     SQLiteReminderRepository,
     SQLiteUserRepository,
+    SQLitePushSubscriptionRepository,
 )
 from src.application.services import TaskService, ReminderService, UserService
+from src.application.push_service import PushService
 
 
 # 1. Provide the Repository implementation
@@ -55,3 +61,15 @@ def get_user_service(
     repository: SQLiteUserRepository = Depends(get_user_repository),
 ) -> UserService:
     return UserService(repository=repository)
+
+
+def get_push_subscription_repository(
+    session: Session = Depends(get_session),
+) -> IPushSubscriptionRepository:
+    return SQLitePushSubscriptionRepository(session=session)
+
+
+def get_push_service(
+    repository: IPushSubscriptionRepository = Depends(get_push_subscription_repository),
+) -> PushService:
+    return PushService(repository=repository)

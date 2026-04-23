@@ -43,6 +43,9 @@ export const translations = {
     alerts_on_day: "3 alerts on due day",
     managed_by_task: "Managed by task",
     every: "Every",
+    native_notifications: "Native Notifications",
+    enable_push: "Enable Push Alerts",
+    push_not_supported: "Push not supported",
     
     // Toast
     remember_header: "RECUERDA",
@@ -136,6 +139,9 @@ export const translations = {
     alerts_on_day: "3 avisos en el día",
     managed_by_task: "Gestionado por la tarea",
     every: "Cada",
+    native_notifications: "Notificaciones Nativas",
+    enable_push: "Activar Alertas Push",
+    push_not_supported: "Push no soportado",
     
     // Toast
     remember_header: "RECUERDA",

@@ -7,6 +7,8 @@ from src.domain.models import (
     Reminder,
     ReminderCreate,
     ReminderUpdate,
+    PushSubscription,
+    User,
 )
 
 
@@ -99,3 +101,35 @@ class IReminderRepository(Protocol):
     ) -> Optional[Reminder]: ...
 
     def delete(self, reminder_id: int, user_id: int) -> bool: ...
+
+
+class IPushSubscriptionRepository(Protocol):
+    """
+    Interface (Port) for Push Notification Subscriptions.
+    """
+
+    def get_all_for_user(self, user_id: int) -> List[PushSubscription]: ...
+
+    def get_all(self) -> List[PushSubscription]: ...
+
+    def create(
+        self, user_id: int, endpoint: str, p256dh: str, auth: str
+    ) -> PushSubscription: ...
+
+    def delete_by_endpoint(self, endpoint: str) -> bool: ...
+
+
+class IUserRepository(Protocol):
+    """
+    Interface (Port) for User data persistence.
+    """
+
+    def get_all(self) -> List[User]: ...
+
+    def get_by_id(self, user_id: int) -> Optional[User]: ...
+
+    def update_settings(
+        self, user_id: int, start_time: str, end_time: str, language: str
+    ) -> Optional[User]: ...
+
+    def update_last_reset_date(self, user_id: int, date_str: str) -> bool: ...

@@ -16,8 +16,12 @@ from src.api.dependencies import (
     get_task_service,
     get_reminder_service,
     get_user_service,
+    get_push_subscription_repository,
+    get_push_service,
 )
 from src.api.security import get_current_user
+from src.application.push_service import PushService
+from src.application.interfaces import IPushSubscriptionRepository
 
 router = APIRouter(
     prefix="/tasks",
@@ -264,3 +268,49 @@ def confirm_reset(
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update reset date")
     return {"message": "Reset confirmed"}
+
+
+# --- Push Notifications Router ---
+push_router = APIRouter(
+    prefix="/push",
+    tags=["Push Notifications"],
+)
+
+
+class PushSubscriptionCreate(BaseModel):
+    endpoint: str
+    p256dh: str
+    auth: str
+
+
+@push_router.get("/vapid-public-key")
+def get_vapid_public_key(service: PushService = Depends(get_push_service)):
+    return {"public_key": service.get_public_key()}
+
+
+@push_router.post("/subscribe", status_code=status.HTTP_201_CREATED)
+def subscribe(
+    subscription: PushSubscriptionCreate,
+    current_user: User = Depends(get_current_user),
+    repo: IPushSubscriptionRepository = Depends(get_push_subscription_repository),
+):
+    repo.create(
+        user_id=current_user.id,
+        endpoint=subscription.endpoint,
+        p256dh=subscription.p256dh,
+        auth=subscription.auth,
+    )
+    return {"message": "Subscribed successfully"}
+
+
+@push_router.post("/unsubscribe")
+def unsubscribe(
+    subscription: PushSubscriptionCreate,
+    current_user: User = Depends(get_current_user),
+    repo: IPushSubscriptionRepository = Depends(get_push_subscription_repository),
+):
+    # We use endpoint to identify the subscription to remove
+    success = repo.delete_by_endpoint(subscription.endpoint)
+    if not success:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    return {"message": "Unsubscribed successfully"}

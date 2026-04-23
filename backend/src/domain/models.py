@@ -89,6 +89,7 @@ class ReminderBase(SQLModel):
     is_active: bool = Field(default=True)
     user_id: Optional[int] = Field(default=None, index=True)
     task_id: Optional[int] = Field(default=None, index=True)
+    last_triggered_at: Optional[datetime] = Field(default=None)
 
 
 class Reminder(ReminderBase, table=True):
@@ -105,6 +106,17 @@ class ReminderUpdate(SQLModel):
     interval_minutes: Optional[int] = Field(default=None, gt=0)
     is_active: Optional[bool] = None
     task_id: Optional[int] = None
+    last_triggered_at: Optional[datetime] = None
+
+
+class PushSubscription(SQLModel, table=True):
+    __tablename__ = "push_subscriptions"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True)
+    endpoint: str = Field(unique=True)
+    p256dh: str
+    auth: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class TaskCompletionLog(SQLModel, table=True):

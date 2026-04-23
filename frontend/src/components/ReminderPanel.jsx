@@ -3,7 +3,8 @@ import { useReminderStore } from '../store/useReminderStore'
 import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
 import { stripMarkdown } from '../utils/textUtils'
-import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown } from 'lucide-react'
+import { checkPushSubscription, subscribeToPush, unsubscribeFromPush } from '../services/pushSubscription'
+import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown, Smartphone } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -28,7 +29,33 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
   
   const [newTitle, setNewTitle] = useState('');
   const [newInterval, setNewInterval] = useState(60);
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [pushSupported, setPushSupported] = useState(true);
   const panelRef = useRef(null);
+
+  useEffect(() => {
+    const checkPush = async () => {
+      const isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
+      setPushSupported(isSupported);
+      if (isSupported) {
+        const subscribed = await checkPushSubscription();
+        setIsPushEnabled(subscribed);
+      }
+    };
+    if (isOpen) {
+      checkPush();
+    }
+  }, [isOpen]);
+
+  const handlePushToggle = async () => {
+    if (isPushEnabled) {
+      await unsubscribeFromPush();
+      setIsPushEnabled(false);
+    } else {
+      const sub = await subscribeToPush();
+      if (sub) setIsPushEnabled(true);
+    }
+  };
 
   // Close on click outside
   useEffect(() => {
@@ -96,6 +123,28 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
                 className="w-full bg-black/20 border border-white/5 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-paramo-frailejon"
               />
             </div>
+          </div>
+        </section>
+
+        {/* Native Push Section */}
+        <section className="space-y-4">
+          <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
+            <Smartphone size={14} /> {t.native_notifications}
+          </h3>
+          <div className="bg-black/20 border border-white/5 rounded-xl p-4 flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-white/90">{t.enable_push}</p>
+              {!pushSupported && <p className="text-[10px] text-red-400/70 uppercase font-black">{t.push_not_supported}</p>}
+            </div>
+            <button
+              onClick={handlePushToggle}
+              disabled={!pushSupported}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isPushEnabled ? 'bg-paramo-frailejon' : 'bg-white/10'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isPushEnabled ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
           </div>
         </section>
 

@@ -11,8 +11,14 @@ from src.domain.models import (
     ReminderCreate,
     ReminderUpdate,
     User,
+    PushSubscription,
 )
-from src.application.interfaces import ITaskRepository, IReminderRepository
+from src.application.interfaces import (
+    ITaskRepository,
+    IReminderRepository,
+    IPushSubscriptionRepository,
+    IUserRepository,
+)
 
 
 class SQLiteTaskRepository(ITaskRepository):
@@ -292,13 +298,20 @@ class SQLiteReminderRepository(IReminderRepository):
         return True
 
 
-class SQLiteUserRepository:
+class SQLiteUserRepository(IUserRepository):
     """
     Minimal repository for user settings.
     """
 
     def __init__(self, session: Session):
         self.session = session
+
+    def get_all(self) -> List[User]:
+        statement = select(User)
+        return self.session.exec(statement).all()
+
+    def get_by_id(self, user_id: int) -> Optional[User]:
+        return self.session.get(User, user_id)
 
     def update_settings(
         self, user_id: int, start_time: str, end_time: str, language: str
@@ -325,5 +338,57 @@ class SQLiteUserRepository:
             return False
         db_user.last_period_reset_date = date_str
         self.session.add(db_user)
+        self.session.commit()
+        return True
+
+
+class SQLitePushSubscriptionRepository(IPushSubscriptionRepository):
+    """
+    SQLite Adapter for the Push Subscription Repository.
+    """
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def get_all_for_user(self, user_id: int) -> List[PushSubscription]:
+        statement = select(PushSubscription).where(PushSubscription.user_id == user_id)
+        return self.session.exec(statement).all()
+
+    def get_all(self) -> List[PushSubscription]:
+        statement = select(PushSubscription)
+        return self.session.exec(statement).all()
+
+    def create(
+        self, user_id: int, endpoint: str, p256dh: str, auth: str
+    ) -> PushSubscription:
+        # Check if endpoint already exists to avoid duplicates (unique constraint handled by DB, but good to be explicit)
+        statement = select(PushSubscription).where(
+            PushSubscription.endpoint == endpoint
+        )
+        existing = self.session.exec(statement).first()
+        if existing:
+            existing.user_id = user_id
+            existing.p256dh = p256dh
+            existing.auth = auth
+            db_sub = existing
+        else:
+            db_sub = PushSubscription(
+                user_id=user_id, endpoint=endpoint, p256dh=p256dh, auth=auth
+            )
+            self.session.add(db_sub)
+
+        self.session.commit()
+        self.session.refresh(db_sub)
+        return db_sub
+
+    def delete_by_endpoint(self, endpoint: str) -> bool:
+        statement = select(PushSubscription).where(
+            PushSubscription.endpoint == endpoint
+        )
+        db_sub = self.session.exec(statement).first()
+        if not db_sub:
+            return False
+
+        self.session.delete(db_sub)
         self.session.commit()
         return True

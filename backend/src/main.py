@@ -2,16 +2,34 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.core.config import settings
-from src.api.routers import router as tasks_router, reminders_router, users_router
+from src.api.routers import (
+    router as tasks_router,
+    reminders_router,
+    users_router,
+    push_router,
+)
 from src.api.auth_router import router as auth_router
+from src.application.push_service import PushService
+from src.application.reminder_scheduler import ReminderScheduler
+from src.infrastructure.sqlite_repository import SQLitePushSubscriptionRepository
+from src.infrastructure.database import engine
+from sqlmodel import Session
 
 
 # Lifespan context manager runs code before the app starts accepting requests
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Database initialization is now handled via migrations
+    # Initialize PushService and Scheduler
+    with Session(engine) as session:
+        push_repo = SQLitePushSubscriptionRepository(session)
+        push_service = PushService(push_repo)
+        scheduler = ReminderScheduler(push_service)
+        app.state.scheduler = scheduler
+        scheduler.start()
+
     yield
-    # Code here runs on app shutdown (not needed for SQLite)
+    # Shutdown scheduler on app stop
+    app.state.scheduler.shutdown()
 
 
 app = FastAPI(
@@ -37,6 +55,7 @@ app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(reminders_router)
 app.include_router(users_router)
+app.include_router(push_router)
 
 
 @app.get("/")
