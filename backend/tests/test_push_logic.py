@@ -64,7 +64,10 @@ async def test_scheduler_triggers_interval_reminder(db_session):
 
     # Use assert_any_call to ignore calls for other users if they somehow persisted
     mock_push.send_notification.assert_any_call(
-        user_id=user.id, title="RECUERDA", body="Test Push"
+        user_id=user.id,
+        title="RECUERDA",
+        body="Test Push",
+        data={"reminder_id": reminder.id},
     )
 
     db_session.refresh(reminder)

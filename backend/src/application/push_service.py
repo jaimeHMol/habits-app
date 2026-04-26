@@ -34,7 +34,7 @@ class PushService:
         payload = {
             "title": title,
             "body": body,
-            "icon": "/favicon.svg",
+            "icon": "/pwa-192x192.png",
             "badge": "/pwa-192x192.png",
             "data": data or {},
         }

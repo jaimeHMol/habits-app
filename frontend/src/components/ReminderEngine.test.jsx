@@ -13,20 +13,22 @@ describe('ReminderEngine', () => {
   const mockFetchReminders = vi.fn()
   const mockSetTriggered = vi.fn()
 
+  // Mock BroadcastChannel
+  let mockPostMessage = vi.fn()
+  let channelInstance
+
   beforeEach(() => {
     vi.clearAllMocks()
     
     useReminderStore.mockReturnValue({
       reminders: [],
       userSettings: { dayStartTime: '08:00', dayEndTime: '20:00' },
-      lastTriggeredAt: {},
       addAlert: mockAddAlert,
       fetchReminders: mockFetchReminders,
       setTriggered: mockSetTriggered
     })
 
     useHabitStore.mockReturnValue({
-      tasks: [],
       isAuthenticated: true
     })
 
@@ -37,6 +39,17 @@ describe('ReminderEngine', () => {
       }
     }
 
+    // Mock BroadcastChannel
+    global.BroadcastChannel = class {
+      constructor(name) {
+        this.name = name
+        this.onmessage = null
+        channelInstance = this
+      }
+      postMessage = mockPostMessage
+      close = vi.fn()
+    }
+
     // Mock Notification
     global.Notification = class {
       static permission = 'granted'
@@ -45,44 +58,34 @@ describe('ReminderEngine', () => {
     }
   })
 
-  it('should not trigger anything if no reminders', () => {
+  it('should not trigger anything if no message received', () => {
     render(<ReminderEngine />)
     expect(mockAddAlert).not.toHaveBeenCalled()
   })
 
-  it('should trigger a task-based alert when in a slot time', () => {
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
-    const dayOfMonth = new Date().getDate();
-
-    useReminderStore.mockReturnValue({
-      reminders: [
-        { id: 1, title: 'Task Alert', task_id: 101, isActive: true }
-      ],
-      userSettings: { dayStartTime: '08:00', dayEndTime: '20:00' },
-      lastTriggeredAt: {},
-      addAlert: mockAddAlert,
-      fetchReminders: mockFetchReminders,
-      setTriggered: mockSetTriggered
-    })
-
-    useHabitStore.mockReturnValue({
-      tasks: [
-        { id: 101, title: 'Test Task', columnId: 'monthly', targetDay: dayOfMonth, completed: false }
-      ],
-      isAuthenticated: true
-    })
-
-    // Mock current time to be 08:01 (Slot 1 is 08:00)
-    vi.useFakeTimers()
-    const now = new Date()
-    now.setHours(8, 1, 0)
-    vi.setSystemTime(now)
-
+  it('should trigger alert when receiving PUSH_RECEIVED message', () => {
     render(<ReminderEngine />)
     
-    expect(mockAddAlert).toHaveBeenCalled()
-    expect(localStorage.getItem(`slot_1_0_${today}`)).toBe('true')
+    // Simulate receiving a message from the Service Worker
+    const mockPayload = {
+      title: 'Push Title',
+      body: 'Push Body',
+      data: { task_id: 123, reminder_id: 456 }
+    }
     
-    vi.useRealTimers()
+    channelInstance.onmessage({
+      data: {
+        type: 'PUSH_RECEIVED',
+        payload: mockPayload
+      }
+    })
+
+    expect(mockAddAlert).toHaveBeenCalledWith({
+      title: 'Push Title',
+      body: 'Push Body',
+      task_id: 123,
+      id: 456
+    })
+    expect(mockSetTriggered).toHaveBeenCalledWith(456)
   })
 })

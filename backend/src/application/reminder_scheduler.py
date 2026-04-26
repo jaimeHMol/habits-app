@@ -99,7 +99,10 @@ class ReminderScheduler:
         # Give a small 10-second margin (0.16 min) to avoid missing cycles due to millisecond delays
         if diff_minutes >= (reminder.interval_minutes - 0.16):
             self.push_service.send_notification(
-                user_id=user.id, title="RECUERDA", body=reminder.title
+                user_id=user.id,
+                title="RECUERDA",
+                body=reminder.title,
+                data={"reminder_id": reminder.id},
             )
             # Update last_triggered_at
             reminder_repo.update(
@@ -165,7 +168,11 @@ class ReminderScheduler:
                     user_id=user.id,
                     title="RECORDATORIO DE TAREA",
                     body=reminder.title,
-                    data={"task_id": task.id, "slot_index": index},
+                    data={
+                        "task_id": task.id,
+                        "slot_index": index,
+                        "reminder_id": reminder.id,
+                    },
                 )
 
                 # Update last_triggered_at

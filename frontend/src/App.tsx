@@ -39,20 +39,9 @@ function App() {
     login, register, logout, fetchUserProfile, language, setLanguage,
     showReviewModal, checkDayChange, activeTimer, tickTimer, generateInvite 
   } = useHabitStore()
-  
-  const { fetchReminders, addAlert } = useReminderStore()
-  
-  // Service Worker Messaging: Listen for push notifications when app is open
-  useEffect(() => {
-    const channel = new BroadcastChannel('reminders-channel');
-    channel.onmessage = (event) => {
-      if (event.data?.type === 'PUSH_RECEIVED') {
-        const { title, body, data } = event.data.payload;
-        addAlert({ title, body, task_id: data?.task_id });
-      }
-    };
-    return () => channel.close();
-  }, [addAlert]);
+  const { fetchReminders } = useReminderStore()
+
+  // Initial and Automatic Refresh Logic
 
   const [activeMobileColumn, setActiveMobileColumn] = useState('daily')
   const [authMode, setAuthMode] = useState('login') 

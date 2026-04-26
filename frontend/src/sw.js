@@ -11,34 +11,32 @@ self.addEventListener('push', (event) => {
   try {
     const payload = event.data.json();
     const title = payload.title || 'RECUERDA';
+    
+    // CRITICAL: Android Chrome DOES NOT support SVG icons in notifications.
+    // Using PNG icons from the public directory.
     const options = {
       body: payload.body,
-      icon: payload.icon || '/favicon.svg',
-      badge: payload.badge || '/pwa-192x192.png',
+      icon: '/pwa-192x192.png',
+      badge: '/pwa-192x192.png',
       data: payload.data || {},
       vibrate: [300, 100, 400],
       tag: 'habit-reminder',
       renotify: true,
-      requireInteraction: false // En Android, esto ayuda a que no se quede "stuck"
+      requireInteraction: false
     };
 
-    event.waitUntil(
-      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        // ¿Hay alguna ventana de la app abierta y visible?
-        const isAppOpen = clientList.some(client => client.visibilityState === 'visible');
+    // Broadcast message to the app (if open) to show in-app feedback (Toast/Sound)
+    channel.postMessage({
+      type: 'PUSH_RECEIVED',
+      payload: { title, ...options }
+    });
 
-        if (isAppOpen) {
-          // Solo mandamos el mensaje interno
-          channel.postMessage({
-            type: 'PUSH_RECEIVED',
-            payload: { title, ...options }
-          });
-        } else {
-          // App cerrada o en background: Mostrar notificación obligatoria
-          return self.registration.showNotification(title, options);
-        }
-      })
+    // CRITICAL: On Android Chrome, EVERY push event MUST call showNotification.
+    // If we skip it (even if app is open), Chrome shows a "phantom" generic notification.
+    event.waitUntil(
+      self.registration.showNotification(title, options)
     );
+    
   } catch (err) {
     console.error('Push event error:', err);
   }
@@ -49,10 +47,16 @@ self.addEventListener('notificationclick', (event) => {
   
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) {
-        return clientList[0].focus();
+      // If a window is already open, focus it
+      for (const client of clientList) {
+        if (client.url === '/' && 'focus' in client) {
+          return client.focus();
+        }
       }
-      return self.clients.openWindow('/');
+      // Otherwise open the app
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
+      }
     })
   );
 });
