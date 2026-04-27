@@ -3,8 +3,9 @@ import json
 import logging
 from typing import Optional
 
+from pywebpush import WebPusher, WebPushException
+from py_vapid import Vapid
 from cryptography.hazmat.primitives.asymmetric import ec
-from pywebpush import WebPushException, webpush
 
 from src.application.interfaces import IPushSubscriptionRepository
 from src.core.config import settings
@@ -18,40 +19,44 @@ class PushService:
         self.public_key = settings.vapid_public_key
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
-        self._private_key_obj = None
+        self._vapid_obj = None
 
-    def _get_private_key_object(self):
+    def _prepare_vapid_object(self):
         """
-        Creates a real EllipticCurvePrivateKey object from the base64 string.
-        This is the only way to satisfy recent versions of the cryptography library.
+        Manually creates a Vapid object to bypass pywebpush's buggy path-checking logic.
+        This is the most professional way to handle modern cryptography compatibility.
         """
-        if self._private_key_obj:
-            return self._private_key_obj
+        if self._vapid_obj:
+            return self._vapid_obj
 
         try:
-            # 1. Clean and decode base64
+            # 1. Decode base64 private key
             key_str = self.private_key.strip().replace('"', "").replace("'", "")
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
-
             private_key_bytes = base64.urlsafe_b64decode(key_str)
 
-            # 2. Reconstruct the key object using the exact Elliptic Curve (SECP256R1)
-            # This creates a real 'EllipticCurvePrivateKey' instance.
-            self._private_key_obj = ec.derive_private_key(
+            # 2. Create a Vapid instance and manually set the private key object
+            # This ensures cryptography receives a real EllipticCurvePrivateKey instance
+            vapid = Vapid()
+            vapid.private_key = ec.derive_private_key(
                 int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
             )
-            return self._private_key_obj
+            # Public key must also be set for signing
+            vapid.public_key = vapid.private_key.public_key()
+
+            self._vapid_obj = vapid
+            return vapid
         except Exception as e:
-            logger.error(f"Critical error loading VAPID key object: {e}")
+            logger.error(f"Critical error initializing VAPID object: {e}")
             return None
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
         """
-        Sends a push notification to all subscriptions of a user.
+        Sends a push notification bypassing the buggy webpush() constructor.
         """
         results = []
         if not self.private_key or not self.public_key:
@@ -69,10 +74,10 @@ class PushService:
             "data": data or {},
         }
 
-        # IMPORTANT: We use the reconstructed object directly
-        vapid_key = self._get_private_key_object()
-        if not vapid_key:
-            return [{"error": "Could not reconstruct VAPID key object"}]
+        # Prepare the Vapid object once
+        vapid_obj = self._prepare_vapid_object()
+        if not vapid_obj:
+            return [{"error": "Internal VAPID initialization failed"}]
 
         for sub in subscriptions:
             try:
@@ -81,21 +86,27 @@ class PushService:
                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
                 }
 
-                # Passing the EC object to 'vapid_private_key' is supported
-                # and bypasses the faulty string/file parsing logic of pywebpush
-                webpush(
+                # CRITICAL FIX: We instantiate WebPusher with vapid_private_key=None
+                # to prevent it from calling its internal (and buggy) Vapid.from_string()
+                wp = WebPusher(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=vapid_key,
+                    vapid_private_key=None,
                     vapid_claims={"sub": self.subject},
                 )
+
+                # We manually inject our perfectly constructed Vapid object
+                wp._vapid = vapid_obj
+
+                # Now send() will use our injected object without any path/string checks
+                wp.send()
+
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
             except WebPushException as ex:
                 results.append({"endpoint": sub.endpoint[:20], "error": str(ex)})
                 if ex.response and ex.response.status_code in [404, 410]:
                     self.repository.delete_by_endpoint(sub.endpoint)
             except Exception as e:
-                # Catching and reporting the exact error string for debugging
                 results.append({"error": str(e)})
 
         return results
