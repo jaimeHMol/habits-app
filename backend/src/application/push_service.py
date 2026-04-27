@@ -1,13 +1,12 @@
 import base64
 import json
 import logging
-import os
-import tempfile
+import time
 from typing import Optional
 
-from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
+import jwt  # Usaremos PyJWT que ya está en tus requirements
 
 from src.application.interfaces import IPushSubscriptionRepository
 from src.core.config import settings
@@ -22,40 +21,51 @@ class PushService:
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
 
-    def _get_private_key_pem(self):
+    def _generate_vapid_headers(self, endpoint):
         """
-        Reconstructs the Elliptic Curve private key and exports it as a PEM string.
+        Manually generates VAPID headers using PyJWT.
+        This bypasses ALL the buggy logic in pywebpush and py-vapid.
         """
         try:
+            # 1. Reconstruct the Private Key Object
             key_str = self.private_key.strip().replace('"', "").replace("'", "")
             padding = len(key_str) % 4
-            if padding:
-                key_str += "=" * (4 - padding)
-
+            if padding: key_str += "=" * (4 - padding)
             private_key_bytes = base64.urlsafe_b64decode(key_str)
-
-            # Reconstruct the key object using the exact Elliptic Curve (SECP256R1)
+            
             priv_key_obj = ec.derive_private_key(
                 int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
             )
 
-            # Export to PEM format (Traditional OpenSSL)
-            pem_bytes = priv_key_obj.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
-            return pem_bytes.decode("utf-8")
+            # 2. Create the Claims
+            # The 'aud' must be the origin of the push service
+            from urllib.parse import urlparse
+            parsed_url = urlparse(endpoint)
+            audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
+
+            claims = {
+                "sub": self.subject,
+                "aud": audience,
+                "exp": int(time.time()) + 43200  # 12 hours
+            }
+
+            # 3. Sign the JWT manually
+            token = jwt.encode(claims, priv_key_obj, algorithm="ES256")
+
+            # 4. Return the headers in the format pywebpush expects for 'vapid_headers'
+            return {
+                "Authorization": f"WebPush {token}",
+                "Crypto-Key": f"p256ecdsa={self.public_key.strip()}"
+            }
         except Exception as e:
-            logger.error(f"Critical error loading VAPID key: {e}")
+            logger.error(f"Manual VAPID generation failed: {e}")
             return None
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
         """
-        Sends a push notification using a temporary file for the VAPID key.
-        This is the most bulletproof way to use the library.
+        Sends a push notification using manually generated VAPID headers.
         """
         results = []
         if not self.private_key or not self.public_key:
@@ -65,7 +75,6 @@ class PushService:
         if not subscriptions:
             return [{"error": "No subscriptions found for user"}]
 
-        # Prepare payload
         payload = {
             "title": title,
             "body": body,
@@ -74,44 +83,34 @@ class PushService:
             "data": data or {},
         }
 
-        # Generate PEM string
-        pem_content = self._get_private_key_pem()
-        if not pem_content:
-            return [{"error": "Could not generate VAPID PEM content"}]
+        for sub in subscriptions:
+            try:
+                # Generate headers for THIS specific endpoint
+                vapid_headers = self._generate_vapid_headers(sub.endpoint)
+                
+                if not vapid_headers:
+                    results.append({"error": "Failed to generate manual VAPID headers"})
+                    continue
 
-        # Use a temporary file to bypass all library parsing bugs
-        tmp_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
-        try:
-            tmp_file.write(pem_content)
-            tmp_file.close()
-            tmp_path = tmp_file.name
+                subscription_info = {
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                }
 
-            for sub in subscriptions:
-                try:
-                    subscription_info = {
-                        "endpoint": sub.endpoint,
-                        "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
-                    }
-
-                    # Passing a REAL FILE PATH is the library's most supported path
-                    webpush(
-                        subscription_info=subscription_info,
-                        data=json.dumps(payload),
-                        vapid_private_key=tmp_path,
-                        vapid_claims={"sub": self.subject},
-                    )
-                    results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
-                except WebPushException as ex:
-                    results.append({"endpoint": sub.endpoint[:20], "error": str(ex)})
-                    if ex.response and ex.response.status_code in [404, 410]:
-                        self.repository.delete_by_endpoint(sub.endpoint)
-                except Exception as e:
-                    results.append({"error": str(e)})
-
-        finally:
-            # Always clean up the temporary key file
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+                # We pass 'vapid_headers' instead of 'vapid_private_key'.
+                # This tells pywebpush: "Don't touch the keys, just use these headers".
+                webpush(
+                    subscription_info=subscription_info,
+                    data=json.dumps(payload),
+                    vapid_headers=vapid_headers
+                )
+                results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
+            except WebPushException as ex:
+                results.append({"endpoint": sub.endpoint[:20], "error": str(ex)})
+                if ex.response and ex.response.status_code in [404, 410]:
+                    self.repository.delete_by_endpoint(sub.endpoint)
+            except Exception as e:
+                results.append({"error": str(e)})
 
         return results
 
