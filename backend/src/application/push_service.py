@@ -1,9 +1,10 @@
+import base64
 import json
 import logging
 from typing import Optional
 
+from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
-from py_vapid import Vapid
 
 from src.application.interfaces import IPushSubscriptionRepository
 from src.core.config import settings
@@ -17,29 +18,33 @@ class PushService:
         self.public_key = settings.vapid_public_key
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
-        self._vapid_instance = None
+        self._private_key_obj = None
 
-    def _get_vapid_instance(self):
+    def _get_private_key_object(self):
         """
-        Creates a Vapid instance from the Base64 private key.
-        This uses the official 'from_string' method which handles raw base64.
+        Creates a real EllipticCurvePrivateKey object from the base64 string.
+        This is the only way to satisfy recent versions of the cryptography library.
         """
-        if self._vapid_instance:
-            return self._vapid_instance
+        if self._private_key_obj:
+            return self._private_key_obj
 
         try:
-            key_str = self.private_key.strip()
-            # Ensure correct padding for base64
+            # 1. Clean and decode base64
+            key_str = self.private_key.strip().replace('"', "").replace("'", "")
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
 
-            # Reconstruct Vapid object from the base64 string
-            vapid = Vapid.from_string(key_str)
-            self._vapid_instance = vapid
-            return vapid
+            private_key_bytes = base64.urlsafe_b64decode(key_str)
+
+            # 2. Reconstruct the key object using the exact Elliptic Curve (SECP256R1)
+            # This creates a real 'EllipticCurvePrivateKey' instance.
+            self._private_key_obj = ec.derive_private_key(
+                int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
+            )
+            return self._private_key_obj
         except Exception as e:
-            logger.error(f"Failed to load VAPID key: {e}")
+            logger.error(f"Critical error loading VAPID key object: {e}")
             return None
 
     def send_notification(
@@ -64,10 +69,10 @@ class PushService:
             "data": data or {},
         }
 
-        # Initialize the Vapid object
-        vapid = self._get_vapid_instance()
-        if not vapid:
-            return [{"error": "Internal error: Could not initialize VAPID"}]
+        # IMPORTANT: We use the reconstructed object directly
+        vapid_key = self._get_private_key_object()
+        if not vapid_key:
+            return [{"error": "Could not reconstruct VAPID key object"}]
 
         for sub in subscriptions:
             try:
@@ -76,11 +81,12 @@ class PushService:
                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
                 }
 
-                # Passing the Vapid object directly is the most stable method
+                # Passing the EC object to 'vapid_private_key' is supported
+                # and bypasses the faulty string/file parsing logic of pywebpush
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=vapid,
+                    vapid_private_key=vapid_key,
                     vapid_claims={"sub": self.subject},
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
@@ -89,6 +95,7 @@ class PushService:
                 if ex.response and ex.response.status_code in [404, 410]:
                     self.repository.delete_by_endpoint(sub.endpoint)
             except Exception as e:
+                # Catching and reporting the exact error string for debugging
                 results.append({"error": str(e)})
 
         return results
