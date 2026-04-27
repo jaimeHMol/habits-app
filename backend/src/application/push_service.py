@@ -1,5 +1,6 @@
 import json
 import logging
+import base64
 from typing import Optional
 from pywebpush import webpush, WebPushException
 from src.core.config import settings
@@ -14,6 +15,22 @@ class PushService:
         self.public_key = settings.vapid_public_key
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
+
+    def _get_decoded_private_key(self):
+        """
+        Helper to decode the private key correctly for pywebpush.
+        It must be a Base64-decoded byte string.
+        """
+        try:
+            # Add padding if missing
+            key = self.private_key
+            padding = len(key) % 4
+            if padding:
+                key += "=" * (4 - padding)
+            return base64.urlsafe_b64decode(key)
+        except Exception as e:
+            logger.error(f"Failed to decode private key: {e}")
+            return self.private_key
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
@@ -38,6 +55,9 @@ class PushService:
             "data": data or {},
         }
 
+        # Get correctly formatted private key
+        private_key_decoded = self._get_decoded_private_key()
+
         for sub in subscriptions:
             try:
                 subscription_info = {
@@ -48,7 +68,7 @@ class PushService:
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=self.private_key,
+                    vapid_private_key=private_key_decoded,
                     vapid_claims={"sub": self.subject},
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
