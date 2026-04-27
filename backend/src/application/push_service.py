@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 from typing import Optional
@@ -22,29 +21,25 @@ class PushService:
 
     def _get_vapid_instance(self):
         """
-        Creates and caches a Vapid instance directly from raw bytes.
-        This bypasses all PEM/String/File parsing issues.
+        Creates a Vapid instance from the Base64 private key.
+        This uses the official 'from_string' method which handles raw base64.
         """
         if self._vapid_instance:
             return self._vapid_instance
 
         try:
-            # 1. Prepare raw bytes from base64
             key_str = self.private_key.strip()
+            # Ensure correct padding for base64
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
-            private_key_bytes = base64.urlsafe_b64decode(key_str)
 
-            # 2. Create Vapid instance using the internal from_raw method
-            # This is the most direct way supported by py-vapid
-            vapid = Vapid()
-            # Internally py-vapid uses the 32 bytes of the private key
-            vapid.private_key = vapid._private_key_from_bytes(private_key_bytes)
+            # Reconstruct Vapid object from the base64 string
+            vapid = Vapid.from_string(key_str)
             self._vapid_instance = vapid
             return vapid
         except Exception as e:
-            logger.error(f"Failed to create Vapid instance: {e}")
+            logger.error(f"Failed to load VAPID key: {e}")
             return None
 
     def send_notification(
@@ -69,8 +64,10 @@ class PushService:
             "data": data or {},
         }
 
-        # Get the initialized Vapid instance
+        # Initialize the Vapid object
         vapid = self._get_vapid_instance()
+        if not vapid:
+            return [{"error": "Internal error: Could not initialize VAPID"}]
 
         for sub in subscriptions:
             try:
@@ -79,8 +76,7 @@ class PushService:
                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
                 }
 
-                # We pass the Vapid instance to the 'vapid_private_key' parameter.
-                # pywebpush is smart enough to use it if it's not a string.
+                # Passing the Vapid object directly is the most stable method
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
