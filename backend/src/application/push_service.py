@@ -22,26 +22,23 @@ class PushService:
 
     def _prepare_vapid_object(self):
         """
-        Manually creates a Vapid object to bypass pywebpush's buggy path-checking logic.
+        Uses the officially discovered 'from_raw' method to load the VAPID key.
+        This is the most direct and compatible way for Vapid02.
         """
         if self._vapid_obj:
             return self._vapid_obj, None
 
         try:
-            # 1. Decode base64 private key
+            # 1. Decode base64 to raw bytes (VAPID keys are 32 bytes)
             key_str = self.private_key.strip().replace('"', "").replace("'", "")
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
 
-            # Use urlsafe_b64decode as it's the standard for VAPID
             private_key_bytes = base64.urlsafe_b64decode(key_str)
 
-            # 2. Create Vapid instance and set the private key
-            vapid = Vapid()
-            # We use the internal helper of py-vapid to ensure the curve is correctly set
-            vapid.private_key = vapid._private_key_from_bytes(private_key_bytes)
-            vapid.public_key = vapid.private_key.public_key()
+            # 2. Use the 'from_raw' method discovered via server inspection
+            vapid = Vapid.from_raw(private_key_bytes)
 
             self._vapid_obj = vapid
             return vapid, None
@@ -54,7 +51,7 @@ class PushService:
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
         """
-        Sends a push notification to all subscriptions of a user.
+        Sends a push notification using the validated Vapid object.
         """
         results = []
         if not self.private_key or not self.public_key:
@@ -84,7 +81,7 @@ class PushService:
                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
                 }
 
-                # Using WebPusher directly
+                # We pass the Vapid object to WebPusher
                 wp = WebPusher(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
