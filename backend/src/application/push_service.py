@@ -1,9 +1,13 @@
+import base64
 import json
 import logging
 from typing import Optional
-from pywebpush import webpush, WebPushException
-from src.core.config import settings
+
+from cryptography.hazmat.primitives.asymmetric import ec
+from pywebpush import WebPushException, webpush
+
 from src.application.interfaces import IPushSubscriptionRepository
+from src.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -15,33 +19,34 @@ class PushService:
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
 
-    def _get_formatted_private_key(self):
+    def _get_private_key_object(self):
         """
-        Pywebpush expects the private key as a base64 encoded string.
-        However, it needs correct padding to avoid decoding errors.
+        Reconstructs an EllipticCurvePrivateKey object from the Base64 VAPID private key.
+        This is the most robust way to avoid 'curve must be an EllipticCurve instance' errors.
         """
         try:
-            key = self.private_key.strip()
-            # Ensure it's a string, not bytes
-            if isinstance(key, bytes):
-                key = key.decode("utf-8")
-
-            # Remove any existing padding and re-add it correctly
-            key = key.rstrip("=")
-            padding = len(key) % 4
+            # 1. Ensure correct padding for base64 decoding
+            key_str = self.private_key.strip()
+            padding = len(key_str) % 4
             if padding:
-                key += "=" * (4 - padding)
-            return key
+                key_str += "=" * (4 - padding)
+
+            # 2. Decode from Base64 URL-safe to raw bytes
+            private_key_bytes = base64.urlsafe_b64decode(key_str)
+
+            # 3. Create the Private Key object using the SECP256R1 curve (standard for VAPID)
+            return ec.derive_private_key(
+                int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
+            )
         except Exception as e:
-            logger.error(f"Failed to format private key: {e}")
-            return self.private_key
+            logger.error(f"Failed to reconstruct VAPID private key object: {e}")
+            return self.private_key  # Fallback to raw string
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
         """
         Sends a push notification to all subscriptions of a user.
-        Returns a list of results for debugging.
         """
         results = []
         if not self.private_key or not self.public_key:
@@ -59,8 +64,8 @@ class PushService:
             "data": data or {},
         }
 
-        # Get correctly formatted private key string
-        private_key_ready = self._get_formatted_private_key()
+        # Pre-calculate the key object once
+        key_object = self._get_private_key_object()
 
         for sub in subscriptions:
             try:
@@ -72,7 +77,7 @@ class PushService:
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=private_key_ready,
+                    vapid_private_key=key_object,
                     vapid_claims={"sub": self.subject},
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
