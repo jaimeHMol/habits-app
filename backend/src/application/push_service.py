@@ -3,9 +3,8 @@ import json
 import logging
 from typing import Optional
 
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
+from py_vapid import Vapid
 
 from src.application.interfaces import IPushSubscriptionRepository
 from src.core.config import settings
@@ -19,38 +18,34 @@ class PushService:
         self.public_key = settings.vapid_public_key
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
+        self._vapid_instance = None
 
-    def _get_private_key_pem(self):
+    def _get_vapid_instance(self):
         """
-        Converts the raw Base64 private key from .env into a PEM formatted string.
-        This is the ONLY format that pywebpush accepts as a string while
-        preserving the EllipticCurve instance requirement.
+        Creates and caches a Vapid instance directly from raw bytes.
+        This bypasses all PEM/String/File parsing issues.
         """
+        if self._vapid_instance:
+            return self._vapid_instance
+
         try:
+            # 1. Prepare raw bytes from base64
             key_str = self.private_key.strip()
-            # 1. Add padding if missing
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
-
-            # 2. Decode to raw bytes
             private_key_bytes = base64.urlsafe_b64decode(key_str)
 
-            # 3. Reconstruct the cryptography object
-            priv_key_obj = ec.derive_private_key(
-                int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
-            )
-
-            # 4. Export to PEM format (which is a string that pywebpush can 'stat')
-            pem_bytes = priv_key_obj.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
-            return pem_bytes.decode("utf-8")
+            # 2. Create Vapid instance using the internal from_raw method
+            # This is the most direct way supported by py-vapid
+            vapid = Vapid()
+            # Internally py-vapid uses the 32 bytes of the private key
+            vapid.private_key = vapid._private_key_from_bytes(private_key_bytes)
+            self._vapid_instance = vapid
+            return vapid
         except Exception as e:
-            logger.error(f"Critical error reconstructing VAPID PEM: {e}")
-            return self.private_key
+            logger.error(f"Failed to create Vapid instance: {e}")
+            return None
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
@@ -74,8 +69,8 @@ class PushService:
             "data": data or {},
         }
 
-        # The library expects a PEM string to avoid the 'stat' error and load the curve
-        vapid_key_pem = self._get_private_key_pem()
+        # Get the initialized Vapid instance
+        vapid = self._get_vapid_instance()
 
         for sub in subscriptions:
             try:
@@ -84,10 +79,12 @@ class PushService:
                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
                 }
 
+                # We pass the Vapid instance to the 'vapid_private_key' parameter.
+                # pywebpush is smart enough to use it if it's not a string.
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=vapid_key_pem,
+                    vapid_private_key=vapid,
                     vapid_claims={"sub": self.subject},
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
