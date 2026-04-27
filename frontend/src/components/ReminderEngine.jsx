@@ -97,13 +97,16 @@ export const ReminderEngine = () => {
     return () => clearInterval(interval);
   }, [reminders, userSettings, lastTriggeredAt, isAuthenticated, tasks, addAlert, setTriggered]);
 
-  // 4. LOGICA PUSH (Para Toasts cuando llega un mensaje del servidor)
+  // 4. LOGICA PUSH
   useEffect(() => {
     const channel = new BroadcastChannel('reminders-channel');
     channel.onmessage = (event) => {
+      if (event.data?.type === 'DEBUG') {
+        alert(event.data.message);
+      }
       if (event.data?.type === 'PUSH_RECEIVED') {
+        alert('APP: ¡Mensaje de Push recibido desde el SW!');
         const { title, body, data } = event.data.payload;
-        // Solo sonar y mostrar toast si no se acaba de mostrar localmente
         triggerNotification({ title, body, id: data?.reminder_id, task_id: data?.task_id });
       }
     };
