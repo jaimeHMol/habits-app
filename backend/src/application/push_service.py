@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Optional
 
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
 
@@ -19,28 +20,37 @@ class PushService:
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
 
-    def _get_private_key_object(self):
+    def _get_private_key_pem(self):
         """
-        Reconstructs an EllipticCurvePrivateKey object from the Base64 VAPID private key.
-        This is the most robust way to avoid 'curve must be an EllipticCurve instance' errors.
+        Converts the raw Base64 private key from .env into a PEM formatted string.
+        This is the ONLY format that pywebpush accepts as a string while
+        preserving the EllipticCurve instance requirement.
         """
         try:
-            # 1. Ensure correct padding for base64 decoding
             key_str = self.private_key.strip()
+            # 1. Add padding if missing
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
 
-            # 2. Decode from Base64 URL-safe to raw bytes
+            # 2. Decode to raw bytes
             private_key_bytes = base64.urlsafe_b64decode(key_str)
 
-            # 3. Create the Private Key object using the SECP256R1 curve (standard for VAPID)
-            return ec.derive_private_key(
+            # 3. Reconstruct the cryptography object
+            priv_key_obj = ec.derive_private_key(
                 int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
             )
+
+            # 4. Export to PEM format (which is a string that pywebpush can 'stat')
+            pem_bytes = priv_key_obj.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.TraditionalOpenSSL,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+            return pem_bytes.decode("utf-8")
         except Exception as e:
-            logger.error(f"Failed to reconstruct VAPID private key object: {e}")
-            return self.private_key  # Fallback to raw string
+            logger.error(f"Critical error reconstructing VAPID PEM: {e}")
+            return self.private_key
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
@@ -64,8 +74,8 @@ class PushService:
             "data": data or {},
         }
 
-        # Pre-calculate the key object once
-        key_object = self._get_private_key_object()
+        # The library expects a PEM string to avoid the 'stat' error and load the curve
+        vapid_key_pem = self._get_private_key_pem()
 
         for sub in subscriptions:
             try:
@@ -77,7 +87,7 @@ class PushService:
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=key_object,
+                    vapid_private_key=vapid_key_pem,
                     vapid_claims={"sub": self.subject},
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
