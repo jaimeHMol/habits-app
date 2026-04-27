@@ -1,6 +1,5 @@
 import json
 import logging
-import base64
 from typing import Optional
 from pywebpush import webpush, WebPushException
 from src.core.config import settings
@@ -16,20 +15,25 @@ class PushService:
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
 
-    def _get_decoded_private_key(self):
+    def _get_formatted_private_key(self):
         """
-        Helper to decode the private key correctly for pywebpush.
-        It must be a Base64-decoded byte string.
+        Pywebpush expects the private key as a base64 encoded string.
+        However, it needs correct padding to avoid decoding errors.
         """
         try:
-            # Add padding if missing
-            key = self.private_key
+            key = self.private_key.strip()
+            # Ensure it's a string, not bytes
+            if isinstance(key, bytes):
+                key = key.decode("utf-8")
+
+            # Remove any existing padding and re-add it correctly
+            key = key.rstrip("=")
             padding = len(key) % 4
             if padding:
                 key += "=" * (4 - padding)
-            return base64.urlsafe_b64decode(key)
+            return key
         except Exception as e:
-            logger.error(f"Failed to decode private key: {e}")
+            logger.error(f"Failed to format private key: {e}")
             return self.private_key
 
     def send_notification(
@@ -55,8 +59,8 @@ class PushService:
             "data": data or {},
         }
 
-        # Get correctly formatted private key
-        private_key_decoded = self._get_decoded_private_key()
+        # Get correctly formatted private key string
+        private_key_ready = self._get_formatted_private_key()
 
         for sub in subscriptions:
             try:
@@ -68,7 +72,7 @@ class PushService:
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
-                    vapid_private_key=private_key_decoded,
+                    vapid_private_key=private_key_ready,
                     vapid_claims={"sub": self.subject},
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
