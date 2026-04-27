@@ -66,9 +66,10 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
 
   const handleTestPush = async () => {
     try {
-      await taskApi.sendTestPush();
+      const res = await taskApi.sendTestPush();
+      alert('Resultado: ' + JSON.stringify(res.details));
     } catch (err) {
-      console.error('Test push error:', err);
+      alert('Error al pedir prueba: ' + err.message);
     }
   };
 

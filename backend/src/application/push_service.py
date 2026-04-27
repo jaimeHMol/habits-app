@@ -20,16 +20,15 @@ class PushService:
     ):
         """
         Sends a push notification to all subscriptions of a user.
+        Returns a list of results for debugging.
         """
+        results = []
         if not self.private_key or not self.public_key:
-            logger.warning(
-                f"Skipping push for user {user_id}: VAPID keys not configured"
-            )
-            return
+            return [{"error": "VAPID keys not configured"}]
 
         subscriptions = self.repository.get_all_for_user(user_id)
         if not subscriptions:
-            return
+            return [{"error": "No subscriptions found for user"}]
 
         payload = {
             "title": title,
@@ -52,16 +51,15 @@ class PushService:
                     vapid_private_key=self.private_key,
                     vapid_claims={"sub": self.subject},
                 )
+                results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
             except WebPushException as ex:
-                logger.error(f"WebPush error: {ex}")
-                # If the subscription is expired or invalid (410 Gone or 404 Not Found)
+                results.append({"endpoint": sub.endpoint[:20], "error": str(ex)})
                 if ex.response and ex.response.status_code in [404, 410]:
-                    logger.info(
-                        f"Removing invalid subscription for endpoint: {sub.endpoint}"
-                    )
                     self.repository.delete_by_endpoint(sub.endpoint)
             except Exception as e:
-                logger.exception(f"Unexpected error sending push: {e}")
+                results.append({"error": str(e)})
+
+        return results
 
     def get_public_key(self) -> str:
         return self.public_key

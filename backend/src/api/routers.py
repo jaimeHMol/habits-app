@@ -321,10 +321,10 @@ def test_push(
     current_user: User = Depends(get_current_user),
     push_service: PushService = Depends(get_push_service),
 ):
-    push_service.send_notification(
+    results = push_service.send_notification(
         user_id=current_user.id,
         title="PRUEBA PUSH",
         body="Si ves esto, las notificaciones nativas funcionan perfectamente.",
         data={"type": "test"},
     )
-    return {"message": "Test push sent"}
+    return {"message": "Test push attempted", "details": results}
