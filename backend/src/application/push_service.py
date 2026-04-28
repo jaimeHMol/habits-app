@@ -6,6 +6,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import jwt
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from pywebpush import WebPushException, webpush
 
@@ -24,50 +25,62 @@ class PushService:
 
     def _generate_manual_vapid_headers(self, endpoint):
         """
-        Gathers the VAPID headers manually using PyJWT.
-        This bypasses pywebpush and py-vapid completely for the VAPID part.
+        Gathers the VAPID headers manually with line-by-line debug tracking.
         """
+        step = "INICIO"
         try:
-            # 1. Reconstruct the EC Private Key from base64
+            # 1. Reconstruct the EC Private Key
+            step = "DECODE_BASE64"
             key_str = self.private_key.strip().replace('"', "").replace("'", "")
             padding = len(key_str) % 4
             if padding:
                 key_str += "=" * (4 - padding)
             private_key_bytes = base64.urlsafe_b64decode(key_str)
 
-            # Create the private key object
+            step = "DERIVE_KEY_OBJ"
             priv_key_obj = ec.derive_private_key(
                 int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
             )
 
-            # 2. Prepare JWT Claims
+            # 2. Convert to PEM (This is the most compatible format for PyJWT)
+            step = "CONVERT_TO_PEM"
+            pem_key = priv_key_obj.private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption(),
+            )
+
+            # 3. Prepare JWT Claims
+            step = "PARSE_ENDPOINT"
             parsed_url = urlparse(endpoint)
             audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
+            step = "PREPARE_CLAIMS"
             claims = {
                 "sub": self.subject,
                 "aud": audience,
-                "exp": int(time.time()) + 43200,  # 12 hours
+                "exp": int(time.time()) + 43200,
             }
 
-            # 3. Sign JWT using ES256 (The VAPID standard)
-            token = jwt.encode(claims, priv_key_obj, algorithm="ES256")
+            # 4. Sign JWT using the PEM key string (extremely robust)
+            step = "JWT_ENCODE"
+            token = jwt.encode(claims, pem_key, algorithm="ES256")
 
-            # 4. Construct Headers
-            # We provide BOTH formats (modern and legacy) for maximum compatibility with FCM and Mozilla
+            step = "HEADERS_BUILD"
             return {
                 "Authorization": f"WebPush {token}",
                 "Crypto-Key": f"p256ecdsa={self.public_key.strip()}",
             }
         except Exception as e:
-            logger.error(f"Manual VAPID Header Generation failed: {e}")
-            return None
+            msg = f"Falla en {step}: {type(e).__name__} - {str(e)}"
+            logger.error(msg)
+            return {"error_step": msg}
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
         """
-        Sends a push notification using manually signed headers.
+        Sends a push notification with verbose error reporting.
         """
         results = []
         if not self.private_key or not self.public_key:
@@ -87,10 +100,11 @@ class PushService:
 
         for sub in subscriptions:
             try:
-                # Generate headers for THIS endpoint
-                vapid_headers = self._generate_manual_vapid_headers(sub.endpoint)
-                if not vapid_headers:
-                    results.append({"error": "Failed to sign VAPID token"})
+                # 1. Generate headers
+                res_headers = self._generate_manual_vapid_headers(sub.endpoint)
+
+                if "error_step" in res_headers:
+                    results.append({"error": res_headers["error_step"]})
                     continue
 
                 subscription_info = {
@@ -98,22 +112,23 @@ class PushService:
                     "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
                 }
 
-                # CRITICAL: We pass the headers to the 'headers' argument via **kwargs.
-                # We set vapid_private_key to None so the library doesn't try to parse it.
+                # 2. Attempt push
+                # Note: We pass vapid_private_key=None to force pywebpush
+                # to NOT use its internal signing logic.
                 webpush(
                     subscription_info=subscription_info,
                     data=json.dumps(payload),
                     vapid_private_key=None,
-                    headers=vapid_headers,
+                    headers=res_headers,
                 )
                 results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
+
             except WebPushException as ex:
-                results.append({"endpoint": sub.endpoint[:20], "error": str(ex)})
-                if ex.response and ex.response.status_code in [404, 410]:
-                    self.repository.delete_by_endpoint(sub.endpoint)
+                results.append({"error": f"Libreria_Push: {str(ex)}"})
             except Exception as e:
-                # This will catch any other error and show the exact message in the alert
-                results.append({"error": f"{type(e).__name__}: {str(e)}"})
+                results.append(
+                    {"error": f"General_Error: {type(e).__name__}: {str(e)}"}
+                )
 
         return results
 
