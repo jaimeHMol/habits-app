@@ -5,13 +5,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 const channel = new BroadcastChannel('reminders-channel');
 
 self.addEventListener('push', (event) => {
-  // TRUCO DE DEBUG: Avisar a la app que el SW recibió ALGO
-  channel.postMessage({ type: 'DEBUG', message: 'SW: ¡Evento PUSH recibido!' });
-
-  if (!event.data) {
-    channel.postMessage({ type: 'DEBUG', message: 'SW: Evento push sin datos' });
-    return;
-  }
+  if (!event.data) return;
 
   try {
     const payload = event.data.json();
@@ -24,17 +18,20 @@ self.addEventListener('push', (event) => {
       data: payload.data || {},
       vibrate: [300, 100, 400],
       tag: 'habit-reminder',
-      renotify: true
+      renotify: true,
+      requireInteraction: false
     };
 
+    // Notify the app if it's open
     channel.postMessage({ type: 'PUSH_RECEIVED', payload: { title, ...options } });
 
+    // Show native notification
     event.waitUntil(
       self.registration.showNotification(title, options)
     );
     
   } catch (err) {
-    channel.postMessage({ type: 'DEBUG', message: 'SW ERROR: ' + err.message });
+    console.error('Push event error:', err);
   }
 });
 

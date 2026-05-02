@@ -101,11 +101,7 @@ export const ReminderEngine = () => {
   useEffect(() => {
     const channel = new BroadcastChannel('reminders-channel');
     channel.onmessage = (event) => {
-      if (event.data?.type === 'DEBUG') {
-        alert(event.data.message);
-      }
       if (event.data?.type === 'PUSH_RECEIVED') {
-        alert('APP: ¡Mensaje de Push recibido desde el SW!');
         const { title, body, data } = event.data.payload;
         triggerNotification({ title, body, id: data?.reminder_id, task_id: data?.task_id });
       }

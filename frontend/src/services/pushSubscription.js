@@ -41,18 +41,9 @@ const subscription = await registration.pushManager.subscribe({
   applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
 });
 
-alert('TOKEN GENERADO: ' + subscription.endpoint.substring(0, 30) + '...');
-
 // 4. Send subscription to backend
-try {
-  await taskApi.subscribePush(subscription);
-  alert('¡Suscripción guardada en el Servidor!');
-} catch (e) {
-  alert('ERROR al guardar en servidor: ' + e.message);
-}
-
+await taskApi.subscribePush(subscription);
 return subscription;
-
 
   } catch (error) {
     console.error('Push subscription failed:', error);

@@ -154,6 +154,27 @@ The application has been hardened following industry best practices to ensure da
 - **Named Volumes:** The SQLite database is stored in a managed Docker volume (`habit_data`) mapped to `/app/data/` inside the container. This improves performance and prevents host-level file permission issues.
 - **Automated Backups:** A dedicated backup service performs an atomic copy of the SQLite database daily at **4:00 AM** (America/Bogota) and keeps a **30-day rotation**. Backups are stored in the `./backups` directory on the host.
 
+## 🔔 Native Push Notifications (Mobile/PWA)
+
+The application supports native mobile notifications even when the browser is closed. Due to technical limitations in the PWA standard and bugs in common Python libraries, several critical workarounds were implemented:
+
+### 🛠️ Technical Workarounds
+1.  **PNG Icons Only**: Android Chrome **fails silently** if a notification uses an SVG icon. All push notifications are hardcoded to use `/pwa-192x192.png`.
+2.  **Library Bypass (The "Nuclear Fix")**: Standard libraries like `pywebpush` and `py-vapid` suffer from a `TypeError: curve must be an EllipticCurve instance` when used with modern versions of the `cryptography` library. 
+    - **Solution**: We bypassed the high-level library constructors. VAPID tokens are signed manually using `PyJWT` (ES256), and payloads are encrypted using the low-level `http_ece` engine. 
+3.  **Nginx Proxying**: New API routes under `/push/` must be explicitly proxied in `nginx.conf` to reach the backend.
+4.  **Service Worker Lifecycle**: Mobile browsers are aggressive with caching. When updating notification logic, users must often clear site data in Chrome settings to register the new `sw.js`.
+
+### 🔑 VAPID Key Management
+VAPID keys are the security handshake between your server and Google/Apple.
+1.  **Generate Keys**: Run `make vapid-gen` in your local environment.
+2.  **Configure `.env`**: Copy the `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` to your server's `.env`.
+3.  **Contact Email**: Set `VAPID_SUBJECT=mailto:your-email@example.com` as required by the protocol.
+
+### 📱 Mobile Setup
+- **HTTPS is Mandatory**: Push notifications will not work over plain HTTP.
+- **Add to Home Screen**: On Android and iOS (16.4+), the app must be installed as a PWA (via "Add to Home Screen") to receive background notifications reliably.
+
 ---
 
 ## 🛠 Maintenance & Troubleshooting
