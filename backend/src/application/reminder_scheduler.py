@@ -1,9 +1,9 @@
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import List
-from sqlmodel import Session
+from sqlmodel import Session, select
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from src.domain.models import ColumnId, Reminder, User
+from src.domain.models import ColumnId, Reminder, User, Task
 from src.infrastructure.database import engine
 from src.infrastructure.sqlite_repository import (
     SQLiteReminderRepository,
@@ -42,6 +42,42 @@ class ReminderScheduler:
             users = user_repo.get_all()
             for user in users:
                 await self._check_user_reminders(user, reminder_repo, task_repo)
+                await self._check_active_timers(user, task_repo)
+
+    async def _check_active_timers(self, user: User, task_repo: SQLiteTaskRepository):
+        """
+        Check for focus timers that have expired while the app was closed.
+        """
+        now_utc = self.datetime_now()
+        # Find tasks for this user that have a timer set but not yet triggered
+        statement = select(Task).where(
+            Task.user_id == user.id,
+            Task.timer_end_time.is_not(None),  # noqa: E711
+            Task.timer_triggered == False,  # noqa: E712
+            Task.completed == False,  # noqa: E712
+        )
+        active_tasks_with_timers = task_repo.session.exec(statement).all()
+
+        for task in active_tasks_with_timers:
+            # Ensure timer_end_time is offset-aware for comparison if it's stored as naive UTC
+            end_time = task.timer_end_time
+            if end_time.tzinfo is None:
+                end_time = end_time.replace(tzinfo=timezone.utc)
+
+            if now_utc >= end_time:
+                # Timer expired! Send push notification.
+                self.push_service.send_notification(
+                    user_id=user.id,
+                    title="RECUERDA",
+                    body=f"Timer finalizado: {task.title}",
+                    data={"task_id": task.id, "type": "timer_end"},
+                )
+
+                # Mark as triggered and completed in DB
+                task.timer_triggered = True
+                task.completed = True
+                task_repo.session.add(task)
+                task_repo.session.commit()
 
     async def _check_user_reminders(
         self,

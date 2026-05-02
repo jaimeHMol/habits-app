@@ -33,6 +33,8 @@ class TaskBase(SQLModel):
     completed: bool = Field(default=False)
     is_collapsed: bool = Field(default=True)
     duration_minutes: Optional[int] = Field(default=None)
+    timer_end_time: Optional[datetime] = Field(default=None)
+    timer_triggered: bool = Field(default=False)
     current_count: int = Field(default=0)
     order_index: int = Field(default=0)  # To persist Drag & Drop sorting
     user_id: Optional[int] = Field(default=None, index=True)
@@ -58,6 +60,8 @@ class TaskUpdate(SQLModel):
     completed: Optional[bool] = None
     is_collapsed: Optional[bool] = None
     duration_minutes: Optional[int] = None
+    timer_end_time: Optional[datetime] = None
+    timer_triggered: Optional[bool] = None
     current_count: Optional[int] = None
     order_index: Optional[int] = None
 

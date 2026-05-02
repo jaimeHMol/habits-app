@@ -100,21 +100,46 @@ export const useHabitStore = create((set, get) => ({
     remainingSeconds: 0 
   },
 
-  startTimer: (taskId, durationMinutes) => {
-    const endTime = Date.now() + (durationMinutes * 60 * 1000);
+  updateTaskOnServer: async (taskId, fields) => {
+    try {
+      await taskApi.update(taskId, fields);
+    } catch (error) {
+      console.error("Failed to update task on server", error);
+    }
+  },
+
+  startTimer: async (taskId, durationMinutes) => {
+    const now = Date.now();
+    const endTime = now + (durationMinutes * 60 * 1000);
     localStorage.setItem('active_timer_task_id', JSON.stringify(taskId));
     localStorage.setItem('active_timer_end_time', JSON.stringify(endTime));
     set({ activeTimer: { taskId, endTime, remainingSeconds: durationMinutes * 60 } });
+    
+    // Sync with backend for background push notifications
+    get().updateTaskOnServer(taskId, { 
+      timer_end_time: new Date(endTime).toISOString(),
+      timer_triggered: false 
+    });
   },
 
-  stopTimer: () => {
+  stopTimer: async () => {
+    const { activeTimer } = get();
+    const taskId = activeTimer.taskId;
+    
     localStorage.removeItem('active_timer_task_id');
     localStorage.removeItem('active_timer_end_time');
     set({ activeTimer: { taskId: null, endTime: 0, remainingSeconds: 0 } });
+
+    if (taskId) {
+      get().updateTaskOnServer(taskId, { 
+        timer_end_time: null,
+        timer_triggered: false 
+      });
+    }
   },
 
   tickTimer: () => {
-    const { activeTimer, toggleTaskCompletion, stopTimer } = get();
+    const { activeTimer } = get();
     if (!activeTimer.taskId || !activeTimer.endTime) return;
 
     const now = Date.now();
@@ -124,8 +149,9 @@ export const useHabitStore = create((set, get) => ({
       const alarm = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
       alarm.play().catch(e => console.log("Audio blocked", e));
       
-      toggleTaskCompletion(activeTimer.taskId);
-      stopTimer();
+      const taskId = activeTimer.taskId;
+      get().stopTimer();
+      get().toggleTaskCompletion(taskId);
     } else {
       set({ 
         activeTimer: { 
@@ -233,10 +259,20 @@ export const useHabitStore = create((set, get) => ({
   })),
 
   toggleTaskCompletion: async (taskId) => {
+    const task = get().tasks.find(t => t.id === taskId);
+    const newCompletedState = !task?.completed;
+
     set((state) => ({
-      tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t)
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
     }));
     try {
+      // Clear timer fields on server if completing
+      if (newCompletedState) {
+        await taskApi.update(taskId, { 
+          timer_end_time: null,
+          timer_triggered: false 
+        });
+      }
       await taskApi.toggleComplete(taskId, false);
       useReminderStore.getState().fetchReminders();
     } catch (error) {

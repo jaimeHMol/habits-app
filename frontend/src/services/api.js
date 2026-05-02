@@ -86,6 +86,8 @@ export const taskApi = {
       targetMonth: task.target_month,
       isCollapsed: task.is_collapsed,
       durationMinutes: task.duration_minutes,
+      timerEndTime: task.timer_end_time,
+      timerTriggered: task.timer_triggered,
       taskType: task.task_type,
       currentCount: task.current_count
     }));
@@ -105,7 +107,11 @@ export const taskApi = {
     const response = await fetch(`${API_URL}${taskId}`, {
       method: 'PUT',
       headers: getHeaders(),
-      body: JSON.stringify(taskData),
+      body: JSON.stringify({
+        ...taskData,
+        timer_end_time: taskData.timer_end_time,
+        timer_triggered: taskData.timer_triggered
+      }),
       credentials: 'include'
     });
     return handleResponse(response);
