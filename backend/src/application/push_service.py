@@ -5,10 +5,11 @@ import time
 from typing import Optional
 from urllib.parse import urlparse
 
+import httpx
 import jwt
-from cryptography.hazmat.primitives import serialization
+import pywebpush
 from cryptography.hazmat.primitives.asymmetric import ec
-from pywebpush import WebPushException, webpush
+from pywebpush import WebPusher
 
 from src.application.interfaces import IPushSubscriptionRepository
 from src.core.config import settings
@@ -23,112 +24,102 @@ class PushService:
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
 
-    def _generate_manual_vapid_headers(self, endpoint):
-        """
-        Gathers the VAPID headers manually with line-by-line debug tracking.
-        """
-        step = "INICIO"
-        try:
-            # 1. Reconstruct the EC Private Key
-            step = "DECODE_BASE64"
-            key_str = self.private_key.strip().replace('"', "").replace("'", "")
-            padding = len(key_str) % 4
-            if padding:
-                key_str += "=" * (4 - padding)
-            private_key_bytes = base64.urlsafe_b64decode(key_str)
-
-            step = "DERIVE_KEY_OBJ"
-            priv_key_obj = ec.derive_private_key(
-                int.from_bytes(private_key_bytes, "big"), ec.SECP256R1()
-            )
-
-            # 2. Convert to PEM (This is the most compatible format for PyJWT)
-            step = "CONVERT_TO_PEM"
-            pem_key = priv_key_obj.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.PKCS8,
-                encryption_algorithm=serialization.NoEncryption(),
-            )
-
-            # 3. Prepare JWT Claims
-            step = "PARSE_ENDPOINT"
-            parsed_url = urlparse(endpoint)
-            audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
-
-            step = "PREPARE_CLAIMS"
-            claims = {
-                "sub": self.subject,
-                "aud": audience,
-                "exp": int(time.time()) + 43200,
-            }
-
-            # 4. Sign JWT using the PEM key string (extremely robust)
-            step = "JWT_ENCODE"
-            token = jwt.encode(claims, pem_key, algorithm="ES256")
-
-            step = "HEADERS_BUILD"
-            return {
-                "Authorization": f"WebPush {token}",
-                "Crypto-Key": f"p256ecdsa={self.public_key.strip()}",
-            }
-        except Exception as e:
-            msg = f"Falla en {step}: {type(e).__name__} - {str(e)}"
-            logger.error(msg)
-            return {"error_step": msg}
+    def _get_private_key_obj(self):
+        """Reconstructs the EC Private Key object securely."""
+        key_str = self.private_key.strip().replace('"', "").replace("'", "")
+        padding = len(key_str) % 4
+        if padding:
+            key_str += "=" * (4 - padding)
+        key_bytes = base64.urlsafe_b64decode(key_str)
+        return ec.derive_private_key(int.from_bytes(key_bytes, "big"), ec.SECP256R1())
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
-        """
-        Sends a push notification with verbose error reporting.
-        """
+        """Sends notification using manual VAPID signing and fixed encryption."""
         results = []
-        if not self.private_key or not self.public_key:
-            return [{"error": "VAPID keys not configured"}]
-
         subscriptions = self.repository.get_all_for_user(user_id)
         if not subscriptions:
-            return [{"error": "No subscriptions found"}]
+            return [{"error": "No subscriptions"}]
 
-        payload = {
+        # 1. Pre-generate VAPID key object
+        try:
+            priv_key_obj = self._get_private_key_obj()
+        except Exception as e:
+            return [{"error": f"Key Error: {str(e)}"}]
+
+        payload_content = {
             "title": title,
             "body": body,
             "icon": "/pwa-192x192.png",
             "badge": "/pwa-192x192.png",
             "data": data or {},
         }
+        payload_bytes = json.dumps(payload_content).encode("utf-8")
 
         for sub in subscriptions:
             try:
-                # 1. Generate headers
-                res_headers = self._generate_manual_vapid_headers(sub.endpoint)
+                parsed_url = urlparse(sub.endpoint)
+                audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-                if "error_step" in res_headers:
-                    results.append({"error": res_headers["error_step"]})
-                    continue
+                # Manual VAPID Token via PyJWT
+                claims = {
+                    "sub": self.subject,
+                    "aud": audience,
+                    "exp": int(time.time()) + 43200,
+                }
+                vapid_token = jwt.encode(claims, priv_key_obj, algorithm="ES256")
 
-                subscription_info = {
-                    "endpoint": sub.endpoint,
-                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                headers = {
+                    "Authorization": f"WebPush {vapid_token}",
+                    "Crypto-Key": f"p256ecdsa={self.public_key.strip()}",
+                    "Content-Encoding": "aes128gcm",
+                    "TTL": "86400",
                 }
 
-                # 2. Attempt push
-                # Note: We pass vapid_private_key=None to force pywebpush
-                # to NOT use its internal signing logic.
-                webpush(
-                    subscription_info=subscription_info,
-                    data=json.dumps(payload),
-                    vapid_private_key=None,
-                    headers=res_headers,
+                # We use WebPusher just to get the encrypted body
+                pusher = WebPusher(
+                    {
+                        "endpoint": sub.endpoint,
+                        "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                    }
                 )
-                results.append({"endpoint": sub.endpoint[:20], "status": "sent"})
 
-            except WebPushException as ex:
-                results.append({"error": f"Libreria_Push: {str(ex)}"})
+                # --- THE CRITICAL PATCH ---
+                # This fixes the 'curve must be an EllipticCurve instance' error
+                # by forcing the library to use the exact same class reference as cryptography
+                original_curve = pywebpush.ec.SECP256R1
+                pywebpush.ec.SECP256R1 = lambda: ec.SECP256R1()
+
+                try:
+                    # pusher._encode_data handles AES128GCM encryption
+                    # If this succeeds, it returns a byte string.
+                    encrypted_body = pusher._encode_data(payload_bytes, "aes128gcm")
+
+                    # Perform manual HTTP request to bypass library bugs
+                    with httpx.Client() as client:
+                        response = client.post(
+                            sub.endpoint,
+                            content=encrypted_body,
+                            headers=headers,
+                            timeout=15.0,
+                        )
+
+                        if response.status_code in [201, 202]:
+                            results.append({"status": "sent"})
+                        else:
+                            error_text = response.text[:100]
+                            results.append(
+                                {"error": f"HTTP {response.status_code}: {error_text}"}
+                            )
+                            if response.status_code in [404, 410]:
+                                self.repository.delete_by_endpoint(sub.endpoint)
+                finally:
+                    # Restore the original library state
+                    pywebpush.ec.SECP256R1 = original_curve
+
             except Exception as e:
-                results.append(
-                    {"error": f"General_Error: {type(e).__name__}: {str(e)}"}
-                )
+                results.append({"error": f"{type(e).__name__}: {str(e)}"})
 
         return results
 
