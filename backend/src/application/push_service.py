@@ -24,29 +24,39 @@ class PushService:
         self.private_key = settings.vapid_private_key
         self.subject = settings.vapid_subject
 
-    def _get_private_key_obj(self):
+    def _get_private_key_obj(self, log_list):
         """Reconstructs the EC Private Key object securely."""
-        key_str = self.private_key.strip().replace('"', "").replace("'", "")
-        padding = len(key_str) % 4
-        if padding:
-            key_str += "=" * (4 - padding)
-        key_bytes = base64.urlsafe_b64decode(key_str)
-        return ec.derive_private_key(int.from_bytes(key_bytes, "big"), ec.SECP256R1())
+        try:
+            key_str = self.private_key.strip().replace('"', "").replace("'", "")
+            padding = len(key_str) % 4
+            if padding:
+                key_str += "=" * (4 - padding)
+            key_bytes = base64.urlsafe_b64decode(key_str)
+            log_list.append("Llave privada decodificada")
+            return ec.derive_private_key(
+                int.from_bytes(key_bytes, "big"), ec.SECP256R1()
+            )
+        except Exception as e:
+            log_list.append(f"Error en llave: {str(e)}")
+            raise
 
     def send_notification(
         self, user_id: int, title: str, body: str, data: Optional[dict] = None
     ):
-        """Sends notification using manual VAPID signing and fixed encryption."""
+        """
+        Sends a push notification with a total bypass and surgical curve patch.
+        """
         results = []
+        logs = []
         subscriptions = self.repository.get_all_for_user(user_id)
         if not subscriptions:
-            return [{"error": "No subscriptions"}]
+            return [{"error": "Sin suscripciones activas"}]
 
-        # 1. Pre-generate VAPID key object
         try:
-            priv_key_obj = self._get_private_key_obj()
+            priv_key_obj = self._get_private_key_obj(logs)
+            logs.append("Objeto de llave EC creado")
         except Exception as e:
-            return [{"error": f"Key Error: {str(e)}"}]
+            return [{"error": f"Error inicial: {str(e)}", "logs": logs}]
 
         payload_content = {
             "title": title,
@@ -59,10 +69,9 @@ class PushService:
 
         for sub in subscriptions:
             try:
+                # 1. Generar VAPID manual
                 parsed_url = urlparse(sub.endpoint)
                 audience = f"{parsed_url.scheme}://{parsed_url.netloc}"
-
-                # Manual VAPID Token via PyJWT
                 claims = {
                     "sub": self.subject,
                     "aud": audience,
@@ -73,11 +82,13 @@ class PushService:
                 headers = {
                     "Authorization": f"WebPush {vapid_token}",
                     "Crypto-Key": f"p256ecdsa={self.public_key.strip()}",
-                    "Content-Encoding": "aes128gcm",
                     "TTL": "86400",
                 }
+                logs.append(
+                    f"Headers VAPID creados para endpoint {sub.endpoint[:15]}..."
+                )
 
-                # We use WebPusher just to get the encrypted body
+                # 2. Encriptar el payload usando WebPusher.encode con PARCHE QUIRÚRGICO
                 pusher = WebPusher(
                     {
                         "endpoint": sub.endpoint,
@@ -85,41 +96,51 @@ class PushService:
                     }
                 )
 
-                # --- THE CRITICAL PATCH ---
-                # This fixes the 'curve must be an EllipticCurve instance' error
-                # by forcing the library to use the exact same class reference as cryptography
-                original_curve = pywebpush.ec.SECP256R1
+                # --- EL PARCHE DEFINITIVO ---
+                # Forzamos a pywebpush a usar EXACTAMENTE la misma instancia de la curva que nosotros
+                # Esto soluciona el 'curve must be an EllipticCurve instance'
+                original_curve_func = pywebpush.ec.SECP256R1
                 pywebpush.ec.SECP256R1 = lambda: ec.SECP256R1()
 
                 try:
-                    # pusher._encode_data handles AES128GCM encryption
-                    # If this succeeds, it returns a byte string.
-                    encrypted_body = pusher._encode_data(payload_bytes, "aes128gcm")
+                    logs.append("Iniciando encriptación aes128gcm...")
+                    # El nombre correcto según dir() es 'encode'
+                    encoded_res = pusher.encode(payload_bytes, "aes128gcm")
+                    encrypted_body = encoded_res.get("body")
 
-                    # Perform manual HTTP request to bypass library bugs
+                    if not encrypted_body:
+                        raise Exception("No se pudo obtener el cuerpo encriptado")
+
+                    logs.append("Cuerpo encriptado con éxito")
+
+                    # 3. Envío HTTP Manual
                     with httpx.Client() as client:
                         response = client.post(
                             sub.endpoint,
                             content=encrypted_body,
-                            headers=headers,
+                            headers={
+                                **headers,
+                                "Content-Type": "application/octet-stream",
+                                "Content-Encoding": "aes128gcm",
+                            },
                             timeout=15.0,
                         )
 
                         if response.status_code in [201, 202]:
-                            results.append({"status": "sent"})
+                            results.append({"status": "sent", "logs": logs})
                         else:
-                            error_text = response.text[:100]
                             results.append(
-                                {"error": f"HTTP {response.status_code}: {error_text}"}
+                                {
+                                    "error": f"HTTP {response.status_code}: {response.text[:50]}",
+                                    "logs": logs,
+                                }
                             )
-                            if response.status_code in [404, 410]:
-                                self.repository.delete_by_endpoint(sub.endpoint)
                 finally:
-                    # Restore the original library state
-                    pywebpush.ec.SECP256R1 = original_curve
+                    # Restauramos la librería a su estado original
+                    pywebpush.ec.SECP256R1 = original_curve_func
 
             except Exception as e:
-                results.append({"error": f"{type(e).__name__}: {str(e)}"})
+                results.append({"error": f"{type(e).__name__}: {str(e)}", "logs": logs})
 
         return results
 
