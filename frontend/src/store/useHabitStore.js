@@ -139,8 +139,15 @@ export const useHabitStore = create((set, get) => ({
   },
 
   tickTimer: () => {
-    const { activeTimer } = get();
+    const { activeTimer, tasks } = get();
     if (!activeTimer.taskId || !activeTimer.endTime) return;
+
+    // If the task was already completed by the background scheduler, just stop locally
+    const task = tasks.find(t => t.id === activeTimer.taskId);
+    if (task?.completed) {
+      get().stopTimer();
+      return;
+    }
 
     const now = Date.now();
     const remaining = Math.round((activeTimer.endTime - now) / 1000);

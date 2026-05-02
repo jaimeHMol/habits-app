@@ -34,11 +34,16 @@ class PushService:
         return ec.derive_private_key(int.from_bytes(key_bytes, "big"), ec.SECP256R1())
 
     def send_notification(
-        self, user_id: int, title: str, body: str, data: Optional[dict] = None
+        self,
+        user_id: int,
+        title: str,
+        body: str,
+        data: Optional[dict] = None,
+        urgency: str = "normal",
     ):
         """
         Sends a push notification using manual VAPID signing and manual encryption.
-        This provides the most robust and compatible delivery bypassing library bugs.
+        'urgency' can be: very-low, low, normal, high.
         """
         results = []
         subscriptions = self.repository.get_all_for_user(user_id)
@@ -76,6 +81,7 @@ class PushService:
                     "Crypto-Key": f"p256ecdsa={self.public_key.strip()}",
                     "TTL": "86400",
                     "Content-Encoding": "aes128gcm",
+                    "Urgency": urgency,  # CRITICAL for background delivery
                 }
 
                 # 2. Manual Encryption using http_ece

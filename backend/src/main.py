@@ -9,23 +9,16 @@ from src.api.routers import (
     push_router,
 )
 from src.api.auth_router import router as auth_router
-from src.application.push_service import PushService
 from src.application.reminder_scheduler import ReminderScheduler
-from src.infrastructure.sqlite_repository import SQLitePushSubscriptionRepository
-from src.infrastructure.database import engine
-from sqlmodel import Session
 
 
 # Lifespan context manager runs code before the app starts accepting requests
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize PushService and Scheduler
-    with Session(engine) as session:
-        push_repo = SQLitePushSubscriptionRepository(session)
-        push_service = PushService(push_repo)
-        scheduler = ReminderScheduler(push_service)
-        app.state.scheduler = scheduler
-        scheduler.start()
+    # Initialize Scheduler (it will create its own PushService/Sessions internally)
+    scheduler = ReminderScheduler()
+    app.state.scheduler = scheduler
+    scheduler.start()
 
     yield
     # Shutdown scheduler on app stop

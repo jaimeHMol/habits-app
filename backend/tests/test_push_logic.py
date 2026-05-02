@@ -4,8 +4,7 @@ from sqlmodel import Session, select
 from src.domain.models import Reminder, User
 from src.infrastructure.database import engine
 from src.application.reminder_scheduler import ReminderScheduler
-from src.application.push_service import PushService
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 
 @pytest.fixture(autouse=True)
@@ -27,8 +26,8 @@ def db_session():
 
 @pytest.mark.asyncio
 async def test_scheduler_triggers_interval_reminder(db_session):
-    mock_push = MagicMock(spec=PushService)
-    scheduler = ReminderScheduler(mock_push)
+    # Setup scheduler
+    scheduler = ReminderScheduler()
 
     user_id_ts = int(datetime.now().timestamp())
     user = User(
@@ -48,7 +47,7 @@ async def test_scheduler_triggers_interval_reminder(db_session):
     reminder = Reminder(
         title="Test Push",
         interval_minutes=60,
-        is_active=True,
+        isActive=True,  # Note the field name in current implementation
         user_id=user.id,
         last_triggered_at=two_hours_ago,
     )
@@ -59,16 +58,20 @@ async def test_scheduler_triggers_interval_reminder(db_session):
     # Mock time to exactly NOW (naive UTC)
     mock_now = now_utc_naive
 
-    with patch.object(ReminderScheduler, "datetime_now", return_value=mock_now):
-        await scheduler.check_all_reminders()
+    # We need to mock PushService at the point of instantiation in the loop
+    with patch("src.application.reminder_scheduler.PushService") as MockPushService:
+        mock_push = MockPushService.return_value
+        with patch.object(ReminderScheduler, "datetime_now", return_value=mock_now):
+            await scheduler.check_all_reminders()
 
-    # Use assert_any_call to ignore calls for other users if they somehow persisted
-    mock_push.send_notification.assert_any_call(
-        user_id=user.id,
-        title="RECUERDA",
-        body="Test Push",
-        data={"reminder_id": reminder.id},
-    )
+        # Verify push was sent
+        mock_push.send_notification.assert_any_call(
+            user_id=user.id,
+            title="RECUERDA",
+            body="Test Push",
+            data={"reminder_id": reminder.id},
+            urgency="normal",
+        )
 
     db_session.refresh(reminder)
     assert reminder.last_triggered_at is not None
@@ -76,8 +79,7 @@ async def test_scheduler_triggers_interval_reminder(db_session):
 
 @pytest.mark.asyncio
 async def test_scheduler_respects_activity_window(db_session):
-    mock_push = MagicMock(spec=PushService)
-    scheduler = ReminderScheduler(mock_push)
+    scheduler = ReminderScheduler()
 
     user_id_ts = int(datetime.now().timestamp()) + 1
     user = User(
@@ -105,9 +107,11 @@ async def test_scheduler_respects_activity_window(db_session):
     # 04:00 AM Bogota (09:00 UTC) -> Outside 08:00 window
     mock_now = now_utc_naive.replace(hour=9, minute=0, second=0, microsecond=0)
 
-    with patch.object(ReminderScheduler, "datetime_now", return_value=mock_now):
-        await scheduler.check_all_reminders()
+    with patch("src.application.reminder_scheduler.PushService") as MockPushService:
+        mock_push = MockPushService.return_value
+        with patch.object(ReminderScheduler, "datetime_now", return_value=mock_now):
+            await scheduler.check_all_reminders()
 
-    # Should NOT have called push for THIS user
-    for call in mock_push.send_notification.call_args_list:
-        assert call.kwargs["user_id"] != user.id
+        # Should NOT have called push for THIS user
+        for call in mock_push.send_notification.call_args_list:
+            assert call.kwargs["user_id"] != user.id
