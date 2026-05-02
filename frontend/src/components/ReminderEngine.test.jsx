@@ -81,8 +81,7 @@ describe('ReminderEngine', () => {
     })
 
     expect(mockAddAlert).toHaveBeenCalledWith({
-      title: 'Push Title',
-      body: 'Push Body',
+      title: 'Push Body',
       task_id: 123,
       id: 456
     })

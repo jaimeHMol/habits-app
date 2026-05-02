@@ -5,7 +5,7 @@ import { translations } from '../i18n/translations'
 import { stripMarkdown } from '../utils/textUtils'
 import { checkPushSubscription, subscribeToPush, unsubscribeFromPush } from '../services/pushSubscription'
 import { taskApi } from '../services/api'
-import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown, Smartphone, Send } from 'lucide-react'
+import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown, Smartphone } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -61,14 +61,6 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
       }
     } catch (err) {
       console.error('Toggle error:', err);
-    }
-  };
-
-  const handleTestPush = async () => {
-    try {
-      await taskApi.sendTestPush();
-    } catch (err) {
-      console.error('Test push request failed:', err);
     }
   };
 
@@ -161,14 +153,6 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
               />
             </button>
           </div>
-          {isPushEnabled && (
-            <button
-              onClick={handleTestPush}
-              className="w-full flex items-center justify-center gap-2 bg-paramo-frailejon/10 hover:bg-paramo-frailejon/20 border border-paramo-frailejon/20 rounded-lg p-2 text-[10px] text-paramo-frailejon font-black uppercase tracking-wider transition-colors"
-            >
-              <Send size={12} /> Probar Notificación Ahora
-            </button>
-          )}
         </section>
 
         {/* Add Reminder Form */}

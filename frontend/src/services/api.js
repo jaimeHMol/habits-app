@@ -313,14 +313,5 @@ export const taskApi = {
       credentials: 'include'
     });
     return handleResponse(response);
-  },
-
-  sendTestPush: async () => {
-    const response = await fetch(`${BASE_URL}/push/test-push`, {
-      method: 'POST',
-      headers: getHeaders(),
-      credentials: 'include'
-    });
-    return handleResponse(response);
   }
 };

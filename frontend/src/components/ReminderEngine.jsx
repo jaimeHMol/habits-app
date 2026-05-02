@@ -103,7 +103,13 @@ export const ReminderEngine = () => {
     channel.onmessage = (event) => {
       if (event.data?.type === 'PUSH_RECEIVED') {
         const { title, body, data } = event.data.payload;
-        triggerNotification({ title, body, id: data?.reminder_id, task_id: data?.task_id });
+        // The payload 'body' contains the habit text from the backend.
+        // We use it as the title for our internal Toast UI.
+        triggerNotification({ 
+          title: body || title, 
+          id: data?.reminder_id, 
+          task_id: data?.task_id 
+        });
       }
     };
     return () => channel.close();

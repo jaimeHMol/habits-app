@@ -166,7 +166,7 @@ class ReminderScheduler:
                 # Trigger Push
                 self.push_service.send_notification(
                     user_id=user.id,
-                    title="RECORDATORIO DE TAREA",
+                    title="RECUERDA",
                     body=reminder.title,
                     data={
                         "task_id": task.id,
