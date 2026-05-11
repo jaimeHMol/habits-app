@@ -9,21 +9,32 @@ self.addEventListener('push', (event) => {
 
   try {
     const payload = event.data.json();
-    const title = payload.title || 'RECUERDA';
+    let title = payload.title || 'RECUERDA';
+    const payloadData = payload.data || {};
+    
+    // Determine vibration pattern and title based on type
+    const isTimer = payloadData.type === 'timer_end';
+    const vibratePattern = isTimer 
+      ? [500, 200, 500, 200, 1000] // Long pulses for alarm
+      : [200, 100, 200];           // Short pop for normal reminder
+
+    if (isTimer) {
+      title = `⏳ ${title}`;
+    }
     
     const options = {
       body: payload.body,
       icon: '/pwa-192x192.png',
       badge: '/pwa-192x192.png',
-      data: payload.data || {},
-      vibrate: [300, 100, 400],
+      data: payloadData,
+      vibrate: vibratePattern,
       tag: 'habit-reminder',
       renotify: true,
-      requireInteraction: false
+      requireInteraction: isTimer // Require interaction for timers so it stays on screen until dismissed
     };
 
     // Notify the app if it's open
-    channel.postMessage({ type: 'PUSH_RECEIVED', payload: { title, ...options } });
+    channel.postMessage({ type: 'PUSH_RECEIVED', payload: { title: payload.title, ...options } });
 
     // Show native notification
     event.waitUntil(
