@@ -158,7 +158,7 @@ export const useHabitStore = create((set, get) => ({
       
       const taskId = activeTimer.taskId;
       get().stopTimer();
-      get().toggleTaskCompletion(taskId);
+      get().toggleTaskCompletion(taskId, true);
     } else {
       set({ 
         activeTimer: { 
@@ -265,9 +265,11 @@ export const useHabitStore = create((set, get) => ({
     tasks: state.tasks.map(t => t.columnId === columnId ? { ...t, isCollapsed: setCollapsed } : t)
   })),
 
-  toggleTaskCompletion: async (taskId) => {
+  toggleTaskCompletion: async (taskId, targetState = null) => {
     const task = get().tasks.find(t => t.id === taskId);
-    const newCompletedState = !task?.completed;
+    const newCompletedState = targetState !== null ? targetState : !task?.completed;
+
+    if (task && task.completed === newCompletedState) return;
 
     set((state) => ({
       tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
@@ -280,7 +282,7 @@ export const useHabitStore = create((set, get) => ({
           timer_triggered: false 
         });
       }
-      await taskApi.toggleComplete(taskId, false);
+      await taskApi.toggleComplete(taskId, false, targetState);
       useReminderStore.getState().fetchReminders();
     } catch (error) {
       get().fetchTasks();

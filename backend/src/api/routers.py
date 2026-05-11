@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from src.domain.models import (
@@ -85,10 +85,13 @@ def delete_task(
 def toggle_task_completion(
     task_id: int,
     is_retroactive: bool = False,
+    target_state: Optional[bool] = None,
     current_user: User = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
-    task = service.toggle_completion(task_id, current_user.id, is_retroactive)
+    task = service.toggle_completion(
+        task_id, current_user.id, is_retroactive, target_state
+    )
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     return task

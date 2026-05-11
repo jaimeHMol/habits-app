@@ -77,13 +77,20 @@ class TaskService:
         return self.repository.delete(task_id, user_id)
 
     def toggle_completion(
-        self, task_id: int, user_id: int, is_retroactive: bool = False
+        self,
+        task_id: int,
+        user_id: int,
+        is_retroactive: bool = False,
+        target_state: Optional[bool] = None,
     ) -> Optional[Task]:
         task = self.repository.get_by_id(task_id, user_id)
         if not task:
             return None
 
-        new_status = not task.completed
+        new_status = not task.completed if target_state is None else target_state
+        if new_status == task.completed:
+            return task  # No change needed
+
         update_data = TaskUpdate(completed=new_status)
         updated_task = self.repository.update(task_id, update_data, user_id)
 
