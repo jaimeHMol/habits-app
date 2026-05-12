@@ -161,9 +161,13 @@ The application supports native mobile notifications even when the browser is cl
 ### 🛠️ Technical Workarounds
 1.  **PNG Icons Only**: Android Chrome **fails silently** if a notification uses an SVG icon. All push notifications are hardcoded to use `/pwa-192x192.png`.
 2.  **Library Bypass (The "Nuclear Fix")**: Standard libraries like `pywebpush` and `py-vapid` suffer from a `TypeError: curve must be an EllipticCurve instance` when used with modern versions of the `cryptography` library. 
-    - **Solution**: We bypassed the high-level library constructors. VAPID tokens are signed manually using `PyJWT` (ES256), and payloads are encrypted using the low-level `http_ece` engine. 
-3.  **Nginx Proxying**: New API routes under `/push/` must be explicitly proxied in `nginx.conf` to reach the backend.
-4.  **Service Worker Lifecycle**: Mobile browsers are aggressive with caching. When updating notification logic, users must often clear site data in Chrome settings to register the new `sw.js`.
+    - **Solution**: We bypassed the high-level library constructors. VAPID tokens are signed manually using `PyJWT` (ES256), and payloads are encrypted using the low-level `http_ece` engine.
+3.  **Background Timers (Doze Mode & Data Races)**: To reliably trigger focus timers when the device is locked:
+    - The backend sets the `Urgency: high` header to wake Android from "Doze Mode".
+    - The Service Worker sets `requireInteraction: true` and a distinct, long vibration pattern (`[500, 200, 500, 200, 1000]`) to simulate an alarm.
+    - To prevent a data race where unlocking the phone causes the frontend to revert a server-completed task, frontend timers send explicit state (`targetState=true`) instead of "blind" toggling.
+4.  **Nginx Proxying**: New API routes under `/push/` must be explicitly proxied in `nginx.conf` to reach the backend.
+5.  **Service Worker Lifecycle**: Mobile browsers are aggressive with caching. When updating notification logic, users must often clear site data in Chrome settings to register the new `sw.js`.
 
 ### 🔑 VAPID Key Management
 VAPID keys are the security handshake between your server and Google/Apple.
