@@ -22,6 +22,8 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
 
   const isTimerActive = activeTimer.taskId === task.id;
   const isDailyColumn = column.id === 'daily';
+  
+  const hasDescription = !!(task.description && task.description.trim().length > 0);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -173,15 +175,17 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
               <div {...dragHandleProps} onClick={(e) => e.stopPropagation()} className="text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors cursor-grab active:cursor-grabbing">
                 <GripVertical size={16} strokeWidth={1.5} />
               </div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); toggleCollapse(task.id); }} 
-                className="text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors"
-              >
-                {task.isCollapsed ? <ChevronDown size={16} strokeWidth={1.5} /> : <ChevronUp size={16} strokeWidth={1.5} />}
-              </button>
+              {hasDescription && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); toggleCollapse(task.id); }} 
+                  className="text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors"
+                >
+                  {task.isCollapsed ? <ChevronDown size={16} strokeWidth={1.5} /> : <ChevronUp size={16} strokeWidth={1.5} />}
+                </button>
+              )}
             </div>
           </div>
-          {!task.isCollapsed && (
+          {hasDescription && !task.isCollapsed && (
             <div className="mt-1.5 animate-fadeIn">
               <div className="prose-container">
                 <ReactMarkdown

@@ -8,7 +8,7 @@ import { PeriodicReviewModal } from './components/PeriodicReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
 import { NotificationToast } from './components/NotificationToast'
-import { LogOut, Lock, UserPlus, Copy, Check, Globe } from 'lucide-react'
+import { LogOut, Lock, UserPlus, Copy, Check, Globe, Eye, EyeOff } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -49,6 +49,7 @@ function App() {
   // Auth Form State
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [fullName, setFullName] = useState('')
   const [invitationCode, setInvitationCode] = useState('')
   
@@ -178,10 +179,22 @@ function App() {
                 type="text" placeholder={t.username} value={username} onChange={(e) => setUsername(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
-              <input 
-                type="password" placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} required
-                className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
-              />
+              <div className="relative flex items-center">
+                <input 
+                  type={showPassword ? "text" : "password"} placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} required
+                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 pr-10 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
+                />
+                {password.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-paramo-muted hover:text-white transition-colors"
+                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
+              </div>
               <button disabled={isProcessing} className="bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-bold tracking-widest uppercase text-xs p-3 rounded-lg hover:bg-paramo-frailejon/20 transition-all mt-2 flex justify-center">
                 {isProcessing ? '...' : t.enter_btn}
               </button>
@@ -202,10 +215,22 @@ function App() {
                 type="text" placeholder={t.username} value={username} onChange={(e) => setUsername(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
               />
-              <input 
-                type="password" placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} required
-                className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
-              />
+              <div className="relative flex items-center">
+                <input 
+                  type={showPassword ? "text" : "password"} placeholder={t.password} value={password} onChange={(e) => setPassword(e.target.value)} required
+                  className="w-full bg-black/20 border border-white/10 rounded-lg p-3 pr-10 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
+                />
+                {password.length > 0 && (
+                  <button 
+                    type="button" 
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 text-paramo-muted hover:text-white transition-colors"
+                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                )}
+              </div>
               <input 
                 type="text" placeholder={t.invitation_code} value={invitationCode} onChange={(e) => setInvitationCode(e.target.value)} required
                 className="bg-black/20 border border-white/10 rounded-lg p-3 text-sm text-white placeholder:text-paramo-muted focus:outline-none focus:border-paramo-frailejon transition-colors"
