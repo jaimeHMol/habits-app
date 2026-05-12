@@ -236,6 +236,7 @@ export const useHabitStore = create((set, get) => ({
       });
       
       await get().fetchTasks();
+      useReminderStore.getState().fetchReminders();
     } catch (error) {
       console.error("Review confirmation failed", error);
       set({ isLoading: false });

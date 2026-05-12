@@ -89,7 +89,7 @@ function App() {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', refreshData);
     };
-  }, [fetchTasks, fetchReminders, isAuthenticated, checkDayChange, user, fetchUserProfile]);
+  }, [fetchTasks, fetchReminders, isAuthenticated, checkDayChange, fetchUserProfile]);
 
   // Timer loop for Focus Mode
   useEffect(() => {
