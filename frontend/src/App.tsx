@@ -67,12 +67,10 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const refreshData = () => {
+    const refreshData = async () => {
       console.log("🔄 Syncing data with server...");
-      if (!user) fetchUserProfile();
-      fetchTasks().then(() => {
-        checkDayChange();
-      });
+      await fetchUserProfile();
+      await fetchTasks();
       fetchReminders();
     };
 

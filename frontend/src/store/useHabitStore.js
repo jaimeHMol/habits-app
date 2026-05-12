@@ -170,9 +170,14 @@ export const useHabitStore = create((set, get) => ({
   },
 
   checkDayChange: async () => {
-    const { lastUsedDate, tasks } = get();
+    const { lastUsedDate, tasks, showReviewModal } = get();
     const today = new Date();
     const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+
+    if (lastUsedDate === todayStr && showReviewModal) {
+      set({ showReviewModal: false, pendingResets: [] });
+      return;
+    }
 
     if (lastUsedDate && lastUsedDate !== todayStr) {
       const lastDate = new Date(lastUsedDate + 'T00:00:00'); 
