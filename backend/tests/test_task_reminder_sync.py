@@ -118,7 +118,7 @@ def test_task_reminder_sync_completion(client):
 
 def test_task_reminder_auto_healing(client):
     """
-    Test that calling GET /reminders/ automatically heals the database by 
+    Test that calling GET /reminders/ automatically heals the database by
     re-creating missing reminders for eligible tasks.
     """
     # 1. Create a task
@@ -144,8 +144,10 @@ def test_task_reminder_auto_healing(client):
     # 3. Call GET /reminders/ which should trigger auto-healing
     reminders_res_after = client.get("/reminders/")
     reminders_after = reminders_res_after.json()
-    
+
     # 4. Verify reminder is back
-    task_reminder_after = next((r for r in reminders_after if r["task_id"] == task_id), None)
+    task_reminder_after = next(
+        (r for r in reminders_after if r["task_id"] == task_id), None
+    )
     assert task_reminder_after is not None
     assert task_reminder_after["title"] == "Auto-Healing Test"
