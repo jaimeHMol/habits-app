@@ -243,8 +243,10 @@ export const useHabitStore = create((set, get) => ({
     }
   },
 
-  fetchTasks: async () => {
-    set({ isLoading: true, error: null });
+  fetchTasks: async (isBackground = false) => {
+    if (!isBackground) {
+      set({ isLoading: true, error: null });
+    }
     try {
       const tasks = await taskApi.getAll();
       set({ tasks, isLoading: false, isAuthenticated: true });
@@ -266,6 +268,27 @@ export const useHabitStore = create((set, get) => ({
   toggleCollapse: (taskId) => set((state) => ({
     tasks: state.tasks.map(t => t.id === taskId ? { ...t, isCollapsed: !t.isCollapsed } : t)
   })),
+
+  togglePinTask: async (taskId) => {
+    const task = get().tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const newPinnedState = !task.isPinned;
+
+    set((state) => {
+      const updatedTasks = state.tasks.map(t => t.id === taskId ? { ...t, isPinned: newPinnedState } : t);
+      updatedTasks.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0);
+        return 0;
+      });
+      return { tasks: updatedTasks };
+    });
+
+    try {
+      await taskApi.update(taskId, { is_pinned: newPinnedState });
+    } catch (error) {
+      get().fetchTasks(); 
+    }
+  },
 
   toggleColumnCollapse: (columnId, setCollapsed) => set((state) => ({
     tasks: state.tasks.map(t => t.columnId === columnId ? { ...t, isCollapsed: setCollapsed } : t)

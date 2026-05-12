@@ -30,9 +30,11 @@ class SQLiteTaskRepository(ITaskRepository):
         self.session = session
 
     def get_all(self, user_id: int) -> List[Task]:
-        # Sorting by order_index by default to match UI expectations
+        # Sorting by is_pinned descending, then order_index to match UI expectations
         statement = (
-            select(Task).where(Task.user_id == user_id).order_by(Task.order_index)
+            select(Task)
+            .where(Task.user_id == user_id)
+            .order_by(Task.is_pinned.desc(), Task.order_index)
         )
         results = self.session.exec(statement)
         return results.all()
@@ -49,8 +51,11 @@ class SQLiteTaskRepository(ITaskRepository):
             statement = select(Task).where(
                 Task.column_id == db_task.column_id, Task.user_id == user_id
             )
-            count = len(self.session.exec(statement).all())
-            db_task.order_index = count
+            existing_tasks = self.session.exec(statement).all()
+            for t in existing_tasks:
+                t.order_index += 1
+                self.session.add(t)
+            db_task.order_index = 0
 
         self.session.add(db_task)
         self.session.commit()

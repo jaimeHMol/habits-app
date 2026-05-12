@@ -89,7 +89,8 @@ export const taskApi = {
       timerEndTime: task.timer_end_time,
       timerTriggered: task.timer_triggered,
       taskType: task.task_type,
-      currentCount: task.current_count
+      currentCount: task.current_count,
+      isPinned: task.is_pinned
     }));
   },
 

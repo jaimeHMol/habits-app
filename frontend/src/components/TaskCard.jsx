@@ -1,13 +1,20 @@
 import React from 'react'
 import { useHabitStore } from '../store/useHabitStore'
-import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus, Hash } from 'lucide-react'
+import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus, Hash, Bookmark } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+
+const MinimalPin = ({ size = 16, strokeWidth = 1.5, fill = "none", className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M9 4h6v5l2 3H7l2-3V4z" />
+    <line x1="12" y1="12" x2="12" y2="21" />
+  </svg>
+);
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
-  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask } = useHabitStore();
+  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask } = useHabitStore();
 
   const hasMonthlyDate = column.type === 'monthly' && task.targetDay != null;
   const hasAnnuallyDate = column.type === 'annually' && task.targetDay != null && task.targetMonth != null;
@@ -35,8 +42,8 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
         borderLeftColor: isTimerActive ? '#0d9488' : (task.completed ? '#a8a29e' : (task.priority === 'frailejon' ? '#0d9488' : task.priority === 'tierra' ? '#b45309' : '#a8a29e')) 
       }}
     >
-      <div className={`p-3 md:p-4 flex gap-2 md:gap-3 ${task.isCollapsed ? 'items-center' : 'items-start'}`}>
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+      <div className="p-3 md:p-4 flex gap-2 md:gap-3 items-start">
+        <div className="flex flex-col items-center gap-2 flex-shrink-0 pt-0.5">
           {task.taskType === 'counter' ? (
             <div className="flex flex-col items-center gap-2">
               <button 
@@ -153,15 +160,24 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
             </div>
             
             <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+              {(column.id !== 'daily' && column.id !== 'todo') && (
+                <button 
+                  onClick={(e) => { e.stopPropagation(); togglePinTask(task.id); }} 
+                  className={`p-1 rounded-md hover:bg-white/5 transition-colors ${task.isPinned ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'}`}
+                  title={task.isPinned ? "Unpin task" : "Pin task"}
+                >
+                  {task.isPinned ? <MinimalPin size={16} fill="currentColor" strokeWidth={1.5} /> : <MinimalPin size={16} strokeWidth={1.5} />}
+                </button>
+              )}
               {/* BUG FIX: We now use the explicitly passed dragHandleProps */}
-              <div {...dragHandleProps} onClick={(e) => e.stopPropagation()} className="text-paramo-muted/50 hover:text-white p-1 rounded-md cursor-grab active:cursor-grabbing">
-                <GripVertical size={16} />
+              <div {...dragHandleProps} onClick={(e) => e.stopPropagation()} className="text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors cursor-grab active:cursor-grabbing">
+                <GripVertical size={16} strokeWidth={1.5} />
               </div>
               <button 
                 onClick={(e) => { e.stopPropagation(); toggleCollapse(task.id); }} 
                 className="text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors"
               >
-                {task.isCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
+                {task.isCollapsed ? <ChevronDown size={16} strokeWidth={1.5} /> : <ChevronUp size={16} strokeWidth={1.5} />}
               </button>
             </div>
           </div>

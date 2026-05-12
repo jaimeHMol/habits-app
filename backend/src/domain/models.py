@@ -32,6 +32,7 @@ class TaskBase(SQLModel):
     target_month: Optional[int] = Field(default=None, ge=1, le=12)
     completed: bool = Field(default=False)
     is_collapsed: bool = Field(default=True)
+    is_pinned: bool = Field(default=False)
     duration_minutes: Optional[int] = Field(default=None)
     timer_end_time: Optional[datetime] = Field(default=None)
     timer_triggered: bool = Field(default=False)
@@ -59,6 +60,7 @@ class TaskUpdate(SQLModel):
     target_month: Optional[int] = None
     completed: Optional[bool] = None
     is_collapsed: Optional[bool] = None
+    is_pinned: Optional[bool] = None
     duration_minutes: Optional[int] = None
     timer_end_time: Optional[datetime] = None
     timer_triggered: Optional[bool] = None

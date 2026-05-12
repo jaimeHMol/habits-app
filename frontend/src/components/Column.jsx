@@ -38,7 +38,6 @@ export const Column = ({ column, isActiveOnMobile }) => {
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <h2 className="font-bold text-lg text-white/90 truncate max-w-[100px] md:max-w-none">{t[column.id]}</h2>
-            <div className="h-1.5 w-1.5 rounded-full bg-paramo-frailejon shadow-[0_0_8px_rgba(13,148,136,0.8)]"></div>
           </div>
           
           <div className="flex items-center border-l border-white/10 pl-2 gap-2">

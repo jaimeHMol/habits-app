@@ -67,27 +67,29 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
-    const refreshData = async () => {
+    const refreshData = async (isBackground = false) => {
       console.log("🔄 Syncing data with server...");
       await fetchUserProfile();
-      await fetchTasks();
+      await fetchTasks(isBackground);
       fetchReminders();
     };
 
-    refreshData();
+    refreshData(); // Initial load is not background
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refreshData();
+        refreshData(true);
       }
     };
 
+    const handleFocus = () => refreshData(true);
+
     window.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', refreshData);
+    window.addEventListener('focus', handleFocus);
 
     return () => {
       window.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', refreshData);
+      window.removeEventListener('focus', handleFocus);
     };
   }, [fetchTasks, fetchReminders, isAuthenticated, checkDayChange, fetchUserProfile]);
 
