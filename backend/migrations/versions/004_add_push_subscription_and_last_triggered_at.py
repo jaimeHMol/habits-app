@@ -1,6 +1,6 @@
 """add push subscription and last triggered at
 
-Revision ID: 7277ddc4a37d
+Revision ID: 004
 Revises: 003
 Create Date: 2026-04-21 11:38:54.585135
 
@@ -14,7 +14,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision: str = "7277ddc4a37d"
+revision: str = "004"
 down_revision: Union[str, Sequence[str], None] = "003"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

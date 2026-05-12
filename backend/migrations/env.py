@@ -25,6 +25,35 @@ if config.config_file_name is not None:
 target_metadata = SQLModel.metadata
 
 
+def process_revision_directives(context, revision, directives):
+    """Custom hook to enforce sequential revision IDs (001, 002, etc.)."""
+    if config.get_main_option("revision_environment") == "true":
+        script = context.script
+        # Get the current head
+        heads = script.get_heads()
+        if not heads:
+            next_num = 1
+        else:
+            # Assumes linear history
+            last_rev = heads[0]
+            try:
+                next_num = int(last_rev) + 1
+            except ValueError:
+                # Fallback: scan versions directory for highest number
+                import os
+
+                versions_dir = os.path.join(script.dir, "versions")
+                files = os.listdir(versions_dir)
+                nums = [
+                    int(f.split("_")[0]) for f in files if f.split("_")[0].isdigit()
+                ]
+                next_num = max(nums) + 1 if nums else 1
+
+        for directive in directives:
+            directive.rev_id = f"{next_num:03d}"
+            next_num += 1
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
     url = settings.database_url
@@ -33,6 +62,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        process_revision_directives=process_revision_directives,
     )
 
     with context.begin_transaction():
@@ -57,6 +87,7 @@ def run_migrations_online() -> None:
             target_metadata=target_metadata,
             # Critical for SQLite: allows altering tables by recreating them
             render_as_batch=True,
+            process_revision_directives=process_revision_directives,
         )
 
         with context.begin_transaction():
