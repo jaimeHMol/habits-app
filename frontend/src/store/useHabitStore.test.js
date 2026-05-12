@@ -153,4 +153,28 @@ describe('useHabitStore - checkDayChange', () => {
     
     vi.useRealTimers()
   })
+
+  it('should auto-close the modal and abort if lastUsedDate matches today (concurrent device sync)', async () => {
+    const today = new Date('2026-04-21T08:00:00-05:00')
+    const todayStr = '2026-04-21'
+    
+    vi.useFakeTimers()
+    vi.setSystemTime(today)
+
+    useHabitStore.setState({ 
+      lastUsedDate: todayStr, 
+      showReviewModal: true,
+      pendingResets: ['daily']
+    })
+
+    await useHabitStore.getState().checkDayChange()
+
+    const state = useHabitStore.getState()
+    expect(state.showReviewModal).toBe(false)
+    expect(state.pendingResets).toEqual([])
+    expect(taskApi.confirmReset).not.toHaveBeenCalled()
+    expect(taskApi.resetDaily).not.toHaveBeenCalled()
+    
+    vi.useRealTimers()
+  })
 })
