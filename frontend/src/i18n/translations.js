@@ -85,6 +85,8 @@ export const translations = {
     error_title_req: "Title is required",
     error_day_range: "Day must be between 1 and 31",
     error_network: "Network error. Try again.",
+    offline_error: "No internet connection.",
+    offline_action: "Action not available without connection.",
     
     // Priorities
     prio_muted: "Optional",
@@ -181,6 +183,8 @@ export const translations = {
     error_title_req: "El título es obligatorio",
     error_day_range: "El día debe ser entre 1 y 31",
     error_network: "Error de red. Intenta de nuevo.",
+    offline_error: "No hay conexión a internet.",
+    offline_action: "Acción no disponible sin conexión.",
     
     // Priorities
     prio_muted: "Opcional",

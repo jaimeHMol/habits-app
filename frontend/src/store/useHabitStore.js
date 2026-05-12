@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { taskApi } from '../services/api'
 import { useReminderStore } from './useReminderStore'
+import { translations } from '../i18n/translations'
 
 export const useHabitStore = create((set, get) => ({
   isAuthenticated: true, // Assume true to try initial data fetch, but will be set to false on 401
@@ -103,6 +104,7 @@ export const useHabitStore = create((set, get) => ({
   },
 
   updateTaskOnServer: async (taskId, fields) => {
+    if (!navigator.onLine) return;
     try {
       await taskApi.update(taskId, fields);
     } catch (error) {
@@ -111,6 +113,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   startTimer: async (taskId, durationMinutes) => {
+    if (!navigator.onLine) {
+      const lang = get().language;
+      alert(translations[lang].offline_action);
+      return;
+    }
     const now = Date.now();
     const endTime = now + (durationMinutes * 60 * 1000);
     localStorage.setItem('active_timer_task_id', JSON.stringify(taskId));
@@ -273,7 +280,8 @@ export const useHabitStore = create((set, get) => ({
 
   togglePinTask: async (taskId) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return;
     }
 
@@ -303,7 +311,8 @@ export const useHabitStore = create((set, get) => ({
 
   toggleTaskCompletion: async (taskId, targetState = null) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return;
     }
 
@@ -332,7 +341,8 @@ export const useHabitStore = create((set, get) => ({
 
   incrementTask: async (taskId, isRetroactive = false) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return;
     }
 
@@ -349,7 +359,8 @@ export const useHabitStore = create((set, get) => ({
 
   decrementTask: async (taskId) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return;
     }
 
@@ -365,7 +376,8 @@ export const useHabitStore = create((set, get) => ({
 
   reorderTasks: async (columnId, startIndex, endIndex) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return;
     }
 
@@ -389,7 +401,8 @@ export const useHabitStore = create((set, get) => ({
 
   addTask: async (columnId, taskData) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return false;
     }
 
@@ -418,7 +431,8 @@ export const useHabitStore = create((set, get) => ({
 
   updateTask: async (taskId, updatedData) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return false;
     }
 
@@ -444,7 +458,8 @@ export const useHabitStore = create((set, get) => ({
 
   deleteTask: async (taskId) => {
     if (!navigator.onLine) {
-      alert("Acción no disponible sin conexión.");
+      const lang = get().language;
+      alert(translations[lang].offline_action);
       return;
     }
 

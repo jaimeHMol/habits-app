@@ -116,7 +116,10 @@ function App() {
     setIsProcessing(true);
     setAuthError('');
     const result = await login(username, password);
-    if (!result.success) setAuthError(result.message || t.auth_failed);
+    if (!result.success) {
+      const msg = result.message === 'OFFLINE_ERROR' ? t.offline_error : (result.message || t.auth_failed);
+      setAuthError(msg);
+    }
     setIsProcessing(false);
   }
 

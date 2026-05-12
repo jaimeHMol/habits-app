@@ -15,7 +15,7 @@ const apiFetch = async (url, options) => {
     return await fetch(url, options);
   } catch (error) {
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('No hay conexión a internet');
+      throw new Error('OFFLINE_ERROR');
     }
     throw error;
   }

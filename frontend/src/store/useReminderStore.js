@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import { taskApi } from '../services/api'
+import { useHabitStore } from './useHabitStore'
+import { translations } from '../i18n/translations'
 
 export const useReminderStore = create((set, get) => ({
   reminders: [],
@@ -32,6 +34,11 @@ export const useReminderStore = create((set, get) => ({
   },
 
   addReminder: async (reminderData) => {
+    if (!navigator.onLine) {
+      const lang = useHabitStore.getState().language;
+      alert(translations[lang].offline_action);
+      return false;
+    }
     try {
       await taskApi.createReminder(reminderData);
       get().fetchReminders();
@@ -42,6 +49,11 @@ export const useReminderStore = create((set, get) => ({
   },
 
   updateReminder: async (id, reminderData) => {
+    if (!navigator.onLine) {
+      const lang = useHabitStore.getState().language;
+      alert(translations[lang].offline_action);
+      return false;
+    }
     try {
       await taskApi.updateReminder(id, reminderData);
       get().fetchReminders();
@@ -52,6 +64,11 @@ export const useReminderStore = create((set, get) => ({
   },
 
   deleteReminder: async (id) => {
+    if (!navigator.onLine) {
+      const lang = useHabitStore.getState().language;
+      alert(translations[lang].offline_action);
+      return false;
+    }
     try {
       await taskApi.deleteReminder(id);
       set(state => ({ reminders: state.reminders.filter(r => r.id !== id) }));
@@ -62,6 +79,11 @@ export const useReminderStore = create((set, get) => ({
   },
 
   updateSettings: async (settings) => {
+    if (!navigator.onLine) {
+      const lang = useHabitStore.getState().language;
+      alert(translations[lang].offline_action);
+      return false;
+    }
     try {
       await taskApi.updateSettings(settings);
       set({ userSettings: { dayStartTime: settings.dayStartTime, dayEndTime: settings.dayEndTime } });
