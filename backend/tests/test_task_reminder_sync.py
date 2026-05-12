@@ -114,3 +114,38 @@ def test_task_reminder_sync_completion(client):
     # 5. Verify reminder is back
     reminders_res = client.get("/reminders/")
     assert any(r["task_id"] == task_id for r in reminders_res.json())
+
+
+def test_task_reminder_auto_healing(client):
+    """
+    Test that calling GET /reminders/ automatically heals the database by 
+    re-creating missing reminders for eligible tasks.
+    """
+    # 1. Create a task
+    task_payload = {
+        "title": "Auto-Healing Test",
+        "column_id": ColumnId.MONTHLY,
+        "target_day": 10,
+    }
+    create_res = client.post("/tasks/", json=task_payload)
+    task_id = create_res.json().get("id")
+
+    # Verify reminder exists and get its ID
+    reminders_res = client.get("/reminders/")
+    reminders = reminders_res.json()
+    task_reminder = next((r for r in reminders if r["task_id"] == task_id), None)
+    assert task_reminder is not None
+    reminder_id = task_reminder["id"]
+
+    # 2. Delete the reminder manually (simulating the "limbo" state)
+    delete_res = client.delete(f"/reminders/{reminder_id}")
+    assert delete_res.status_code == 204
+
+    # 3. Call GET /reminders/ which should trigger auto-healing
+    reminders_res_after = client.get("/reminders/")
+    reminders_after = reminders_res_after.json()
+    
+    # 4. Verify reminder is back
+    task_reminder_after = next((r for r in reminders_after if r["task_id"] == task_id), None)
+    assert task_reminder_after is not None
+    assert task_reminder_after["title"] == "Auto-Healing Test"
