@@ -10,7 +10,16 @@ const getHeaders = () => {
   };
 };
 
-// Helper function to handle 401 Unauthorized responses
+const apiFetch = async (url, options) => {
+  try {
+    return await apiFetch(url, options);
+  } catch (error) {
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('No hay conexión a internet');
+    }
+    throw error;
+  }
+};
 const handleResponse = async (response) => {
   if (response.status === 401) {
     // Return null or throw a specific error that the UI can catch without reloading
@@ -29,7 +38,7 @@ export const taskApi = {
     formData.append('username', username);
     formData.append('password', password);
 
-    const response = await fetch(`${BASE_URL}/auth/login`, {
+    const response = await apiFetch(`${BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData,
@@ -41,7 +50,7 @@ export const taskApi = {
   },
 
   logout: async () => {
-    const response = await fetch(`${BASE_URL}/auth/logout`, {
+    const response = await apiFetch(`${BASE_URL}/auth/logout`, {
       method: 'POST',
       credentials: 'include'
     });
@@ -49,7 +58,7 @@ export const taskApi = {
   },
 
   register: async (data) => {
-    const response = await fetch(`${BASE_URL}/auth/register`, {
+    const response = await apiFetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -64,7 +73,7 @@ export const taskApi = {
   },
 
   generateInvite: async () => {
-    const response = await fetch(`${BASE_URL}/auth/invitations/generate`, {
+    const response = await apiFetch(`${BASE_URL}/auth/invitations/generate`, {
       method: 'POST',
       headers: getHeaders(),
       credentials: 'include'
@@ -73,7 +82,7 @@ export const taskApi = {
   },
 
   getAll: async () => {
-    const response = await fetch(API_URL, { 
+    const response = await apiFetch(API_URL, { 
       headers: getHeaders(),
       credentials: 'include'
     });
@@ -95,7 +104,7 @@ export const taskApi = {
   },
 
   create: async (taskData) => {
-    const response = await fetch(API_URL, {
+    const response = await apiFetch(API_URL, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify(taskData),
@@ -105,7 +114,7 @@ export const taskApi = {
   },
 
   update: async (taskId, taskData) => {
-    const response = await fetch(`${API_URL}${taskId}`, {
+    const response = await apiFetch(`${API_URL}${taskId}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -119,7 +128,7 @@ export const taskApi = {
   },
 
   delete: async (taskId) => {
-    const response = await fetch(`${API_URL}${taskId}`, {
+    const response = await apiFetch(`${API_URL}${taskId}`, {
       method: 'DELETE',
       headers: getHeaders(),
       credentials: 'include'
@@ -132,7 +141,7 @@ export const taskApi = {
     if (targetState !== null) {
       url += `&target_state=${targetState}`;
     }
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'PATCH',
       headers: getHeaders(),
       credentials: 'include'
@@ -141,7 +150,7 @@ export const taskApi = {
   },
 
   increment: async (taskId, isRetroactive = false) => {
-    const response = await fetch(`${API_URL}${taskId}/increment?is_retroactive=${isRetroactive}`, {
+    const response = await apiFetch(`${API_URL}${taskId}/increment?is_retroactive=${isRetroactive}`, {
       method: 'PATCH',
       headers: getHeaders(),
       credentials: 'include'
@@ -150,7 +159,7 @@ export const taskApi = {
   },
 
   decrement: async (taskId) => {
-    const response = await fetch(`${API_URL}${taskId}/decrement`, {
+    const response = await apiFetch(`${API_URL}${taskId}/decrement`, {
       method: 'PATCH',
       headers: getHeaders(),
       credentials: 'include'
@@ -160,7 +169,7 @@ export const taskApi = {
 
 
   reorderColumn: async (columnId, taskIds) => {
-    const response = await fetch(`${BASE_URL}/tasks/reorder/column`, {
+    const response = await apiFetch(`${BASE_URL}/tasks/reorder/column`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({ column_id: columnId, task_ids: taskIds }),
@@ -170,7 +179,7 @@ export const taskApi = {
   },
 
   resetDaily: async () => {
-    const response = await fetch(`${BASE_URL}/tasks/reset-daily`, {
+    const response = await apiFetch(`${BASE_URL}/tasks/reset-daily`, {
       method: 'POST',
       headers: getHeaders(),
       credentials: 'include'
@@ -179,7 +188,7 @@ export const taskApi = {
   },
 
   resetMonthly: async () => {
-    const response = await fetch(`${BASE_URL}/tasks/reset-monthly`, {
+    const response = await apiFetch(`${BASE_URL}/tasks/reset-monthly`, {
       method: 'POST',
       headers: getHeaders(),
       credentials: 'include'
@@ -188,7 +197,7 @@ export const taskApi = {
   },
 
   resetAnnually: async () => {
-    const response = await fetch(`${BASE_URL}/tasks/reset-annually`, {
+    const response = await apiFetch(`${BASE_URL}/tasks/reset-annually`, {
       method: 'POST',
       headers: getHeaders(),
       credentials: 'include'
@@ -198,7 +207,7 @@ export const taskApi = {
 
   // --- Reminders ---
   getReminders: async () => {
-    const response = await fetch(`${BASE_URL}/reminders/`, { 
+    const response = await apiFetch(`${BASE_URL}/reminders/`, { 
       headers: getHeaders(),
       credentials: 'include'
     });
@@ -211,7 +220,7 @@ export const taskApi = {
   },
 
   createReminder: async (reminderData) => {
-    const response = await fetch(`${BASE_URL}/reminders/`, {
+    const response = await apiFetch(`${BASE_URL}/reminders/`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -225,7 +234,7 @@ export const taskApi = {
   },
 
   updateReminder: async (reminderId, reminderData) => {
-    const response = await fetch(`${BASE_URL}/reminders/${reminderId}`, {
+    const response = await apiFetch(`${BASE_URL}/reminders/${reminderId}`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -239,7 +248,7 @@ export const taskApi = {
   },
 
   deleteReminder: async (reminderId) => {
-    const response = await fetch(`${BASE_URL}/reminders/${reminderId}`, {
+    const response = await apiFetch(`${BASE_URL}/reminders/${reminderId}`, {
       method: 'DELETE',
       headers: getHeaders(),
       credentials: 'include'
@@ -249,7 +258,7 @@ export const taskApi = {
 
   // --- User / Settings ---
   getMe: async () => {
-    const response = await fetch(`${BASE_URL}/users/me`, { 
+    const response = await apiFetch(`${BASE_URL}/users/me`, { 
       headers: getHeaders(),
       credentials: 'include'
     });
@@ -263,7 +272,7 @@ export const taskApi = {
   },
 
   updateSettings: async (settings) => {
-    const response = await fetch(`${BASE_URL}/users/settings`, {
+    const response = await apiFetch(`${BASE_URL}/users/settings`, {
       method: 'PUT',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -277,7 +286,7 @@ export const taskApi = {
   },
 
   confirmReset: async (dateStr) => {
-    const response = await fetch(`${BASE_URL}/users/confirm-reset`, {
+    const response = await apiFetch(`${BASE_URL}/users/confirm-reset`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ date_str: dateStr }),
@@ -288,7 +297,7 @@ export const taskApi = {
 
   // --- Push Notifications ---
   getVapidPublicKey: async () => {
-    const response = await fetch(`${BASE_URL}/push/vapid-public-key`, {
+    const response = await apiFetch(`${BASE_URL}/push/vapid-public-key`, {
       credentials: 'include'
     });
     return handleResponse(response);
@@ -299,7 +308,7 @@ export const taskApi = {
     const p256dh = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh'))));
     const auth = btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))));
     
-    const response = await fetch(`${BASE_URL}/push/subscribe`, {
+    const response = await apiFetch(`${BASE_URL}/push/subscribe`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({
@@ -313,7 +322,7 @@ export const taskApi = {
   },
 
   unsubscribePush: async (subscription) => {
-    const response = await fetch(`${BASE_URL}/push/unsubscribe`, {
+    const response = await apiFetch(`${BASE_URL}/push/unsubscribe`, {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({

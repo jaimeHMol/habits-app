@@ -270,6 +270,11 @@ export const useHabitStore = create((set, get) => ({
   })),
 
   togglePinTask: async (taskId) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return;
+    }
+
     const task = get().tasks.find(t => t.id === taskId);
     if (!task) return;
     const newPinnedState = !task.isPinned;
@@ -295,6 +300,11 @@ export const useHabitStore = create((set, get) => ({
   })),
 
   toggleTaskCompletion: async (taskId, targetState = null) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return;
+    }
+
     const task = get().tasks.find(t => t.id === taskId);
     const newCompletedState = targetState !== null ? targetState : !task?.completed;
 
@@ -319,6 +329,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   incrementTask: async (taskId, isRetroactive = false) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return;
+    }
+
     set((state) => ({
       tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
     }));
@@ -331,6 +346,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   decrementTask: async (taskId) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return;
+    }
+
     set((state) => ({
       tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
     }));
@@ -342,6 +362,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   reorderTasks: async (columnId, startIndex, endIndex) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return;
+    }
+
     const state = get();
     const column = state.columns.find(c => c.id === columnId);
     const isDoneView = column.viewMode === 'done';
@@ -361,6 +386,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   addTask: async (columnId, taskData) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return false;
+    }
+
     const payload = {
       title: taskData.title,
       description: taskData.description,
@@ -385,6 +415,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   updateTask: async (taskId, updatedData) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return false;
+    }
+
     const payload = {
       title: updatedData.title,
       description: updatedData.description,
@@ -406,6 +441,11 @@ export const useHabitStore = create((set, get) => ({
   },
 
   deleteTask: async (taskId) => {
+    if (!navigator.onLine) {
+      alert("Acción no disponible sin conexión.");
+      return;
+    }
+
     try {
       await taskApi.delete(taskId);
       set((state) => ({ tasks: state.tasks.filter(t => t.id !== taskId) }));

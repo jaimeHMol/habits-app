@@ -1,6 +1,30 @@
 import { precacheAndRoute } from 'workbox-precaching';
+import { registerRoute } from 'workbox-routing';
+import { NetworkFirst } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
 
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Cache API GET requests for offline read support
+registerRoute(
+  ({ request, url }) => {
+    // Only cache GET requests
+    if (request.method !== 'GET') return false;
+    
+    // API paths to cache
+    const apiPaths = ['/tasks', '/users/me', '/reminders'];
+    return apiPaths.some(path => url.pathname.startsWith(path));
+  },
+  new NetworkFirst({
+    cacheName: 'api-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 24 * 60 * 60, // 24 hours
+      }),
+    ],
+  })
+);
 
 const channel = new BroadcastChannel('reminders-channel');
 
