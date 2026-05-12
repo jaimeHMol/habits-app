@@ -55,7 +55,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   e.stopPropagation();
                   decrementTask(task.id);
                 }}
-                className={`p-1 text-paramo-muted/40 hover:text-white transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : 'opacity-0 group-hover:opacity-100'}`}
+                className={`p-1 text-paramo-muted/40 hover:text-white transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : ''}`}
               >
                 <Minus size={14} />
               </button>
@@ -83,7 +83,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                     if (isTimerActive) stopTimer();
                     else startTimer(task.id, task.durationMinutes);
                   }}
-                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? 'bg-paramo-frailejon text-white animate-pulse' : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
+                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? 'bg-paramo-frailejon text-white animate-pulse' : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-40 group-hover:opacity-100'}`}
                 >
                   {isTimerActive ? <Square size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
                 </button>
