@@ -106,3 +106,66 @@ def test_reset_daily_tasks(client: TestClient):
     assert t1["completed"] is False
     assert t2["completed"] is False
     assert t3["completed"] is True  # Todo column should remain untouched
+
+
+def test_reset_monthly_tasks(client: TestClient):
+    """
+    Test that all monthly tasks are reset to uncompleted status, and reminders are re-created.
+    """
+    # 1. Create a monthly task
+    res = client.post(
+        "/tasks/",
+        json={"title": "Monthly Task", "column_id": ColumnId.MONTHLY, "target_day": 15},
+    )
+    task_id = res.json()["id"]
+
+    # 2. Complete it (should delete reminder)
+    client.patch(f"/tasks/{task_id}/complete")
+    reminders = client.get("/reminders/").json()
+    assert len([r for r in reminders if r["task_id"] == task_id]) == 0
+
+    # 3. Trigger reset
+    reset_res = client.post("/tasks/reset-monthly")
+    assert reset_res.status_code == 200
+
+    # 4. Verify results
+    t1 = next(t for t in client.get("/tasks/").json() if t["id"] == task_id)
+    assert t1["completed"] is False
+
+    # 5. Verify reminder is restored
+    reminders = client.get("/reminders/").json()
+    assert len([r for r in reminders if r["task_id"] == task_id]) == 1
+
+
+def test_reset_annually_tasks(client: TestClient):
+    """
+    Test that all annually tasks are reset to uncompleted status, and reminders are re-created.
+    """
+    # 1. Create an annually task
+    res = client.post(
+        "/tasks/",
+        json={
+            "title": "Annually Task",
+            "column_id": ColumnId.ANNUALLY,
+            "target_day": 15,
+            "target_month": 5,
+        },
+    )
+    task_id = res.json()["id"]
+
+    # 2. Complete it (should delete reminder)
+    client.patch(f"/tasks/{task_id}/complete")
+    reminders = client.get("/reminders/").json()
+    assert len([r for r in reminders if r["task_id"] == task_id]) == 0
+
+    # 3. Trigger reset
+    reset_res = client.post("/tasks/reset-annually")
+    assert reset_res.status_code == 200
+
+    # 4. Verify results
+    t1 = next(t for t in client.get("/tasks/").json() if t["id"] == task_id)
+    assert t1["completed"] is False
+
+    # 5. Verify reminder is restored
+    reminders = client.get("/reminders/").json()
+    assert len([r for r in reminders if r["task_id"] == task_id]) == 1

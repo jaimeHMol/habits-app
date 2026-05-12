@@ -142,13 +142,25 @@ class TaskService:
         """
         Orchestrates the reset of all monthly tasks to uncompleted status.
         """
-        return self.repository.reset_monthly_tasks(user_id)
+        success = self.repository.reset_monthly_tasks(user_id)
+        if success:
+            tasks = self.repository.get_all(user_id)
+            for task in tasks:
+                if task.column_id == ColumnId.MONTHLY:
+                    self._sync_task_reminder(task)
+        return success
 
     def reset_annually_tasks(self, user_id: int) -> bool:
         """
         Orchestrates the reset of all annually tasks to uncompleted status.
         """
-        return self.repository.reset_annually_tasks(user_id)
+        success = self.repository.reset_annually_tasks(user_id)
+        if success:
+            tasks = self.repository.get_all(user_id)
+            for task in tasks:
+                if task.column_id == ColumnId.ANNUALLY:
+                    self._sync_task_reminder(task)
+        return success
 
     def _sync_task_reminder(self, task: Task):
         """
