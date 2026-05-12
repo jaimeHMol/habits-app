@@ -181,7 +181,10 @@ reminders_router = APIRouter(
 def get_reminders(
     current_user: User = Depends(get_current_user),
     service: ReminderService = Depends(get_reminder_service),
+    task_service: TaskService = Depends(get_task_service),
 ):
+    # Auto-healing mechanism: Ensure task-associated reminders are perfectly synced
+    task_service.sync_all_task_reminders(current_user.id)
     return service.get_all_reminders(current_user.id)
 
 

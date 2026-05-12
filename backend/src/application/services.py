@@ -162,6 +162,47 @@ class TaskService:
                     self._sync_task_reminder(task)
         return success
 
+    def sync_all_task_reminders(self, user_id: int):
+        """
+        Self-healing mechanism to ensure all task-associated reminders perfectly match
+        the current state of the tasks. Called dynamically on read to guarantee integrity.
+        """
+        tasks = self.repository.get_all(user_id)
+        all_reminders = self.reminder_repo.get_all(user_id)
+        existing_task_reminders = {
+            r.task_id: r for r in all_reminders if r.task_id is not None
+        }
+
+        for task in tasks:
+            should_have_reminder = (
+                task.column_id in [ColumnId.MONTHLY, ColumnId.ANNUALLY]
+                and task.target_day is not None
+                and not task.completed
+            )
+
+            existing_reminder = existing_task_reminders.get(task.id)
+            if should_have_reminder:
+                reminder_title = strip_markdown(task.title)
+                if existing_reminder:
+                    if existing_reminder.title != reminder_title:
+                        self.reminder_repo.update(
+                            existing_reminder.id,
+                            ReminderUpdate(title=reminder_title),
+                            user_id,
+                        )
+                else:
+                    self.reminder_repo.create(
+                        ReminderCreate(
+                            title=reminder_title,
+                            interval_minutes=1440,  # Default value, frontend will handle the 3-alert logic
+                            is_active=True,
+                            task_id=task.id,
+                        ),
+                        user_id,
+                    )
+            elif existing_reminder:
+                self.reminder_repo.delete(existing_reminder.id, user_id)
+
     def _sync_task_reminder(self, task: Task):
         """
         Automatically manages reminders for Monthly and Annually tasks with target dates.
@@ -170,45 +211,8 @@ class TaskService:
         if user_id is None:
             return
 
-        all_reminders = self.reminder_repo.get_all(user_id)
-        existing_reminder = next(
-            (r for r in all_reminders if r.task_id == task.id), None
-        )
-
-        # Conditions for having a reminder:
-        # 1. Column is Monthly or Annually
-        # 2. Has a target_day set
-        # 3. Is NOT completed
-        should_have_reminder = (
-            task.column_id in [ColumnId.MONTHLY, ColumnId.ANNUALLY]
-            and task.target_day is not None
-            and not task.completed
-        )
-
-        if should_have_reminder:
-            reminder_title = strip_markdown(task.title)
-            if existing_reminder:
-                # Update if title changed
-                if existing_reminder.title != reminder_title:
-                    self.reminder_repo.update(
-                        existing_reminder.id,
-                        ReminderUpdate(title=reminder_title),
-                        user_id,
-                    )
-            else:
-                # Create new
-                self.reminder_repo.create(
-                    ReminderCreate(
-                        title=reminder_title,
-                        interval_minutes=1440,  # Default value, frontend will handle the 3-alert logic
-                        is_active=True,
-                        task_id=task.id,
-                    ),
-                    user_id,
-                )
-        elif existing_reminder:
-            # Delete if no longer needed
-            self.reminder_repo.delete(existing_reminder.id, user_id)
+        # We delegate to the bulk sync to ensure consistency
+        self.sync_all_task_reminders(user_id)
 
     def _ensure_chronological_order(self, column_id: ColumnId, user_id: int):
         """
