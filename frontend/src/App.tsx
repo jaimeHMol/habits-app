@@ -114,8 +114,8 @@ function App() {
     e.preventDefault();
     setIsProcessing(true);
     setAuthError('');
-    const success = await login(username, password);
-    if (!success) setAuthError(t.auth_failed);
+    const result = await login(username, password);
+    if (!result.success) setAuthError(result.message || t.auth_failed);
     setIsProcessing(false);
   }
 

@@ -16,9 +16,9 @@ export const useHabitStore = create((set, get) => ({
         lastUsedDate: data.user.last_period_reset_date
       });
       get().fetchTasks(); // Load data immediately after login
-      return true;
+      return { success: true };
     } catch (error) {
-      return false;
+      return { success: false, message: error.message };
     }
   },
 
@@ -51,7 +51,9 @@ export const useHabitStore = create((set, get) => ({
       });
       localStorage.setItem('habit_lang', user.language);
     } catch (error) {
-      set({ isAuthenticated: false, user: null });
+      if (error.message === 'Session expired') {
+        set({ isAuthenticated: false, user: null });
+      }
       console.error("Failed to fetch profile", error);
     }
   },
