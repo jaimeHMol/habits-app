@@ -103,6 +103,58 @@ export const useHabitStore = create((set, get) => ({
     remainingSeconds: 0 
   },
 
+  syncQueue: JSON.parse(localStorage.getItem('offline_sync_queue') || '[]'),
+  isSyncing: false,
+
+  enqueueAction: (actionData) => {
+    const action = { ...actionData, id: Date.now().toString() + Math.random().toString(36).substring(7) };
+    set(state => {
+      const newQueue = [...state.syncQueue, action];
+      localStorage.setItem('offline_sync_queue', JSON.stringify(newQueue));
+      return { syncQueue: newQueue };
+    });
+  },
+
+  processSyncQueue: async () => {
+    const { syncQueue, isSyncing } = get();
+    if (syncQueue.length === 0 || !navigator.onLine || isSyncing) return;
+    
+    set({ isSyncing: true });
+    let hasErrors = false;
+
+    for (const action of syncQueue) {
+      try {
+        if (action.type === 'TOGGLE_COMPLETION') {
+          if (action.newCompletedState) {
+            await taskApi.update(action.taskId, { timer_end_time: null, timer_triggered: false });
+          }
+          await taskApi.toggleComplete(action.taskId, false, action.targetState);
+        } else if (action.type === 'INCREMENT') {
+          await taskApi.increment(action.taskId, action.isRetroactive);
+        } else if (action.type === 'DECREMENT') {
+          await taskApi.decrement(action.taskId);
+        }
+        
+        set(state => {
+          const newQueue = state.syncQueue.filter(a => a.id !== action.id);
+          localStorage.setItem('offline_sync_queue', JSON.stringify(newQueue));
+          return { syncQueue: newQueue };
+        });
+      } catch (error) {
+        console.error("Failed to sync action", action, error);
+        hasErrors = true;
+        break;
+      }
+    }
+
+    set({ isSyncing: false });
+    if (!hasErrors) {
+       get().fetchTasks();
+       useReminderStore.getState().fetchReminders();
+    }
+  },
+
+
   updateTaskOnServer: async (taskId, fields) => {
     if (!navigator.onLine) return;
     try {
@@ -257,7 +309,27 @@ export const useHabitStore = create((set, get) => ({
       set({ isLoading: true, error: null });
     }
     try {
-      const tasks = await taskApi.getAll();
+      let tasks = await taskApi.getAll();
+      
+      const { syncQueue } = get();
+      if (syncQueue && syncQueue.length > 0) {
+        syncQueue.forEach(action => {
+          const task = tasks.find(t => t.id === action.taskId);
+          if (!task) return;
+          if (action.type === 'TOGGLE_COMPLETION') {
+            task.completed = action.newCompletedState;
+            if (task.completed) {
+              task.timerEndTime = null;
+              task.timerTriggered = false;
+            }
+          } else if (action.type === 'INCREMENT') {
+            task.currentCount += 1;
+          } else if (action.type === 'DECREMENT') {
+            task.currentCount = Math.max(0, task.currentCount - 1);
+          }
+        });
+      }
+
       set({ tasks, isLoading: false, isAuthenticated: true });
       // Trigger day change check after tasks are loaded
       get().checkDayChange();
@@ -310,16 +382,23 @@ export const useHabitStore = create((set, get) => ({
   })),
 
   toggleTaskCompletion: async (taskId, targetState = null) => {
-    if (!navigator.onLine) {
-      const lang = get().language;
-      alert(translations[lang].offline_action);
-      return;
-    }
-
     const task = get().tasks.find(t => t.id === taskId);
     const newCompletedState = targetState !== null ? targetState : !task?.completed;
 
     if (task && task.completed === newCompletedState) return;
+
+    if (!navigator.onLine) {
+      set((state) => ({
+        tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
+      }));
+      get().enqueueAction({ 
+        type: 'TOGGLE_COMPLETION', 
+        taskId, 
+        targetState, 
+        newCompletedState 
+      });
+      return;
+    }
 
     set((state) => ({
       tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
@@ -341,8 +420,10 @@ export const useHabitStore = create((set, get) => ({
 
   incrementTask: async (taskId, isRetroactive = false) => {
     if (!navigator.onLine) {
-      const lang = get().language;
-      alert(translations[lang].offline_action);
+      set((state) => ({
+        tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
+      }));
+      get().enqueueAction({ type: 'INCREMENT', taskId, isRetroactive });
       return;
     }
 
@@ -359,8 +440,10 @@ export const useHabitStore = create((set, get) => ({
 
   decrementTask: async (taskId) => {
     if (!navigator.onLine) {
-      const lang = get().language;
-      alert(translations[lang].offline_action);
+      set((state) => ({
+        tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
+      }));
+      get().enqueueAction({ type: 'DECREMENT', taskId });
       return;
     }
 

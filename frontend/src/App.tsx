@@ -37,7 +37,8 @@ function App() {
   const { 
     columns, reorderTasks, fetchTasks, isAuthenticated, user, 
     login, register, logout, fetchUserProfile, language, setLanguage,
-    showReviewModal, checkDayChange, activeTimer, tickTimer, generateInvite 
+    showReviewModal, checkDayChange, activeTimer, tickTimer, generateInvite,
+    processSyncQueue
   } = useHabitStore()
   const { fetchReminders } = useReminderStore()
 
@@ -104,6 +105,16 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [isAuthenticated, activeTimer.taskId, tickTimer]);
+
+  // Offline Sync Queue Processor
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("🌐 Conexión restaurada, procesando cola de sincronización...");
+      processSyncQueue();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [processSyncQueue]);
 
   const onDragEnd = (result) => {
     const { source, destination } = result
