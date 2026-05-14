@@ -8,7 +8,7 @@ import { PeriodicReviewModal } from './components/PeriodicReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
 import { NotificationToast } from './components/NotificationToast'
-import { LogOut, Lock, UserPlus, Copy, Check, Globe, Eye, EyeOff } from 'lucide-react'
+import { LogOut, Lock, UserPlus, Copy, Check, Globe, Eye, EyeOff, CloudOff, Download } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
