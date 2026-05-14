@@ -36,7 +36,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
       onClick={onEditClick}
       className={`rounded-xl border-l-4 cursor-pointer group transition-all duration-300
         ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-paramo-frailejon z-50 bg-paramo-board' : 'shadow-md ring-1 hover:ring-white/20'}
-        ${task.completed ? 'bg-paramo-card/40 ring-white/5 opacity-70 grayscale-[50%]' : 'bg-paramo-card ring-white/10'}
+        ${task.completed ? 'bg-white/5 ring-white/5 grayscale-[20%]' : 'bg-paramo-card ring-white/10'}
         ${isTimerActive ? 'ring-paramo-frailejon/50 bg-paramo-frailejon/5 shadow-lg shadow-paramo-frailejon/5' : ''}
       `}
       style={{ 

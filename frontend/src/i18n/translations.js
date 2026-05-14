@@ -126,6 +126,7 @@ export const translations = {
     done: "hechas",
     new_task: "Nueva Tarea",
     no_completed: "Sin tareas completadas.",
+    all_caught_up: "Todo al día",
     
     // Reminders
     reminders_title: "Recordatorios",
@@ -196,3 +197,4 @@ export const translations = {
     reminder_placeholder: "Título del recordatorio...",
   }
 };
+

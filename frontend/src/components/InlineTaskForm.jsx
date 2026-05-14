@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
-import { Trash2, X, Save, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react'
+import { Trash2, X, Save, AlertCircle, ChevronUp, ChevronDown, LoaderPinwheel } from 'lucide-react'
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
@@ -79,11 +79,11 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         </div>
       )}
 
-      <input autoFocus type="text" placeholder={t.title_placeholder || "Task title..."} value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} className="bg-transparent border-b border-white/10 text-sm font-bold text-white placeholder:text-paramo-muted pb-1 focus:outline-none focus:border-paramo-frailejon disabled:opacity-50" />
-      <textarea placeholder={t.desc_placeholder || "Description (optional)..."} value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} className="bg-transparent border border-white/10 rounded-md p-2 text-xs text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon resize-y min-h-[4rem] h-24 disabled:opacity-50" />
+      <input autoFocus type="text" placeholder={t.title_placeholder || "Task title..."} value={title} onChange={(e) => setTitle(e.target.value)} disabled={isSaving} className="bg-transparent border-b border-white/10 text-sm font-bold text-white placeholder:text-paramo-muted pb-1 focus:outline-none focus:border-paramo-frailejon" />
+      <textarea placeholder={t.desc_placeholder || "Description (optional)..."} value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} className="bg-transparent border border-white/10 rounded-md p-2 text-xs text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon resize-y min-h-[4rem] h-24" />
       
       <div className="flex flex-wrap gap-2 items-center">
-        <select value={priority} onChange={(e) => setPriority(e.target.value)} disabled={isSaving} className={`bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-paramo-frailejon disabled:opacity-50 ${priorityColorClass}`}>
+        <select value={priority} onChange={(e) => setPriority(e.target.value)} disabled={isSaving} className={`bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-paramo-frailejon ${priorityColorClass}`}>
           <option value="muted" className="text-paramo-muted font-bold">{t.prio_muted}</option>
           <option value="frailejon" className="text-paramo-frailejon font-bold">{t.prio_important}</option>
           <option value="tierra" className="text-paramo-tierra font-bold">{t.prio_critical}</option>
@@ -92,7 +92,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         {column.id === 'monthly' && (
           <select 
             value={taskType} onChange={(e) => setTaskType(e.target.value)} disabled={isSaving} 
-            className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold text-paramo-muted focus:outline-none focus:border-paramo-frailejon disabled:opacity-50"
+            className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold text-paramo-muted focus:outline-none focus:border-paramo-frailejon"
           >
             <option value="checkbox">{t.type_once || "Once"}</option>
             <option value="counter">{t.type_counter || "Counter"}</option>
@@ -155,7 +155,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
           </div>
         )}
         {column.type === 'annually' && (
-          <select value={targetMonth} onChange={(e) => setTargetMonth(e.target.value)} disabled={isSaving} className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs text-paramo-muted focus:outline-none focus:border-paramo-frailejon disabled:opacity-50">
+          <select value={targetMonth} onChange={(e) => setTargetMonth(e.target.value)} disabled={isSaving} className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs text-paramo-muted focus:outline-none focus:border-paramo-frailejon">
             <option value="" disabled>{t.month_label || "Month"}</option>
             {monthNames.map((m, i) => <option key={m} value={i + 1} className="text-paramo-muted">{m}</option>)}
           </select>
@@ -163,13 +163,16 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
       </div>
       
       <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
-        <div>{initialData && <button onClick={onDelete} disabled={isSaving} title="Delete task" className="text-paramo-muted hover:text-red-500 p-1.5 rounded-md hover:bg-white/5 transition-colors disabled:opacity-50"><Trash2 size={16} /></button>}</div>
+        <div>{initialData && <button onClick={onDelete} disabled={isSaving} title="Delete task" className="text-paramo-muted hover:text-red-500 p-1.5 rounded-md hover:bg-white/5 transition-colors"><Trash2 size={16} /></button>}</div>
         <div className="flex gap-2">
-          <button onClick={onCancel} disabled={isSaving} className="text-paramo-muted hover:text-white p-1.5 rounded-md hover:bg-white/5 transition-colors disabled:opacity-50"><X size={16} /></button>
+          <button onClick={onCancel} disabled={isSaving} className="text-paramo-muted hover:text-white p-1.5 rounded-md hover:bg-white/5 transition-colors"><X size={16} /></button>
           
-          <button onClick={handleSave} disabled={!title.trim() || isSaving} className="text-paramo-frailejon hover:text-teal-400 p-1.5 rounded-md hover:bg-white/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
-            <Save size={16} />
-            {isSaving && <span className="text-[10px] animate-pulse font-bold uppercase tracking-wider">{t.saving_status || "Saving"}</span>}
+          <button onClick={handleSave} disabled={!title.trim() || isSaving} className={`p-1.5 rounded-md transition-colors disabled:cursor-not-allowed flex items-center gap-1 ${isSaving ? 'text-paramo-muted' : 'text-paramo-frailejon hover:text-teal-400 hover:bg-white/5'}`}>
+            {isSaving ? (
+              <LoaderPinwheel size={16} className="animate-spin text-paramo-frailejon" />
+            ) : (
+              <Save size={16} />
+            )}
           </button>
         </div>
       </div>
