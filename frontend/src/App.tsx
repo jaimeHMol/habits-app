@@ -62,6 +62,11 @@ function App() {
   const [generatedInvite, setGeneratedInvite] = useState('')
   const [copied, setCopied] = useState(false)
 
+  // Offline and PWA States
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  const [deferredPrompt, setDeferredPrompt] = useState(null)
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false)
+
   const t = translations[language] || translations.en;
   const greeting = t[getGreetingKey()];
 
@@ -106,15 +111,47 @@ function App() {
     return () => clearInterval(interval);
   }, [isAuthenticated, activeTimer.taskId, tickTimer]);
 
-  // Offline Sync Queue Processor
+  // Offline Sync Queue Processor & Online Status
   useEffect(() => {
     const handleOnline = () => {
       console.log("🌐 Conexión restaurada, procesando cola de sincronización...");
+      setIsOffline(false);
       processSyncQueue();
     };
+    const handleOffline = () => setIsOffline(true);
+
     window.addEventListener('online', handleOnline);
-    return () => window.removeEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    }
   }, [processSyncQueue]);
+
+  // PWA Install Prompt
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Solo mostrar si no se ha instalado ya
+      setShowInstallPrompt(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallPrompt(false);
+    }
+    setDeferredPrompt(null);
+  };
 
   const onDragEnd = (result) => {
     const { source, destination } = result
@@ -286,6 +323,16 @@ function App() {
           </p>
 
           <div className="flex items-center gap-2">
+            {/* Offline Indicator */}
+            {isOffline && (
+              <div 
+                className="text-paramo-tierra bg-paramo-tierra/10 p-2 rounded-lg border border-paramo-tierra/20 animate-pulse"
+                title={t.offline_error || "Offline Mode"}
+              >
+                <CloudOff size={16} />
+              </div>
+            )}
+
             {/* Language Toggle */}
             <button 
               onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
@@ -347,6 +394,26 @@ function App() {
           ))}
         </div>
       </DragDropContext>
+
+      {showInstallPrompt && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 bg-paramo-card border border-paramo-frailejon/30 shadow-2xl p-4 rounded-2xl z-50 flex items-center gap-4 animate-fadeIn max-w-sm w-[90%]">
+          <div className="bg-paramo-frailejon/10 p-2 rounded-xl text-paramo-frailejon">
+            <Download size={20} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-white mb-0.5">Instala Habits</h4>
+            <p className="text-xs text-paramo-muted leading-tight">Acceso rápido y modo offline puro</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <button onClick={handleInstallClick} className="bg-paramo-frailejon text-paramo-bg px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-teal-400 transition-colors">
+              Instalar
+            </button>
+            <button onClick={() => setShowInstallPrompt(false)} className="text-[10px] text-paramo-muted hover:text-white uppercase font-bold text-center">
+              Quizás luego
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-paramo-board border-t border-white/5 px-2 py-3 flex justify-around items-center z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         {columns.map(col => (

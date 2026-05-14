@@ -1,9 +1,12 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { taskApi } from '../services/api'
 import { useReminderStore } from './useReminderStore'
 import { translations } from '../i18n/translations'
 
-export const useHabitStore = create((set, get) => ({
+export const useHabitStore = create(
+  persist(
+    (set, get) => ({
   isAuthenticated: true, // Assume true to try initial data fetch, but will be set to false on 401
   user: null, // { username, fullName, role }
   
@@ -540,18 +543,31 @@ export const useHabitStore = create((set, get) => ({
   },
 
   deleteTask: async (taskId) => {
-    if (!navigator.onLine) {
-      const lang = get().language;
-      alert(translations[lang].offline_action);
-      return;
-    }
+    const taskToDelete = get().tasks.find(t => t.id === taskId);
+    if (!taskToDelete) return;
+
+    // Optimistic Deletion
+    set((state) => ({ tasks: state.tasks.filter(t => t.id !== taskId) }));
 
     try {
       await taskApi.delete(taskId);
-      set((state) => ({ tasks: state.tasks.filter(t => t.id !== taskId) }));
       useReminderStore.getState().fetchReminders();
     } catch (error) {
+      // Rollback
+      set((state) => ({ tasks: [...state.tasks, taskToDelete] }));
+      const lang = get().language;
+      alert(translations[lang].offline_action || "Error deleting task offline.");
       console.error("Delete failed", error);
     }
   }
-}))
+}), {
+  name: 'habits-storage',
+  storage: createJSONStorage(() => localStorage),
+  partialize: (state) => ({ 
+    tasks: state.tasks, 
+    columns: state.columns, 
+    language: state.language, 
+    lastUsedDate: state.lastUsedDate 
+  }),
+})
+);
