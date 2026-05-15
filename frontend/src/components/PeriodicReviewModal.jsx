@@ -41,11 +41,31 @@ export const PeriodicReviewModal = () => {
 
   const Section = ({ title, icon: Icon, tasks, colorClass }) => {
     if (tasks.length === 0) return null;
+    const checkableTasks = tasks.filter(t => t.taskType !== 'counter');
+    const allSelected = checkableTasks.length > 0 && checkableTasks.every(t => completedIds.includes(t.id));
+
     return (
       <div className="space-y-3">
-        <h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${colorClass}`}>
-          <Icon size={14} /> {title}
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${colorClass}`}>
+            <Icon size={14} /> {title}
+          </h3>
+          {checkableTasks.length > 0 && (
+            <button 
+              onClick={() => {
+                if (allSelected) {
+                  setCompletedIds(prev => prev.filter(id => !checkableTasks.find(t => t.id === id)));
+                } else {
+                  const newIds = checkableTasks.filter(t => !completedIds.includes(t.id)).map(t => t.id);
+                  setCompletedIds(prev => [...prev, ...newIds]);
+                }
+              }}
+              className="text-[9px] uppercase font-bold text-paramo-muted hover:text-white transition-colors tracking-widest bg-white/5 px-2 py-1 rounded-md border border-white/5"
+            >
+              {allSelected ? t.review_deselect_all : t.review_select_all}
+            </button>
+          )}
+        </div>
         <div className="flex flex-col gap-2">
           {tasks.map(task => {
             if (task.taskType === 'counter') {

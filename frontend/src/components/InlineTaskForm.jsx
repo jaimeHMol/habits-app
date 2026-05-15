@@ -5,6 +5,49 @@ import { Trash2, X, Save, AlertCircle, ChevronUp, ChevronDown, LoaderPinwheel } 
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
+const Dropdown = ({ value, options, onChange, disabled, className, placeholder }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(o => o.value == value);
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center gap-1 bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-paramo-frailejon disabled:opacity-50 ${className}`}
+      >
+        <span>{selectedOption ? selectedOption.label : (placeholder || '')}</span>
+        <ChevronDown size={10} className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      {isOpen && !disabled && (
+        <div className="absolute top-full mt-1 left-0 bg-paramo-board border border-white/10 rounded shadow-xl z-50 overflow-y-auto max-h-48 flex flex-col min-w-[120px] custom-scrollbar">
+          {options.map(o => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => { onChange(o.value); setIsOpen(false); }}
+              className={`px-3 py-2 text-xs font-bold text-left hover:bg-white/5 transition-colors whitespace-nowrap ${o.className || 'text-paramo-muted'}`}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete }) => {
   const { language } = useHabitStore();
   const t = translations[language] || translations.en;
@@ -83,20 +126,29 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
       <textarea placeholder={t.desc_placeholder || "Description (optional)..."} value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} className="bg-transparent border border-white/10 rounded-md p-2 text-xs text-white placeholder:text-paramo-muted/50 focus:outline-none focus:border-paramo-frailejon resize-y min-h-[4rem] h-24" />
       
       <div className="flex flex-wrap gap-2 items-center">
-        <select value={priority} onChange={(e) => setPriority(e.target.value)} disabled={isSaving} className={`bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold focus:outline-none focus:border-paramo-frailejon ${priorityColorClass}`}>
-          <option value="muted" className="text-paramo-muted font-bold">{t.prio_muted}</option>
-          <option value="frailejon" className="text-paramo-frailejon font-bold">{t.prio_important}</option>
-          <option value="tierra" className="text-paramo-tierra font-bold">{t.prio_critical}</option>
-        </select>
+        <Dropdown
+          value={priority}
+          onChange={setPriority}
+          disabled={isSaving}
+          className={priorityColorClass}
+          options={[
+            { value: 'muted', label: t.prio_muted, className: 'text-paramo-muted' },
+            { value: 'frailejon', label: t.prio_important, className: 'text-paramo-frailejon' },
+            { value: 'tierra', label: t.prio_critical, className: 'text-paramo-tierra' }
+          ]}
+        />
 
         {column.id === 'monthly' && (
-          <select 
-            value={taskType} onChange={(e) => setTaskType(e.target.value)} disabled={isSaving} 
-            className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs font-bold text-paramo-muted focus:outline-none focus:border-paramo-frailejon"
-          >
-            <option value="checkbox">{t.type_once || "Once"}</option>
-            <option value="counter">{t.type_counter || "Counter"}</option>
-          </select>
+          <Dropdown
+            value={taskType}
+            onChange={setTaskType}
+            disabled={isSaving}
+            className="text-paramo-muted"
+            options={[
+              { value: 'checkbox', label: t.type_once || "Once" },
+              { value: 'counter', label: t.type_counter || "Counter" }
+            ]}
+          />
         )}
 
         {column.id === 'daily' && (
@@ -155,10 +207,14 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
           </div>
         )}
         {column.type === 'annually' && (
-          <select value={targetMonth} onChange={(e) => setTargetMonth(e.target.value)} disabled={isSaving} className="bg-paramo-board border border-white/10 rounded px-2 py-1 text-xs text-paramo-muted focus:outline-none focus:border-paramo-frailejon">
-            <option value="" disabled>{t.month_label || "Month"}</option>
-            {monthNames.map((m, i) => <option key={m} value={i + 1} className="text-paramo-muted">{m}</option>)}
-          </select>
+          <Dropdown
+            value={targetMonth}
+            onChange={setTargetMonth}
+            disabled={isSaving}
+            className="text-paramo-muted"
+            placeholder={t.month_label || "Month"}
+            options={monthNames.map((m, i) => ({ value: i + 1, label: m, className: "text-paramo-muted" }))}
+          />
         )}
       </div>
       

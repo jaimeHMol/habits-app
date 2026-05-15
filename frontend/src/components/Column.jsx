@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
 import { Droppable, Draggable } from '@hello-pangea/dnd'
-import { Plus, ChevronsUpDown, Coffee } from 'lucide-react'
+import { Plus, ChevronsUpDown, Coffee, Wind } from 'lucide-react'
 import { TaskCard } from './TaskCard'
 import { InlineTaskForm } from './InlineTaskForm'
 import { LoadingSkeleton } from './LoadingSkeleton'
@@ -114,9 +114,12 @@ export const Column = ({ column, isActiveOnMobile }) => {
               {provided.placeholder}
               
               {currentViewMode === 'done' && displayedTasks.length === 0 && (
-                <p className="text-center text-xs text-paramo-muted py-8 italic">
-                  {t.no_completed}
-                </p>
+                <div className="flex flex-col items-center justify-center py-10 opacity-40 grayscale group hover:opacity-100 hover:grayscale-0 transition-all duration-500">
+                  <Wind size={32} className="text-paramo-muted mb-3" />
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-paramo-muted text-center max-w-[200px]">
+                    {t.no_completed}
+                  </p>
+                </div>
               )}
 
               {currentViewMode === 'active' && displayedTasks.length === 0 && !activeNewTask && (

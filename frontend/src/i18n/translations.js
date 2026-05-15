@@ -27,7 +27,7 @@ export const translations = {
     active: "active",
     done: "done",
     new_task: "New Task",
-    no_completed: "No completed tasks.",
+    no_completed: "No completed tasks",
     all_caught_up: "All caught up",
     
     // Reminders
@@ -39,7 +39,7 @@ export const translations = {
     minutes: "minutes",
     add: "Add",
     my_alerts: "My Alerts",
-    no_general: "No active general reminders.",
+    no_general: "No active general reminders",
     task_alerts: "Task-Linked Alerts",
     alerts_on_day: "3 alerts on due day",
     managed_by_task: "Managed by task",
@@ -85,9 +85,9 @@ export const translations = {
     desc_placeholder: "Description (optional)",
     error_title_req: "Title is required",
     error_day_range: "Day must be between 1 and 31",
-    error_network: "Network error. Try again.",
-    offline_error: "No internet connection.",
-    offline_action: "Action not available without connection.",
+    error_network: "Network error. Try again",
+    offline_error: "No internet connection",
+    offline_action: "Action not available without connection",
     
     // Priorities
     prio_muted: "Optional",
@@ -126,7 +126,7 @@ export const translations = {
     active: "activas",
     done: "hechas",
     new_task: "Nueva Tarea",
-    no_completed: "Sin tareas completadas.",
+    no_completed: "Sin tareas completadas",
     all_caught_up: "Todo al día",
     
     // Reminders
@@ -138,7 +138,7 @@ export const translations = {
     minutes: "minutos",
     add: "Añadir",
     my_alerts: "Mis Alertas",
-    no_general: "Sin recordatorios generales.",
+    no_general: "Sin recordatorios generales",
     task_alerts: "Alertas de Tareas",
     alerts_on_day: "3 avisos en el día",
     managed_by_task: "Gestionado por la tarea",
@@ -166,6 +166,8 @@ export const translations = {
     review_syncing: "Sincronizando...",
     review_start: "Iniciar Nuevo Ciclo",
     review_cycle_added: "Añadidos este ciclo",
+    review_select_all: "Seleccionar Todo",
+    review_deselect_all: "Deseleccionar Todo",
     
     // Form
     title_label: "Título",
@@ -184,9 +186,9 @@ export const translations = {
     desc_placeholder: "Descripción (opcional)",
     error_title_req: "El título es obligatorio",
     error_day_range: "El día debe ser entre 1 y 31",
-    error_network: "Error de red. Intenta de nuevo.",
-    offline_error: "No hay conexión a internet.",
-    offline_action: "Acción no disponible sin conexión.",
+    error_network: "Error de red. Intenta de nuevo",
+    offline_error: "No hay conexión a internet",
+    offline_action: "Acción no disponible sin conexión",
     
     // Priorities
     prio_muted: "Opcional",
@@ -198,4 +200,5 @@ export const translations = {
     reminder_placeholder: "Título del recordatorio...",
   }
 };
+
 
