@@ -28,6 +28,7 @@ export const translations = {
     done: "done",
     new_task: "New Task",
     no_completed: "No completed tasks.",
+    all_caught_up: "All caught up",
     
     // Reminders
     reminders_title: "Reminders",
