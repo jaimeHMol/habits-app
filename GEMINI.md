@@ -37,3 +37,11 @@ Eres un experto en ingeniería de software incluyendo UI and UX (Gemini) operand
 - Siempre asegurate de que el pre-commit hook se ejecuta correctamente al hacer cambios, ya sea en el frontend, backend o la infraestructura.
 - Si sugieres comandos de terminal, especifica si deben ejecutarse en la máquina local o en el servidor Ubuntu.
 - Asume que los puertos de red (80, 443) ya están configurados y Caddy está deshabilitado en el servidor.
+
+## 6. Principios y Reglas de UI/UX (Establecidos post-auditoría)
+- **Local-First y UI Optimista:** Las interacciones del usuario (crear, completar, borrar tareas) deben reflejarse **inmediatamente** en la interfaz (0ms de latencia percibida) antes de esperar la respuesta del servidor. Usa encolado de acciones (Background Sync) para conexiones offline. El estado inicial debe cargarse desde el caché local (Zero-Loading-Screen).
+- **Consistencia de Elementos e Íconos:** Mantén homogeneidad estricta geométrica y de peso visual. Íconos agrupados deben compartir el mismo tamaño y grosor de línea (ej. `size={16} strokeWidth={1.5}`). Prioriza formas básicas y angulares sobre diseños redondeados y complejos.
+- **Evitar Controles Nativos del OS:** Nunca uses elementos nativos (como `<select>`) que rompan la inmersión del diseño oscuro ("dark/páramo"). Sustitúyelos por componentes personalizados (ej. `<Dropdown>`) hechos con Tailwind.
+- **Copywriting de Interfaz (Puntuación):** Los textos cortos de la UI (etiquetas, estados vacíos, mensajes de error cortos, botones) **NUNCA deben llevar punto final**. Solo los párrafos largos y descriptivos llevan punto.
+- **Microinteracciones ("Delight"):** Recompensa al usuario sutilmente al completar hábitos. Usa retroalimentación visual no bloqueante (como partículas de confeti respetando las preferencias de movimiento reducido) y auditiva sintetizada a través de la Web Audio API (tonos cálidos, octavas bajas, ondas suaves como 'sine' o 'triangle') en lugar de cargar pesados archivos mp3.
+- **Empty States y Estados de Carga:** No dejes espacios en blanco "muertos". Usa "Empty States" iconográficos e inspiradores cuando no haya datos. Evita oscurecer (dimming) agresivamente los componentes durante estados de carga (`isSaving`); usa *spinners* localizados en los botones de acción para mantener la tarjeta viva.

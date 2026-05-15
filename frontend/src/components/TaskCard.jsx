@@ -3,6 +3,7 @@ import { useHabitStore } from '../store/useHabitStore'
 import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus, Hash, Bookmark } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import confetti from 'canvas-confetti'
 
 const MinimalPin = ({ size = 16, strokeWidth = 1.5, fill = "none", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -12,6 +13,48 @@ const MinimalPin = ({ size = 16, strokeWidth = 1.5, fill = "none", className = "
 );
 
 const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+
+const playVictorySound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    // Explicitly resume to satisfy mobile/Safari auto-play policies
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
+    const playNote = (frequency, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      // 'sine' wave for a softer, more magical chime
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(frequency, ctx.currentTime + startTime);
+      
+      // Envelope: quick attack, smooth decay
+      gainNode.gain.setValueAtTime(0, ctx.currentTime + startTime);
+      gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + startTime + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + startTime + duration);
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start(ctx.currentTime + startTime);
+      osc.stop(ctx.currentTime + startTime + duration);
+    };
+
+    // Play a fast, uplifting major arpeggio, shifted down one octave (C5, E5, G5, C6)
+    playNote(523.25, 0, 0.4);      // C5
+    playNote(659.25, 0.06, 0.4);   // E5
+    playNote(783.99, 0.12, 0.4);   // G5
+    playNote(1046.50, 0.18, 0.6);  // C6 (rings out a bit longer)
+
+  } catch (err) {
+    console.error("Victory sound failed:", err);
+  }
+};
 
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
   const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask } = useHabitStore();
@@ -31,16 +74,24 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Progress Bar Calculation
+  let backgroundStyle = {};
+  if (isTimerActive && task.durationMinutes > 0) {
+    const totalSeconds = task.durationMinutes * 60;
+    const progressPercent = Math.max(0, Math.min(100, ((totalSeconds - activeTimer.remainingSeconds) / totalSeconds) * 100));
+    backgroundStyle.backgroundImage = `linear-gradient(to right, rgba(13, 148, 136, 0.15) ${progressPercent}%, transparent ${progressPercent}%)`;
+  }
+
   return (
     <div 
       onClick={onEditClick}
       className={`rounded-xl border-l-4 cursor-pointer group transition-all duration-300
         ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-paramo-frailejon z-50 bg-paramo-board' : 'shadow-md ring-1 hover:ring-white/20'}
         ${task.completed ? 'bg-white/5 ring-white/5 grayscale-[20%]' : 'bg-paramo-card ring-white/10'}
-        ${isTimerActive ? 'ring-paramo-frailejon/50 bg-paramo-frailejon/5 shadow-lg shadow-paramo-frailejon/5' : ''}
+        ${isTimerActive ? 'ring-paramo-frailejon/50 shadow-lg shadow-paramo-frailejon/5' : ''}
       `}
       style={{ 
-        // BUG FIX: Removed provided.draggableProps.style from here.
+        ...backgroundStyle,
         borderLeftColor: isTimerActive ? '#0d9488' : (task.completed ? '#a8a29e' : (task.priority === 'frailejon' ? '#0d9488' : task.priority === 'tierra' ? '#b45309' : '#a8a29e')) 
       }}
     >
@@ -75,6 +126,26 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 title={task.completed ? "Mark as active" : "Mark as done"}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (!task.completed) {
+                    try {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = (rect.left + rect.width / 2) / window.innerWidth;
+                      const y = (rect.top + rect.height / 2) / window.innerHeight;
+                      const fireConfetti = typeof confetti === 'function' ? confetti : confetti.default;
+                      if (fireConfetti) {
+                        fireConfetti({
+                          particleCount: 40,
+                          spread: 50,
+                          origin: { x, y },
+                          colors: ['#0d9488', '#14b8a6', '#99f6e4'],
+                          disableForReducedMotion: true
+                        });
+                      }
+                      playVictorySound();
+                    } catch (err) {
+                      console.error("Microinteraction error:", err);
+                    }
+                  }
                   toggleTaskCompletion(task.id);
                 }}
                 className={`transition-colors

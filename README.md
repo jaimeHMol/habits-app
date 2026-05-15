@@ -10,7 +10,12 @@ A minimalist, high-performance task and habit tracker built with a focus on simp
 ## ✨ Features
 
 - **Intuitive Board**: Organize tasks across **Daily**, **Monthly**, **Annually**, and **To-Do** columns.
-- **Multi-language Support (New)**: Full interface available in **English** and **Spanish**, with user preference persisted in the profile.
+- **Local-First & Offline Support**: Enjoy a "Zero-Loading-Screen" experience. Data is persisted locally for instant startup, and changes are synced in the background when connection is restored. Supports creation, completion, and deletion of tasks even while offline.
+- **Optimistic UI**: Every interaction (adding, pinning, or completing a task) happens in 0ms, giving immediate feedback before the server responds.
+- **Delightful Micro-interactions**: Celebrate your wins with a subtle **Confetti** burst and a synthesized **Audio Arpeggio** (Web Audio API) upon task completion. 
+- **In-App Progress Visuals**: Task cards feature a dynamic **Background Progress Bar** that reflects the remaining time of your active focus timer.
+- **Multi-language Support**: Full interface available in **English** and **Spanish**, with user preference persisted in the profile.
+- **Pin Tasks**: Keep your most important items at the top of Monthly and Annually columns, above auto-sorted due dates.
 - **Task-Linked Alerts**: Automated, mandatory reminders for **Monthly** and **Annually** tasks. They trigger 3 times during your workday (Start, Middle, and End) on the due day until the task is completed.
 - **Lock-Resistant Timers**: Improved focused timers that stay accurate even when the mobile device is locked or the app is in the background.
 - **Real-time Sync**: Automatic data refresh whenever you return to the app or switch tabs, ensuring consistency across multiple devices.
