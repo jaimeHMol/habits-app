@@ -314,7 +314,17 @@ export const useHabitStore = create(
     try {
       let tasks = await taskApi.getAll();
       
-      const { syncQueue } = get();
+      const { syncQueue, tasks: currentTasks } = get();
+
+      // Preserve local isCollapsed state to avoid cards collapsing on background refresh
+      tasks = tasks.map(newTask => {
+        const existingTask = currentTasks.find(t => t.id === newTask.id);
+        if (existingTask !== undefined && existingTask.isCollapsed !== undefined) {
+          newTask.isCollapsed = existingTask.isCollapsed;
+        }
+        return newTask;
+      });
+
       if (syncQueue && syncQueue.length > 0) {
         syncQueue.forEach(action => {
           const task = tasks.find(t => t.id === action.taskId);

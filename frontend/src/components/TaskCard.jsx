@@ -103,6 +103,24 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 title="Increment"
                 onClick={(e) => {
                   e.stopPropagation();
+                  try {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = (rect.left + rect.width / 2) / window.innerWidth;
+                    const y = (rect.top + rect.height / 2) / window.innerHeight;
+                    const fireConfetti = typeof confetti === 'function' ? confetti : confetti.default;
+                    if (fireConfetti) {
+                      fireConfetti({
+                        particleCount: 40,
+                        spread: 50,
+                        origin: { x, y },
+                        colors: ['#0d9488', '#14b8a6', '#99f6e4'],
+                        disableForReducedMotion: true
+                      });
+                    }
+                    playVictorySound();
+                  } catch (err) {
+                    console.error("Microinteraction error:", err);
+                  }
                   incrementTask(task.id);
                 }}
                 className="text-paramo-muted hover:text-paramo-frailejon transition-colors"

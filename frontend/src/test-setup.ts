@@ -1,4 +1,5 @@
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
 // Global localStorage Mock
 const localStorageMock = (() => {
@@ -20,3 +21,8 @@ const localStorageMock = (() => {
 })();
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+// Mock canvas-confetti to prevent jsdom canvas errors
+vi.mock('canvas-confetti', () => ({
+  default: vi.fn(),
+}));
