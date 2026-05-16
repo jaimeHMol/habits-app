@@ -154,24 +154,24 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         {column.id === 'daily' && (
           <div className="flex items-center gap-1.5" title="Focus duration">
             <span className="text-[10px] text-paramo-muted tracking-tight">{t.form_during || "during"}</span>
-            <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">
+            <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-[26px]">
               <input 
                 type="number" min="0" placeholder="0" value={durationMinutes} 
                 onChange={(e) => setDurationMinutes(e.target.value)} disabled={isSaving} 
-                className="w-10 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
+                className="w-10 h-full bg-transparent px-2 text-xs font-bold text-paramo-muted placeholder:text-paramo-muted focus:outline-none no-spinner text-center" 
               />
-              <div className="flex flex-col border-l border-white/10">
+              <div className="flex flex-col border-l border-white/10 h-full">
                 <button 
                   type="button" disabled={isSaving}
                   onClick={() => setDurationMinutes(prev => Math.max(1, (parseInt(prev) || 0) + 5))}
-                  className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
+                  className="px-1 flex-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
                 >
                   <ChevronUp size={10} />
                 </button>
                 <button 
                   type="button" disabled={isSaving}
                   onClick={() => setDurationMinutes(prev => Math.max(0, (parseInt(prev) || 5) - 5) || '')}
-                  className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
+                  className="px-1 flex-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
                 >
                   <ChevronDown size={10} />
                 </button>
@@ -182,24 +182,24 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         )}
 
         {(column.type === 'monthly' || column.type === 'annually') && (
-          <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-7">
+          <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-[26px]">
             <input 
               type="number" min="1" max="31" placeholder={t.day_label || "Day"} value={targetDay} 
               onChange={(e) => setTargetDay(e.target.value)} disabled={isSaving} 
-              className="w-10 bg-transparent px-2 py-1 text-xs text-paramo-muted focus:outline-none no-spinner text-center" 
+              className="w-10 h-full bg-transparent px-2 text-xs font-bold text-paramo-muted placeholder:text-paramo-muted focus:outline-none no-spinner text-center" 
             />
-            <div className="flex flex-col border-l border-white/10">
+            <div className="flex flex-col border-l border-white/10 h-full">
               <button 
                 type="button" disabled={isSaving}
                 onClick={() => setTargetDay(prev => Math.min(31, Math.max(1, (parseInt(prev) || 0) + 1)))}
-                className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
+                className="px-1 flex-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors border-b border-white/10 flex items-center justify-center"
               >
                 <ChevronUp size={10} />
               </button>
               <button 
                 type="button" disabled={isSaving}
                 onClick={() => setTargetDay(prev => Math.min(31, Math.max(1, (parseInt(prev) || 2) - 1)))}
-                className="px-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
+                className="px-1 flex-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors flex items-center justify-center"
               >
                 <ChevronDown size={10} />
               </button>
