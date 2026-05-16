@@ -47,6 +47,34 @@ function App() {
   const [activeMobileColumn, setActiveMobileColumn] = useState('daily')
   const [authMode, setAuthMode] = useState('login') 
   
+  // Swipe Logic
+  const [touchStart, setTouchStart] = useState(null)
+  const [touchEnd, setTouchEnd] = useState(null)
+
+  const activeIndex = columns.findIndex(col => col.id === activeMobileColumn)
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null)
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e) => setTouchEnd(e.targetTouches[0].clientX)
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const minSwipeDistance = 50
+    const isLeftSwipe = distance > minSwipeDistance
+    const isRightSwipe = distance < -minSwipeDistance
+    
+    if (isLeftSwipe && activeIndex < columns.length - 1) {
+      setActiveMobileColumn(columns[activeIndex + 1].id)
+    }
+    if (isRightSwipe && activeIndex > 0) {
+      setActiveMobileColumn(columns[activeIndex - 1].id)
+    }
+  }
+  
   // Auth Form State
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -388,10 +416,25 @@ function App() {
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-0 md:gap-6 overflow-x-hidden md:overflow-x-auto items-start w-full px-4 md:px-6 pb-10">
-          {columns.map(column => (
-            <Column key={column.id} column={column} isActiveOnMobile={activeMobileColumn === column.id} />
-          ))}
+        <div 
+          className="w-full px-4 md:px-6 overflow-hidden md:overflow-visible pb-10"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div 
+            className="flex gap-0 md:gap-6 items-start transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] md:!transform-none md:overflow-x-auto"
+            style={{ 
+              transform: `translateX(-${(activeIndex * 100) / columns.length}%)`,
+              width: `${columns.length * 100}%`
+            }}
+          >
+            {columns.map(column => (
+              <div key={column.id} className="w-full flex-shrink-0 md:w-auto md:flex-shrink md:flex-1">
+                <Column column={column} isActiveOnMobile={activeMobileColumn === column.id} />
+              </div>
+            ))}
+          </div>
         </div>
       </DragDropContext>
 

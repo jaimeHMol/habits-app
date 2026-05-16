@@ -28,10 +28,11 @@ export const Column = ({ column, isActiveOnMobile }) => {
   const handleToggleAll = () => toggleColumnCollapse(column.id, !areAllCollapsed);
 
   return (
-    <div className={`
-      ${isActiveOnMobile ? 'flex' : 'hidden'} 
-      md:flex w-full md:w-[320px] lg:flex-1 lg:min-w-0 flex-shrink-0 
+    <div 
+      className={`
+      flex w-full md:w-[320px] lg:flex-1 lg:min-w-0 flex-shrink-0 
       bg-paramo-board rounded-2xl p-4 md:p-5 flex-col h-fit min-h-[50vh] shadow-xl border border-white/5
+      transition-opacity duration-300 ${!isActiveOnMobile ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100'}
     `}>
       
       <div className="flex justify-between items-center mb-5 px-1 gap-2 flex-wrap md:flex-nowrap">
