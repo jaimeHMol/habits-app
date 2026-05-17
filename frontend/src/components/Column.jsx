@@ -29,11 +29,8 @@ export const Column = ({ column, isActiveOnMobile }) => {
 
   return (
     <div 
-      className={`
-      flex w-full md:w-[320px] lg:flex-1 lg:min-w-0 flex-shrink-0 
-      bg-paramo-board rounded-2xl p-4 md:p-5 flex-col h-fit min-h-[50vh] shadow-xl border border-white/5
-      transition-opacity duration-300 ${!isActiveOnMobile ? 'opacity-0 pointer-events-none md:opacity-100 md:pointer-events-auto' : 'opacity-100'}
-    `}>
+      className="flex w-full md:w-[320px] lg:flex-1 lg:min-w-0 flex-shrink-0 bg-paramo-board rounded-2xl p-4 md:p-5 flex-col h-fit min-h-[50vh] shadow-xl border border-white/5"
+    >
       
       <div className="flex justify-between items-center mb-5 px-1 gap-2 flex-wrap md:flex-nowrap">
         <div className="flex items-center gap-2 flex-1 min-w-0">

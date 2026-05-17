@@ -423,10 +423,9 @@ function App() {
           onTouchEnd={handleTouchEnd}
         >
           <div 
-            className="flex gap-0 md:gap-6 items-start transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] md:!transform-none md:overflow-x-auto"
+            className="flex gap-4 md:gap-6 items-start transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] md:!transform-none md:overflow-x-auto w-full"
             style={{ 
-              transform: `translateX(-${(activeIndex * 100) / columns.length}%)`,
-              width: `${columns.length * 100}%`
+              transform: `translateX(calc(-${activeIndex * 100}% - ${activeIndex * 1}rem))`
             }}
           >
             {columns.map(column => (
