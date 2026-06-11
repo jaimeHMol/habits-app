@@ -3,6 +3,43 @@ import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
 import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarClock, CalendarRange, Minus, Plus } from 'lucide-react'
 
+const playVictorySound = () => {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    
+    const playNote = (frequency, startTime, duration) => {
+      const osc = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(frequency, ctx.currentTime + startTime);
+      
+      gainNode.gain.setValueAtTime(0, ctx.currentTime + startTime);
+      gainNode.gain.linearRampToValueAtTime(0.2, ctx.currentTime + startTime + 0.05);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + startTime + duration);
+      
+      osc.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      osc.start(ctx.currentTime + startTime);
+      osc.stop(ctx.currentTime + startTime + duration);
+    };
+
+    playNote(523.25, 0, 0.4);      // C5
+    playNote(659.25, 0.06, 0.4);   // E5
+    playNote(783.99, 0.12, 0.4);   // G5
+    playNote(1046.50, 0.18, 0.6);  // C6
+  } catch (err) {
+    console.error("Victory sound failed:", err);
+  }
+};
+
 export const PeriodicReviewModal = () => {
   const { tasks, pendingResets, confirmReview, isLoading, incrementTask, decrementTask, language } = useHabitStore();
   const t = translations[language] || translations.en;
@@ -20,6 +57,7 @@ export const PeriodicReviewModal = () => {
   };
 
   const handleConfirm = useCallback(() => {
+    playVictorySound();
     confirmReview(completedIds);
   }, [confirmReview, completedIds]);
 

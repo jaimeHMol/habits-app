@@ -15,15 +15,9 @@ export const NotificationToast = () => {
         return (
           <div 
             key={alert.alertId}
-            className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] animate-slideInRight flex items-start gap-4 ring-1 ring-white/10 ${
-              isUrgent 
-              ? 'bg-paramo-card border-l-4 border-orange-500' 
-              : 'bg-paramo-card border-l-4 border-paramo-frailejon'
-            }`}
+            className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] animate-slideInRight flex items-start gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 border-paramo-frailejon`}
           >
-            <div className={`p-2 rounded-full shrink-0 ${
-              isUrgent ? 'bg-orange-500/10 text-orange-500' : 'bg-paramo-frailejon/10 text-paramo-frailejon'
-            }`}>
+            <div className={`p-2 rounded-full shrink-0 bg-paramo-frailejon/10 text-paramo-frailejon`}>
               <BellRing size={20} />
             </div>
             
