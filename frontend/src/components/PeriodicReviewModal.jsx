@@ -56,7 +56,30 @@ export const PeriodicReviewModal = () => {
     );
   };
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback((e) => {
+    try {
+      let origin = { x: 0.5, y: 0.5 };
+      if (e && e.currentTarget) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        origin = {
+          x: (rect.left + rect.width / 2) / window.innerWidth,
+          y: (rect.top + rect.height / 2) / window.innerHeight
+        };
+      }
+      const fireConfetti = typeof confetti === 'function' ? confetti : confetti.default;
+      if (fireConfetti) {
+        fireConfetti({
+          particleCount: 80,
+          spread: 70,
+          origin,
+          colors: ['#0d9488', '#14b8a6', '#99f6e4'],
+          disableForReducedMotion: true
+        });
+      }
+    } catch (err) {
+      console.error("Confetti failed:", err);
+    }
+    
     playVictorySound();
     confirmReview(completedIds);
   }, [confirmReview, completedIds]);
