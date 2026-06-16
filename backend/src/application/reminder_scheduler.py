@@ -5,7 +5,6 @@ from sqlmodel import Session, select
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from src.domain.models import ColumnId, User, Task
 from src.infrastructure.database import engine
-from src.core.config import BACKEND_ROOT
 
 from src.infrastructure.sqlite_repository import (
     SQLiteReminderRepository,
@@ -22,7 +21,6 @@ class ReminderScheduler:
     def __init__(self):
         # We no longer store a push_service here to avoid stale sessions
         self.scheduler = AsyncIOScheduler()
-        self.heartbeat_file = BACKEND_ROOT / "data" / "scheduler_heartbeat.txt"
 
     def datetime_now(self):
         return datetime.now(timezone.utc)
@@ -36,17 +34,7 @@ class ReminderScheduler:
         self.scheduler.shutdown()
         logger.info("Reminder Scheduler stopped")
 
-    def _update_heartbeat(self):
-        """Update a file to prove the scheduler is alive."""
-        try:
-            with open(self.heartbeat_file, "w") as f:
-                f.write(f"Last Run: {self.datetime_now().isoformat()}")
-        except Exception as e:
-            logger.error(f"Failed to update heartbeat: {e}")
-
     async def check_all_reminders(self):
-        self._update_heartbeat()
-
         # We create a fresh session and fresh repositories for EVERY cycle
         with Session(engine) as session:
             user_repo = SQLiteUserRepository(session)
