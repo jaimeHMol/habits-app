@@ -56,6 +56,16 @@ const playVictorySound = () => {
   }
 };
 
+const getConfettiColors = (priority) => {
+  switch (priority) {
+    case 'tierra': return ['#b45309', '#d97706', '#fcd34d']; // amber-700, amber-600, amber-300
+    case 'muted': return ['#a8a29e', '#78716c', '#e7e5e4']; // stone-400, stone-500, stone-200
+    case 'frailejon':
+    default:
+      return ['#0d9488', '#14b8a6', '#99f6e4']; // teal-600, teal-500, teal-200
+  }
+};
+
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
   const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask } = useHabitStore();
 
@@ -113,7 +123,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                         particleCount: 40,
                         spread: 50,
                         origin: { x, y },
-                        colors: ['#0d9488', '#14b8a6', '#99f6e4'],
+                        colors: getConfettiColors(task.priority),
                         disableForReducedMotion: true
                       });
                     }
@@ -155,7 +165,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                           particleCount: 40,
                           spread: 50,
                           origin: { x, y },
-                          colors: ['#0d9488', '#14b8a6', '#99f6e4'],
+                          colors: getConfettiColors(task.priority),
                           disableForReducedMotion: true
                         });
                       }
