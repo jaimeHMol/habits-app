@@ -101,14 +101,36 @@ Oracle Cloud instances require opening ports in two places:
    sudo apt-get install iptables-persistent && sudo netfilter-persistent save
    ```
 
-### 3. SSL Certificate (Certbot Standalone)
-Since Nginx runs inside Docker, use Certbot's standalone mode on the host to generate certificates:
-1. Stop the Nginx container: `sudo docker compose stop nginx`
-2. Run Certbot: 
+### 3. SSL Certificate (Certbot Standalone & Auto-Renewal)
+
+Since Nginx runs inside Docker, use Certbot's standalone mode on the host to generate and renew certificates:
+
+#### Manual Generation / Emergency Renewal:
+1. Stop the Nginx container to free port 80:
    ```bash
-   sudo certbot certonly --standalone -d habits.your-domain.com
+   sudo docker compose stop nginx
    ```
-3. Restart Nginx: `sudo docker compose up -d --build nginx`
+2. Renew or generate the certificate:
+   ```bash
+   # To renew an existing expired certificate:
+   sudo certbot renew
+
+   # Or for initial generation:
+   # sudo certbot certonly --standalone -d habits.your-domain.com
+   ```
+3. Restart Nginx:
+   ```bash
+   sudo docker compose up -d nginx
+   ```
+
+#### Automatic Renewal Configuration (Recommended):
+On Ubuntu, Certbot has a systemd timer/cron job that runs renewal checks automatically in the background. However, since Nginx binds to port 80, the background renewal will fail unless we tell Certbot to temporarily stop Nginx during the challenge.
+
+To automate this, configure **pre** and **post** hooks in Certbot. Run the following command on your server (replace `/path/to/habits-app` with the absolute path to your project folder on the host):
+```bash
+sudo certbot renew --pre-hook "docker compose -f /path/to/habits-app/docker-compose.yml stop nginx" --post-hook "docker compose -f /path/to/habits-app/docker-compose.yml up -d nginx"
+```
+Certbot will save these hooks in `/etc/letsencrypt/renewal/habits.jaimehmol.me.conf` and use them automatically in all future background renewals, ensuring zero manual intervention.
 
 ## 🧪 Testing & Quality
 
