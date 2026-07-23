@@ -56,8 +56,15 @@ A minimalist, high-performance task and habit tracker built with a focus on simp
 The easiest way to get the app running is using Docker:
 
 ```bash
-docker-compose up --build
+docker compose up -d --build
 ```
+
+> [!WARNING]
+> **Avoid using `sudo` with Docker Compose if possible.**
+> If your `docker-compose.yml` mounts host directories using the tilde (`~`) character (e.g., `~/conf/nginx`), running `sudo docker compose` will cause the tilde to resolve to the root user's home directory (`/root`) instead of your user's home directory (e.g., `/home/ubuntu`). This can lead to Docker silently mounting empty folders into your containers.
+> 
+> If you **must** use `sudo`, you can pass the correct home directory using an environment variable:
+> `sudo HOME=/home/ubuntu docker compose up -d`
 
 Access the app at `http://localhost` (Local) or your configured domain (Production). **Database migrations are applied automatically on startup.**
 

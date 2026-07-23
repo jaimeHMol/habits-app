@@ -29,7 +29,7 @@ Eres un experto en ingeniería de software incluyendo UI and UX (Gemini) operand
 ## 4. Reglas de Infraestructura y Despliegue
 - **Orquestación:** Nunca sugieras instalar dependencias globalmente en el servidor. Todo se maneja vía contenedores.
 -  Este repo será deployado en un servidor Ubuntu 24.04 alojado en la nube.
-- **Comando de actualización estándar:** `sudo docker compose up -d --build <servicio>`
+- **Comando de actualización estándar:** `docker compose up -d --build <servicio>` (Se debe evitar usar `sudo` para prevenir que la ruta `~` se resuelva a `/root` en lugar del directorio del usuario actual).
 - **Precaución con SQLite:** El archivo `backend/habits.db` está montado como un volumen. NUNCA sugieras borrar este archivo en producción ni montar un directorio en su lugar. Si la base de datos se corrompe o falta, debe inicializarse con el comando `touch habits.db` antes de levantar el contenedor de Python.
 
 ## 5. Formato de Respuestas
