@@ -300,11 +300,6 @@ def subscribe(
     current_user: User = Depends(get_current_user),
     repo: IPushSubscriptionRepository = Depends(get_push_subscription_repository),
 ):
-    # DEBUG CLEANUP: Remove old subscriptions for this user to ensure we only test the current one
-    all_subs = repo.get_all_for_user(current_user.id)
-    for old_sub in all_subs:
-        repo.delete_by_endpoint(old_sub.endpoint)
-
     repo.create(
         user_id=current_user.id,
         endpoint=subscription.endpoint,

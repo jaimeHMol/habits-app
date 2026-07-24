@@ -45,6 +45,11 @@ self.addEventListener('push', (event) => {
     if (isTimer) {
       title = `⏳ ${title}`;
     }
+
+    // Use unique tags per notification source to prevent silent replacement
+    const tag = isTimer
+      ? `timer-${payloadData.task_id}`
+      : `reminder-${payloadData.reminder_id || payloadData.task_id || Date.now()}`;
     
     const options = {
       body: payload.body,
@@ -52,7 +57,7 @@ self.addEventListener('push', (event) => {
       badge: '/pwa-192x192.png',
       data: payloadData,
       vibrate: vibratePattern,
-      tag: 'habit-reminder',
+      tag,
       renotify: true,
       requireInteraction: isTimer // Require interaction for timers so it stays on screen until dismissed
     };
@@ -72,12 +77,26 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Try to focus an existing window for the same origin
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) return client.focus();
+        try {
+          const clientUrl = new URL(client.url);
+          if (clientUrl.origin === self.location.origin && 'focus' in client) {
+            client.navigate(targetUrl);
+            return client.focus();
+          }
+        } catch (e) {
+          // Skip malformed URLs
+        }
       }
-      if (self.clients.openWindow) return self.clients.openWindow('/');
+      // No existing window — open a new one
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
     })
   );
 });

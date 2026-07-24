@@ -26,7 +26,14 @@ class ReminderScheduler:
         return datetime.now(timezone.utc)
 
     def start(self):
-        self.scheduler.add_job(self.check_all_reminders, "interval", minutes=1)
+        # Timers are time-critical: check every 15 seconds for precise delivery
+        self.scheduler.add_job(
+            self._check_all_active_timers, "interval", seconds=15, id="timer_check"
+        )
+        # Reminders use slot-based logic: 1-minute granularity is sufficient
+        self.scheduler.add_job(
+            self._check_all_user_reminders, "interval", minutes=1, id="reminder_check"
+        )
         self.scheduler.start()
         logger.info("Reminder Scheduler started")
 
@@ -34,26 +41,37 @@ class ReminderScheduler:
         self.scheduler.shutdown()
         logger.info("Reminder Scheduler stopped")
 
-    async def check_all_reminders(self):
-        # We create a fresh session and fresh repositories for EVERY cycle
+    async def _check_all_active_timers(self):
+        """Fast loop (every 15s) — only checks focus timers for precise delivery."""
+        with Session(engine) as session:
+            user_repo = SQLiteUserRepository(session)
+            task_repo = SQLiteTaskRepository(session)
+            push_repo = SQLitePushSubscriptionRepository(session)
+            push_service = PushService(push_repo)
+
+            users = user_repo.get_all()
+            for user in users:
+                await self._check_active_timers(user, task_repo, push_service)
+
+    async def _check_all_user_reminders(self):
+        """Standard loop (every 60s) — checks interval and task-linked reminders."""
         with Session(engine) as session:
             user_repo = SQLiteUserRepository(session)
             reminder_repo = SQLiteReminderRepository(session)
             task_repo = SQLiteTaskRepository(session)
             push_repo = SQLitePushSubscriptionRepository(session)
-
-            # Create a localized PushService for this session
             push_service = PushService(push_repo)
 
             users = user_repo.get_all()
             for user in users:
-                # 1. Standard Reminders (Window checked inside)
                 await self._check_user_reminders(
                     user, reminder_repo, task_repo, push_service
                 )
 
-                # 2. Focus Timers (Urgency: High, No window check)
-                await self._check_active_timers(user, task_repo, push_service)
+    async def check_all_reminders(self):
+        """Combined check for both timers and reminders (used by tests)."""
+        await self._check_all_active_timers()
+        await self._check_all_user_reminders()
 
     async def _check_active_timers(
         self, user: User, task_repo: SQLiteTaskRepository, push_service: PushService
@@ -137,7 +155,7 @@ class ReminderScheduler:
                 title="RECUERDA",
                 body=reminder.title,
                 data={"reminder_id": reminder.id},
-                urgency="normal",
+                urgency="high",
             )
             reminder.last_triggered_at = now_utc
             reminder_repo.session.add(reminder)
