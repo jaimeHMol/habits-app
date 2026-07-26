@@ -66,6 +66,15 @@ const getConfettiColors = (priority) => {
   }
 };
 
+const getProgressColor = (priority) => {
+  switch (priority) {
+    case 'tierra': return 'rgba(180, 83, 9, 0.15)';
+    case 'muted': return 'rgba(168, 162, 158, 0.15)';
+    case 'frailejon':
+    default: return 'rgba(13, 148, 136, 0.15)';
+  }
+};
+
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
   const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask } = useHabitStore();
 
@@ -89,7 +98,8 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
   if (isTimerActive && task.durationMinutes > 0) {
     const totalSeconds = task.durationMinutes * 60;
     const progressPercent = Math.max(0, Math.min(100, ((totalSeconds - activeTimer.remainingSeconds) / totalSeconds) * 100));
-    backgroundStyle.backgroundImage = `linear-gradient(to right, rgba(13, 148, 136, 0.15) ${progressPercent}%, transparent ${progressPercent}%)`;
+    const progressColor = getProgressColor(task.priority);
+    backgroundStyle.backgroundImage = `linear-gradient(to right, ${progressColor} ${progressPercent}%, transparent ${progressPercent}%)`;
   }
 
   return (

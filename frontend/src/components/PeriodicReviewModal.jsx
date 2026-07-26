@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
 import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarClock, CalendarRange, Minus, Plus } from 'lucide-react'
+import confetti from 'canvas-confetti'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 const playVictorySound = () => {
   try {
@@ -57,30 +60,32 @@ export const PeriodicReviewModal = () => {
   };
 
   const handleConfirm = useCallback((e) => {
-    try {
-      let origin = { x: 0.5, y: 0.5 };
-      if (e && e.currentTarget) {
-        const rect = e.currentTarget.getBoundingClientRect();
-        origin = {
-          x: (rect.left + rect.width / 2) / window.innerWidth,
-          y: (rect.top + rect.height / 2) / window.innerHeight
-        };
+    if (completedIds.length > 0) {
+      try {
+        let origin = { x: 0.5, y: 0.5 };
+        if (e && e.currentTarget) {
+          const rect = e.currentTarget.getBoundingClientRect();
+          origin = {
+            x: (rect.left + rect.width / 2) / window.innerWidth,
+            y: (rect.top + rect.height / 2) / window.innerHeight
+          };
+        }
+        const fireConfetti = typeof confetti === 'function' ? confetti : confetti.default;
+        if (fireConfetti) {
+          fireConfetti({
+            particleCount: 80,
+            spread: 70,
+            origin,
+            colors: ['#0d9488', '#14b8a6', '#99f6e4'],
+            disableForReducedMotion: true
+          });
+        }
+      } catch (err) {
+        console.error("Confetti failed:", err);
       }
-      const fireConfetti = typeof confetti === 'function' ? confetti : confetti.default;
-      if (fireConfetti) {
-        fireConfetti({
-          particleCount: 80,
-          spread: 70,
-          origin,
-          colors: ['#0d9488', '#14b8a6', '#99f6e4'],
-          disableForReducedMotion: true
-        });
-      }
-    } catch (err) {
-      console.error("Confetti failed:", err);
+      playVictorySound();
     }
     
-    playVictorySound();
     confirmReview(completedIds);
   }, [confirmReview, completedIds]);
 
@@ -136,7 +141,18 @@ export const PeriodicReviewModal = () => {
                   className="flex items-center justify-between gap-3 p-3 rounded-xl border border-white/5 bg-white/5 text-white"
                 >
                   <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium line-clamp-1 italic">{task.title}</span>
+                    <span className="text-sm font-medium line-clamp-1 italic">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        disallowedElements={['p']}
+                        unwrapDisallowed
+                        components={{
+                          a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors italic" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />
+                        }}
+                      >
+                        {task.title}
+                      </ReactMarkdown>
+                    </span>
                     <span className="text-[10px] text-paramo-muted uppercase font-black">{t.review_cycle_added}: {task.currentCount}</span>
                   </div>
                   <div className="flex items-center gap-1 bg-black/20 rounded-lg p-1 border border-white/5">
@@ -175,7 +191,18 @@ export const PeriodicReviewModal = () => {
                   ? <CheckCircle2 size={18} className="text-paramo-frailejon shrink-0" /> 
                   : <Circle size={18} className="text-paramo-muted shrink-0" />
                 }
-                <span className="text-sm font-medium line-clamp-1 italic">{task.title}</span>
+                <span className="text-sm font-medium line-clamp-1 italic">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    disallowedElements={['p']}
+                    unwrapDisallowed
+                    components={{
+                      a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors italic" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />
+                    }}
+                  >
+                    {task.title}
+                  </ReactMarkdown>
+                </span>
               </button>
             );
           })}
