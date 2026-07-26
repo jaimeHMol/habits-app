@@ -66,12 +66,30 @@ const getConfettiColors = (priority) => {
   }
 };
 
-const getProgressColor = (priority) => {
+const getPriorityTheme = (priority) => {
   switch (priority) {
-    case 'tierra': return 'rgba(180, 83, 9, 0.15)';
-    case 'muted': return 'rgba(168, 162, 158, 0.15)';
+    case 'tierra': return {
+      rgba: 'rgba(180, 83, 9, 0.15)',
+      hex: '#b45309',
+      ring: 'ring-paramo-tierra/50 shadow-lg shadow-paramo-tierra/5',
+      button: 'bg-paramo-tierra text-white animate-pulse',
+      text: 'text-paramo-tierra'
+    };
+    case 'muted': return {
+      rgba: 'rgba(168, 162, 158, 0.15)',
+      hex: '#a8a29e',
+      ring: 'ring-paramo-muted/50 shadow-lg shadow-paramo-muted/5',
+      button: 'bg-paramo-muted text-white animate-pulse',
+      text: 'text-paramo-muted'
+    };
     case 'frailejon':
-    default: return 'rgba(13, 148, 136, 0.15)';
+    default: return {
+      rgba: 'rgba(13, 148, 136, 0.15)',
+      hex: '#0d9488',
+      ring: 'ring-paramo-frailejon/50 shadow-lg shadow-paramo-frailejon/5',
+      button: 'bg-paramo-frailejon text-white animate-pulse',
+      text: 'text-paramo-frailejon'
+    };
   }
 };
 
@@ -93,13 +111,14 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const theme = getPriorityTheme(task.priority);
+
   // Progress Bar Calculation
   let backgroundStyle = {};
   if (isTimerActive && task.durationMinutes > 0) {
     const totalSeconds = task.durationMinutes * 60;
     const progressPercent = Math.max(0, Math.min(100, ((totalSeconds - activeTimer.remainingSeconds) / totalSeconds) * 100));
-    const progressColor = getProgressColor(task.priority);
-    backgroundStyle.backgroundImage = `linear-gradient(to right, ${progressColor} ${progressPercent}%, transparent ${progressPercent}%)`;
+    backgroundStyle.backgroundImage = `linear-gradient(to right, ${theme.rgba} ${progressPercent}%, transparent ${progressPercent}%)`;
   }
 
   return (
@@ -108,11 +127,11 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
       className={`rounded-xl border-l-4 cursor-pointer group transition-all duration-300
         ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-paramo-frailejon z-50 bg-paramo-board' : 'shadow-md ring-1 hover:ring-white/20'}
         ${task.completed ? 'bg-white/5 ring-white/5 grayscale-[20%]' : 'bg-paramo-card ring-white/10'}
-        ${isTimerActive ? 'ring-paramo-frailejon/50 shadow-lg shadow-paramo-frailejon/5' : ''}
+        ${isTimerActive ? theme.ring : ''}
       `}
       style={{ 
         ...backgroundStyle,
-        borderLeftColor: isTimerActive ? '#0d9488' : (task.completed ? '#a8a29e' : (task.priority === 'frailejon' ? '#0d9488' : task.priority === 'tierra' ? '#b45309' : '#a8a29e')) 
+        borderLeftColor: task.completed ? '#a8a29e' : theme.hex 
       }}
     >
       <div className="p-3 md:p-4 flex gap-2 md:gap-3 items-start">
@@ -201,7 +220,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                     if (isTimerActive) stopTimer();
                     else startTimer(task.id, task.durationMinutes);
                   }}
-                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? 'bg-paramo-frailejon text-white animate-pulse' : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-40 group-hover:opacity-100'}`}
+                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? theme.button : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-40 group-hover:opacity-100'}`}
                 >
                   {isTimerActive ? <Square size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
                 </button>
@@ -235,7 +254,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
               )}
               <h3 className={`text-xs sm:text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wide leading-tight break-normal text-balance transition-colors
                 ${task.completed ? 'text-paramo-muted line-through decoration-white/30' : 'text-white/90 group-hover:text-white'}
-                ${isTimerActive ? 'text-paramo-frailejon' : ''}
+                ${isTimerActive ? theme.text : ''}
               `}>
                 {isTimerActive ? (
                   <span className="flex items-center gap-2 italic">
