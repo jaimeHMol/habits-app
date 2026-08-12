@@ -237,6 +237,13 @@ sudo docker compose exec backend sqlite3 /app/data/habits.db
 sudo docker compose exec backup /usr/local/bin/backup.sh
 ```
 
+### Querying a Backup
+If you need to extract information from a database backup without affecting your live database, you can use a temporary Docker container to run SQLite queries against the backup file:
+```bash
+# Note: Replace 'habits_backup_YYYYMMDD_HHMMSS.db' with your actual backup filename.
+docker run --rm -v $(pwd)/backups/habits_backup_YYYYMMDD_HHMMSS.db:/backup.db alpine sh -c "apk add -q --no-cache sqlite && sqlite3 -header -column /backup.db \"SELECT id, title, column_id, created_at FROM task ORDER BY created_at DESC LIMIT 20;\""
+```
+
 ### Future Considerations
 1. **CSP Policy:** If adding external scripts to the frontend, the Content-Security-Policy header in `nginx.conf` may need adjustment.
 2. **Database Migrations:** Always run `make migration-create msg="description"` after changing models and test the migration locally before deploying.

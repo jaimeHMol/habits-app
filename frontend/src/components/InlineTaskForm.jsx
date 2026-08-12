@@ -62,6 +62,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
   
   const [error, setError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const formRef = useRef(null);
 
@@ -218,20 +219,34 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         )}
       </div>
       
-      <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
-        <div>{initialData && <button onClick={onDelete} disabled={isSaving} title="Delete task" className="text-paramo-muted hover:text-red-500 p-1.5 rounded-md hover:bg-white/5 transition-colors"><Trash2 size={16} /></button>}</div>
-        <div className="flex gap-2">
-          <button onClick={onCancel} disabled={isSaving} className="text-paramo-muted hover:text-white p-1.5 rounded-md hover:bg-white/5 transition-colors"><X size={16} /></button>
-          
-          <button onClick={handleSave} disabled={!title.trim() || isSaving} className={`p-1.5 rounded-md transition-colors disabled:cursor-not-allowed flex items-center gap-1 ${isSaving ? 'text-paramo-muted' : 'text-paramo-frailejon hover:text-teal-400 hover:bg-white/5'}`}>
-            {isSaving ? (
-              <LoaderPinwheel size={16} className="animate-spin text-paramo-frailejon" />
-            ) : (
-              <Save size={16} />
-            )}
-          </button>
+      {showDeleteConfirm ? (
+        <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-red-500/20 animate-fadeIn bg-red-950/20 -mx-4 -mb-4 p-4 rounded-b-xl">
+          <span className="text-xs font-bold text-red-400 flex items-center gap-1"><AlertCircle size={14} /> {t.delete_confirm || "Delete this task permanently?"}</span>
+          <div className="flex gap-2 justify-end mt-1">
+            <button type="button" onClick={() => setShowDeleteConfirm(false)} disabled={isSaving} className="text-xs px-3 py-1.5 rounded text-paramo-muted hover:text-white hover:bg-white/5 transition-colors font-medium">
+              {t.cancel || "Cancel"}
+            </button>
+            <button type="button" onClick={onDelete} disabled={isSaving} className="text-xs px-3 py-1.5 rounded bg-red-900/60 text-red-100 hover:bg-red-800 hover:text-white transition-colors flex items-center gap-1.5 font-bold shadow-sm">
+              {isSaving ? <LoaderPinwheel size={12} className="animate-spin" /> : <Trash2 size={12} />} {t.delete || "Delete"}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
+          <div>{initialData && <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isSaving} title="Delete task" className="text-paramo-muted hover:text-red-500 p-1.5 rounded-md hover:bg-white/5 transition-colors"><Trash2 size={16} /></button>}</div>
+          <div className="flex gap-2">
+            <button type="button" onClick={onCancel} disabled={isSaving} className="text-paramo-muted hover:text-white p-1.5 rounded-md hover:bg-white/5 transition-colors"><X size={16} /></button>
+            
+            <button type="button" onClick={handleSave} disabled={!title.trim() || isSaving} className={`p-1.5 rounded-md transition-colors disabled:cursor-not-allowed flex items-center gap-1 ${isSaving ? 'text-paramo-muted' : 'text-paramo-frailejon hover:text-teal-400 hover:bg-white/5'}`}>
+              {isSaving ? (
+                <LoaderPinwheel size={16} className="animate-spin text-paramo-frailejon" />
+              ) : (
+                <Save size={16} />
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
