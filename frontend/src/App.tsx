@@ -8,6 +8,7 @@ import { PeriodicReviewModal } from './components/PeriodicReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
 import { NotificationToast } from './components/NotificationToast'
+import { ReloadPrompt } from './components/ReloadPrompt'
 import { LogOut, Lock, UserPlus, Copy, Check, Globe, Eye, EyeOff, CloudOff, Download } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
@@ -268,7 +269,7 @@ function App() {
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 text-paramo-muted hover:text-white transition-colors"
-                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                    title={showPassword ? t.hide_password : t.show_password}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -304,7 +305,7 @@ function App() {
                     type="button" 
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 text-paramo-muted hover:text-white transition-colors"
-                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                    title={showPassword ? t.hide_password : t.show_password}
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -337,6 +338,7 @@ function App() {
       <NotificationToast />
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
+      <ReloadPrompt />
       
       <header className="p-4 md:p-6 mb-1 md:mb-2 flex flex-col gap-2">
         <div className="w-full">
@@ -365,7 +367,7 @@ function App() {
             <button 
               onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
               className="text-paramo-muted hover:text-white bg-paramo-board px-2.5 py-2 rounded-lg border border-white/5 transition-colors text-[10px] font-black tracking-widest flex items-center gap-2"
-              title="Change Language"
+              title={t.change_language}
             >
               <Globe size={16} />
               <span className="hidden sm:inline">{language === 'en' ? 'ES' : 'EN'}</span>
@@ -375,7 +377,7 @@ function App() {
               <div className="relative group">
                 <button
                   onClick={handleGenerateInvite}
-                  title="Generate Invitation"
+                  title={t.generate_invite}
                   className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors"
                 >
                   <UserPlus size={18} />
@@ -408,7 +410,7 @@ function App() {
             >
               <FingerRibbonIcon size={20} />
             </button>          
-            <button onClick={logout} title="Logout" className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
+            <button onClick={logout} title={t.logout} className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
               <LogOut size={18} />
             </button>
           </div>
@@ -443,15 +445,15 @@ function App() {
             <Download size={20} />
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-bold text-white mb-0.5">Instala Habits</h4>
-            <p className="text-xs text-paramo-muted leading-tight">Acceso rápido y modo offline puro</p>
+            <h4 className="text-sm font-bold text-white mb-0.5">{t.install_title}</h4>
+            <p className="text-xs text-paramo-muted leading-tight">{t.install_desc}</p>
           </div>
           <div className="flex flex-col gap-1">
             <button onClick={handleInstallClick} className="bg-paramo-frailejon text-paramo-bg px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest hover:bg-teal-400 transition-colors">
-              Instalar
+              {t.install_btn}
             </button>
             <button onClick={() => setShowInstallPrompt(false)} className="text-[10px] text-paramo-muted hover:text-white uppercase font-bold text-center">
-              Quizás luego
+              {t.maybe_later}
             </button>
           </div>
         </div>

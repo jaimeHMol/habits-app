@@ -139,7 +139,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
           {task.taskType === 'counter' ? (
             <div className="flex flex-col items-center gap-2">
               <button 
-                title="Increment"
+                title={t.increment}
                 onClick={(e) => {
                   e.stopPropagation();
                   try {
@@ -167,7 +167,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 <Plus size={20} strokeWidth={1.5} />
               </button>
               <button 
-                title="Decrement"
+                title={t.decrement}
                 onClick={(e) => {
                   e.stopPropagation();
                   decrementTask(task.id);
@@ -180,7 +180,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
           ) : (
             <>
               <button 
-                title={task.completed ? "Mark as active" : "Mark as done"}
+                title={task.completed ? t.mark_active : t.mark_done}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!task.completed) {
@@ -214,7 +214,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
 
               {isDailyColumn && !task.completed && task.durationMinutes > 0 && (
                 <button
-                  title={isTimerActive ? "Stop focus" : "Start focus"}
+                  title={isTimerActive ? t.stop_focus : t.start_focus}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (isTimerActive) stopTimer();
@@ -294,7 +294,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 <button 
                   onClick={(e) => { e.stopPropagation(); togglePinTask(task.id); }} 
                   className={`p-1 rounded-md hover:bg-white/5 transition-colors ${task.isPinned ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'}`}
-                  title={task.isPinned ? "Unpin task" : "Pin task"}
+                  title={task.isPinned ? t.unpin_task : t.pin_task}
                 >
                   {task.isPinned ? <MinimalPin size={16} fill="currentColor" strokeWidth={1.5} /> : <MinimalPin size={16} strokeWidth={1.5} />}
                 </button>

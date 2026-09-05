@@ -25,6 +25,7 @@ Eres un experto en ingeniería de software incluyendo UI and UX (Gemini) operand
 - Siempre que agregues una nueva funcionalidad o hagas un arreglo, asegurate ejecutar el lintern (eslint) y los tests del frontend.
 - Para diseño de la UI siempre prioriza la opción más clara, más limpia y consisa, buscando que la UX sea lo más intuitiva, sencilla y minimalista posible.
 - Esta aplicación debe soportar las ultimas versiones de los navegadores Firefox y Chrome que se ejecutaran tanto en desktop (Windows y Macos) como en dispositivos moviles Android y Ios.
+- **Internacionalización (i18n):** NUNCA escribas textos de interfaz (labels, botones, mensajes, placeholders) en código duro dentro de los componentes. SIEMPRE debes usar el sistema de traducciones existente. Para usarlo: (1) Añade la nueva llave de traducción tanto en `en` como en `es` dentro del archivo `frontend/src/i18n/translations.js`. (2) En el componente, obtén el idioma actual usando `const { language } = useHabitStore()`. (3) Importa el objeto de traducciones y resuélvelo usando `const t = translations[language] || translations.en`. (4) Usa el objeto `t` para renderizar los textos (ej. `t.mi_nueva_llave`).
 
 ## 4. Reglas de Infraestructura y Despliegue
 - **Orquestación:** Nunca sugieras instalar dependencias globalmente en el servidor. Todo se maneja vía contenedores.

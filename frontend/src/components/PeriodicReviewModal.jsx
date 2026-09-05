@@ -159,7 +159,7 @@ export const PeriodicReviewModal = () => {
                     <button 
                       onClick={() => decrementTask(task.id)}
                       className="p-1 hover:bg-white/5 text-paramo-muted hover:text-white transition-colors"
-                      title="Remove"
+                      title={t.remove}
                     >
                       <Minus size={14} />
                     </button>
@@ -167,7 +167,7 @@ export const PeriodicReviewModal = () => {
                     <button 
                       onClick={() => incrementTask(task.id, true)}
                       className="p-1 hover:bg-white/5 text-paramo-frailejon hover:text-teal-400 transition-colors"
-                      title="Add"
+                      title={t.add_btn}
                     >
                       <Plus size={14} />
                     </button>

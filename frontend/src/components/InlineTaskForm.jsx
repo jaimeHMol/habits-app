@@ -153,7 +153,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         )}
 
         {column.id === 'daily' && (
-          <div className="flex items-center gap-1.5" title="Focus duration">
+          <div className="flex items-center gap-1.5" title={t.focus_duration}>
             <span className="text-[10px] text-paramo-muted tracking-tight">{t.form_during || "during"}</span>
             <div className="flex items-center bg-paramo-board border border-white/10 rounded overflow-hidden h-[26px]">
               <input 
@@ -233,7 +233,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
         </div>
       ) : (
         <div className="flex justify-between items-center mt-2 pt-2 border-t border-white/5">
-          <div>{initialData && <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isSaving} title="Delete task" className="text-paramo-muted hover:text-red-500 p-1.5 rounded-md hover:bg-white/5 transition-colors"><Trash2 size={16} /></button>}</div>
+          <div>{initialData && <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={isSaving} title={t.delete_task} className="text-paramo-muted hover:text-red-500 p-1.5 rounded-md hover:bg-white/5 transition-colors"><Trash2 size={16} /></button>}</div>
           <div className="flex gap-2">
             <button type="button" onClick={onCancel} disabled={isSaving} className="text-paramo-muted hover:text-white p-1.5 rounded-md hover:bg-white/5 transition-colors"><X size={16} /></button>
             

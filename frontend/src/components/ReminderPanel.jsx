@@ -224,7 +224,7 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
                       <button 
                         onClick={() => handleToggle(reminder)}
                         className={`p-2 rounded-lg transition-colors ${reminder.isActive ? 'text-paramo-frailejon hover:bg-paramo-frailejon/10' : 'text-paramo-muted hover:bg-white/5'}`}
-                        title="Toggle"
+                        title={t.toggle}
                       >
                         {reminder.isActive ? <BellRing size={16} /> : <BellOff size={16} />}
                       </button>

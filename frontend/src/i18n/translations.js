@@ -97,6 +97,39 @@ export const translations = {
     // Placeholders
     ex_reminder: "Ex: Drink water, Posture...",
     reminder_placeholder: "Reminder title...",
+    
+    // PWA Prompt
+    pwa_ready: "App ready",
+    pwa_offline: "Available offline",
+    pwa_update: "New version available",
+    pwa_refresh: "Update to see changes",
+    pwa_update_btn: "Update",
+    
+    // Tooltips & Hints
+    toggle: "Toggle",
+    expand_collapse: "Expand/Collapse All",
+    focus_duration: "Focus duration",
+    delete_task: "Delete task",
+    increment: "Increment",
+    decrement: "Decrement",
+    remove: "Remove",
+    hide_password: "Hide password",
+    show_password: "Show password",
+    change_language: "Change Language",
+    generate_invite: "Generate Invitation",
+    logout: "Logout",
+    mark_active: "Mark as active",
+    mark_done: "Mark as done",
+    start_focus: "Start focus",
+    stop_focus: "Stop focus",
+    pin_task: "Pin task",
+    unpin_task: "Unpin task",
+    
+    // Install Prompt
+    install_title: "Install Habits",
+    install_desc: "Quick access and pure offline mode",
+    install_btn: "Install",
+    maybe_later: "Maybe later",
   },
   es: {
     // Auth
@@ -198,7 +231,38 @@ export const translations = {
     // Placeholders
     ex_reminder: "Ej: Beber agua, Postura...",
     reminder_placeholder: "Título del recordatorio...",
+    
+    // PWA Prompt
+    pwa_ready: "App lista",
+    pwa_offline: "Disponible offline",
+    pwa_update: "Nueva versión disponible",
+    pwa_refresh: "Actualiza para ver los cambios",
+    pwa_update_btn: "Actualizar",
+    
+    // Tooltips & Hints
+    toggle: "Alternar",
+    expand_collapse: "Expandir/Colapsar Todo",
+    focus_duration: "Duración de foco",
+    delete_task: "Eliminar tarea",
+    increment: "Incrementar",
+    decrement: "Decrementar",
+    remove: "Quitar",
+    hide_password: "Ocultar contraseña",
+    show_password: "Ver contraseña",
+    change_language: "Cambiar Idioma",
+    generate_invite: "Generar Invitación",
+    logout: "Cerrar Sesión",
+    mark_active: "Marcar como activa",
+    mark_done: "Marcar como hecha",
+    start_focus: "Iniciar foco",
+    stop_focus: "Detener foco",
+    pin_task: "Fijar tarea",
+    unpin_task: "Desfijar tarea",
+    
+    // Install Prompt
+    install_title: "Instala Habits",
+    install_desc: "Acceso rápido y modo offline puro",
+    install_btn: "Instalar",
+    maybe_later: "Quizás luego",
   }
 };
-
-

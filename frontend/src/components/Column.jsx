@@ -39,7 +39,7 @@ export const Column = ({ column, isActiveOnMobile }) => {
           </div>
           
           <div className="flex items-center border-l border-white/10 pl-2 gap-2">
-            <button onClick={handleToggleAll} className="text-paramo-muted hover:text-white transition-colors p-1" title="Expand/Collapse All">
+            <button onClick={handleToggleAll} className="text-paramo-muted hover:text-white transition-colors p-1" title={t.expand_collapse}>
               <ChevronsUpDown size={14} />
             </button>
 

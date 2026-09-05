@@ -100,3 +100,10 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
+
+// Allow SW to skip waiting and activate immediately when commanded
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
