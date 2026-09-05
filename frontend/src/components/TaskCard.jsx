@@ -94,7 +94,7 @@ const getPriorityTheme = (priority) => {
 };
 
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
-  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask } = useHabitStore();
+  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask, updateTask } = useHabitStore();
 
   const hasMonthlyDate = column.type === 'monthly' && task.targetDay != null;
   const hasAnnuallyDate = column.type === 'annually' && task.targetDay != null && task.targetMonth != null;
@@ -104,6 +104,19 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
   const isDailyColumn = column.id === 'daily';
   
   const hasDescription = !!(task.description && task.description.trim().length > 0);
+  const handleCheckboxChange = (index, newCheckedState, e) => {
+    e.stopPropagation();
+    let currentIndex = 0;
+    const newDesc = task.description.replace(/\[([ xX])\]/g, (match) => {
+      if (currentIndex === index) {
+        currentIndex++;
+        return newCheckedState ? "[x]" : "[ ]";
+      }
+      currentIndex++;
+      return match;
+    });
+    updateTask(task.id, { description: newDesc });
+  };
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -316,21 +329,47 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
           {hasDescription && !task.isCollapsed && (
             <div className="mt-1.5 animate-fadeIn">
               <div className="prose-container">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    p: ({node, ...props}) => <p className={`text-xs leading-relaxed font-light break-normal text-balance ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`} {...props} />,
-                    a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
-                    strong: ({node, ...props}) => <strong className="font-bold text-white/90" {...props} />,
-                    em: ({node, ...props}) => <em className="italic" {...props} />,
-                    del: ({node, ...props}) => <del className="line-through decoration-white/30" {...props} />,
-                    ul: ({node, ...props}) => <ul className={`list-disc list-inside ml-1 text-xs ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`} {...props} />,
-                    ol: ({node, ...props}) => <ol className={`list-decimal list-inside ml-1 text-xs ${task.completed ? 'text-paramo-muted/70' : 'text-paramo-muted'}`} {...props} />,
-                    li: ({node, ...props}) => <li className="mb-0.5 leading-relaxed font-light" {...props} />,
-                  }}
-                >
-                  {task.description}
-                </ReactMarkdown>
+                {(() => {
+                  let checkboxIndex = 0;
+                  return (
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({node, ...props}) => <p className={`text-xs leading-relaxed font-light break-normal text-balance ${task.completed ? "text-paramo-muted/70" : "text-paramo-muted"}`} {...props} />,
+                        a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
+                        strong: ({node, ...props}) => <strong className="font-bold text-white/90" {...props} />,
+                        em: ({node, ...props}) => <em className="italic" {...props} />,
+                        del: ({node, ...props}) => <del className="line-through decoration-white/30" {...props} />,
+                        ul: ({node, ...props}) => <ul className={`list-disc list-inside ml-1 text-xs ${task.completed ? "text-paramo-muted/70" : "text-paramo-muted"}`} {...props} />,
+                        ol: ({node, ...props}) => <ol className={`list-decimal list-inside ml-1 text-xs ${task.completed ? "text-paramo-muted/70" : "text-paramo-muted"}`} {...props} />,
+                        li: ({node, className, children, ...props}) => {
+                          if (className === "task-list-item") {
+                            return <li className="mb-0.5 leading-relaxed font-light flex items-start gap-1.5" {...props}>{children}</li>;
+                          }
+                          return <li className="mb-0.5 leading-relaxed font-light" {...props}>{children}</li>;
+                        },
+                        input: ({node, checked, disabled, type, ...props}) => {
+                          if (type === "checkbox") {
+                            const currentIndex = checkboxIndex++;
+                            return (
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => handleCheckboxChange(currentIndex, e.target.checked, e)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1 accent-paramo-frailejon cursor-pointer flex-shrink-0"
+                                {...props}
+                              />
+                            );
+                          }
+                          return <input type={type} {...props} />;
+                        }
+                      }}
+                    >
+                      {task.description}
+                    </ReactMarkdown>
+                  );
+                })()}
               </div>
             </div>
           )}
