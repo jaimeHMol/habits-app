@@ -1,5 +1,6 @@
 import React from 'react'
 import { useHabitStore } from '../store/useHabitStore'
+import { translations } from "../i18n/translations"
 import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus, Hash, Bookmark } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -94,7 +95,8 @@ const getPriorityTheme = (priority) => {
 };
 
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
-  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask, updateTask } = useHabitStore();
+  const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask, updateTask, language } = useHabitStore();
+  const t = translations[language] || translations.en;
 
   const hasMonthlyDate = column.type === 'monthly' && task.targetDay != null;
   const hasAnnuallyDate = column.type === 'annually' && task.targetDay != null && task.targetMonth != null;
