@@ -346,7 +346,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                         ol: ({node, ...props}) => <ol className={`list-decimal list-inside ml-1 text-xs ${task.completed ? "text-paramo-muted/70" : "text-paramo-muted"}`} {...props} />,
                         li: ({node, className, children, ...props}) => {
                           if (className === "task-list-item") {
-                            return <li className="mb-0.5 leading-relaxed font-light flex items-start gap-1.5" {...props}>{children}</li>;
+                            return <li className="mb-0.5 leading-relaxed font-light flex items-start gap-1.5 has-[:checked]:line-through has-[:checked]:text-paramo-muted/50 transition-all" {...props}>{children}</li>;
                           }
                           return <li className="mb-0.5 leading-relaxed font-light" {...props}>{children}</li>;
                         },

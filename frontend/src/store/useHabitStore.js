@@ -22,6 +22,7 @@ export const useHabitStore = create(
       get().fetchTasks(); // Load data immediately after login
       return { success: true };
     } catch (error) {
+      get().fetchTasks(true);
       return { success: false, message: error.message };
     }
   },
@@ -31,6 +32,7 @@ export const useHabitStore = create(
       await taskApi.register(data);
       return { success: true };
     } catch (error) {
+      get().fetchTasks(true);
       return { success: false, message: error.message };
     }
   },
@@ -55,6 +57,7 @@ export const useHabitStore = create(
       });
       localStorage.setItem('habit_lang', user.language);
     } catch (error) {
+      get().fetchTasks(true);
       if (error.message === 'Session expired') {
         set({ isAuthenticated: false, user: null });
       }
@@ -82,6 +85,7 @@ export const useHabitStore = create(
       const data = await taskApi.generateInvite();
       return data.code;
     } catch (error) {
+      get().fetchTasks(true);
       console.error("Failed to generate invite", error);
       return null;
     }
@@ -144,6 +148,7 @@ export const useHabitStore = create(
           return { syncQueue: newQueue };
         });
       } catch (error) {
+      get().fetchTasks(true);
         console.error("Failed to sync action", action, error);
         hasErrors = true;
         break;
@@ -163,6 +168,7 @@ export const useHabitStore = create(
     try {
       await taskApi.update(taskId, fields);
     } catch (error) {
+      get().fetchTasks(true);
       console.error("Failed to update task on server", error);
     }
   },
@@ -302,6 +308,7 @@ export const useHabitStore = create(
       await get().fetchTasks();
       useReminderStore.getState().fetchReminders();
     } catch (error) {
+      get().fetchTasks(true);
       console.error("Review confirmation failed", error);
       set({ isLoading: false });
     }
@@ -347,6 +354,7 @@ export const useHabitStore = create(
       // Trigger day change check after tasks are loaded
       get().checkDayChange();
     } catch (error) {
+      get().fetchTasks(true);
       if (error.message === 'Session expired') {
         set({ isAuthenticated: false, user: null, isLoading: false });
       } else {
@@ -386,6 +394,7 @@ export const useHabitStore = create(
     try {
       await taskApi.update(taskId, { is_pinned: newPinnedState });
     } catch (error) {
+      get().fetchTasks(true);
       get().fetchTasks(); 
     }
   },
@@ -427,6 +436,7 @@ export const useHabitStore = create(
       await taskApi.toggleComplete(taskId, false, targetState);
       useReminderStore.getState().fetchReminders();
     } catch (error) {
+      get().fetchTasks(true);
       get().fetchTasks();
     }
   },
@@ -447,6 +457,7 @@ export const useHabitStore = create(
       await taskApi.increment(taskId, isRetroactive);
       useReminderStore.getState().fetchReminders();
     } catch (error) {
+      get().fetchTasks(true);
       get().fetchTasks();
     }
   },
@@ -466,6 +477,7 @@ export const useHabitStore = create(
     try {
       await taskApi.decrement(taskId);
     } catch (error) {
+      get().fetchTasks(true);
       get().fetchTasks();
     }
   },
@@ -490,6 +502,7 @@ export const useHabitStore = create(
     try {
       await taskApi.reorderColumn(columnId, orderedIds);
     } catch (error) {
+      get().fetchTasks(true);
       console.error("Sync failed", error);
       get().fetchTasks();
     }
@@ -521,11 +534,15 @@ export const useHabitStore = create(
       useReminderStore.getState().fetchReminders();
       return true;
     } catch (error) {
+      get().fetchTasks(true);
       return false;
     }
   },
 
   updateTask: async (taskId, updatedData) => {
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updatedData } : t)
+    }));
     if (!navigator.onLine) {
       const lang = get().language;
       alert(translations[lang].offline_action);
@@ -544,10 +561,11 @@ export const useHabitStore = create(
     };
     try {
       await taskApi.update(taskId, payload);
-      get().fetchTasks();
+      get().fetchTasks(true);
       useReminderStore.getState().fetchReminders();
       return true;
     } catch (error) {
+      get().fetchTasks(true);
       return false;
     }
   },
@@ -563,6 +581,7 @@ export const useHabitStore = create(
       await taskApi.delete(taskId);
       useReminderStore.getState().fetchReminders();
     } catch (error) {
+      get().fetchTasks(true);
       // Rollback
       set((state) => ({ tasks: [...state.tasks, taskToDelete] }));
       const lang = get().language;
