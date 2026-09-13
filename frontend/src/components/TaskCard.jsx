@@ -346,9 +346,9 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                         ol: ({node, ...props}) => <ol className={`list-decimal list-inside ml-1 text-xs ${task.completed ? "text-paramo-muted/70" : "text-paramo-muted"}`} {...props} />,
                         li: ({node, className, children, ...props}) => {
                           if (className === "task-list-item") {
-                            return <li className="mb-0.5 leading-relaxed font-light flex items-start gap-1.5 has-[:checked]:line-through has-[:checked]:text-paramo-muted/50 transition-all" {...props}>{children}</li>;
+                            return <li className={`mb-1.5 leading-snug font-normal text-xs flex items-start gap-2 transition-all has-[:checked]:line-through has-[:checked]:text-paramo-muted/50 has-[:checked]:font-light ${task.completed ? "text-paramo-muted/70" : "text-white/80"}`} {...props}>{children}</li>;
                           }
-                          return <li className="mb-0.5 leading-relaxed font-light" {...props}>{children}</li>;
+                          return <li className="mb-0.5 leading-relaxed font-light text-xs" {...props}>{children}</li>;
                         },
                         input: ({node, checked, disabled, type, ...props}) => {
                           if (type === "checkbox") {
@@ -359,7 +359,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                                 checked={checked}
                                 onChange={(e) => handleCheckboxChange(currentIndex, e.target.checked, e)}
                                 onClick={(e) => e.stopPropagation()}
-                                className="mt-1 accent-paramo-frailejon cursor-pointer flex-shrink-0"
+                                className="mt-0.5 w-3.5 h-3.5 accent-paramo-frailejon cursor-pointer flex-shrink-0"
                                 {...props}
                               />
                             );
