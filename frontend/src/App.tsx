@@ -39,7 +39,7 @@ function App() {
     columns, reorderTasks, fetchTasks, isAuthenticated, user, 
     login, register, logout, fetchUserProfile, language, setLanguage,
     showReviewModal, checkDayChange, activeTimer, tickTimer, generateInvite,
-    processSyncQueue
+    processSyncQueue, isOffline, setIsOffline
   } = useHabitStore()
   const { fetchReminders } = useReminderStore()
 
@@ -91,8 +91,7 @@ function App() {
   const [generatedInvite, setGeneratedInvite] = useState('')
   const [copied, setCopied] = useState(false)
 
-  // Offline and PWA States
-  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+  // PWA States
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [showInstallPrompt, setShowInstallPrompt] = useState(false)
 
@@ -152,11 +151,22 @@ function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    const channel = new BroadcastChannel('reminders-channel');
+    channel.onmessage = (event) => {
+      if (event.data?.type === 'SERVER_OFFLINE') {
+        setIsOffline(true);
+      } else if (event.data?.type === 'SERVER_ONLINE') {
+        setIsOffline(false);
+        processSyncQueue();
+      }
+    };
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      channel.close();
     }
-  }, [processSyncQueue]);
+  }, [processSyncQueue, setIsOffline]);
 
   // PWA Install Prompt
   useEffect(() => {
@@ -357,7 +367,7 @@ function App() {
             {isOffline && (
               <div 
                 className="text-paramo-tierra bg-paramo-tierra/10 p-2 rounded-lg border border-paramo-tierra/20 animate-pulse"
-                title={t.offline_error || "Offline Mode"}
+                title={t.offline_mode || t.offline_error || "Offline Mode"}
               >
                 <CloudOff size={16} />
               </div>

@@ -88,6 +88,7 @@ export const translations = {
     error_network: "Network error. Try again",
     offline_error: "No internet connection",
     offline_action: "Action not available without connection",
+    offline_mode: "Offline mode (local data)",
     
     // Priorities
     prio_muted: "Optional",
@@ -222,6 +223,7 @@ export const translations = {
     error_network: "Error de red. Intenta de nuevo",
     offline_error: "No hay conexión a internet",
     offline_action: "Acción no disponible sin conexión",
+    offline_mode: "Modo offline (datos locales)",
     
     // Priorities
     prio_muted: "Opcional",

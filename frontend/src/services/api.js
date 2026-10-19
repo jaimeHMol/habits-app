@@ -14,7 +14,17 @@ const apiFetch = async (url, options) => {
   try {
     return await fetch(url, options);
   } catch (error) {
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (
+      !navigator.onLine ||
+      error.name === 'TypeError' ||
+      error.name === 'NetworkError' ||
+      (error.message && (
+        error.message.includes('fetch') ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('Failed to') ||
+        error.message.includes('Load failed')
+      ))
+    ) {
       throw new Error('OFFLINE_ERROR');
     }
     throw error;

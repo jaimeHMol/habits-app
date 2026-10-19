@@ -10,7 +10,10 @@ vi.mock('../services/api', () => ({
     resetDaily: vi.fn().mockResolvedValue(true),
     resetMonthly: vi.fn().mockResolvedValue(true),
     resetAnnually: vi.fn().mockResolvedValue(true),
-    toggleComplete: vi.fn().mockResolvedValue(true)
+    toggleComplete: vi.fn().mockResolvedValue(true),
+    update: vi.fn().mockResolvedValue(true),
+    increment: vi.fn().mockResolvedValue(true),
+    decrement: vi.fn().mockResolvedValue(true)
   }
 }))
 
@@ -178,3 +181,64 @@ describe('useHabitStore - checkDayChange', () => {
     vi.useRealTimers()
   })
 })
+
+describe('useHabitStore - offline behavior and resilience', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    localStorage.clear()
+    useHabitStore.setState({
+      tasks: [],
+      syncQueue: [],
+      isOffline: false,
+      isLoading: false,
+      error: null
+    })
+  })
+
+  it('fetchTasks sets isOffline: true and avoids infinite loop when network fails with OFFLINE_ERROR', async () => {
+    taskApi.getAll.mockRejectedValueOnce(new Error('OFFLINE_ERROR'))
+
+    await useHabitStore.getState().fetchTasks()
+
+    const state = useHabitStore.getState()
+    expect(state.isOffline).toBe(true)
+    expect(state.isLoading).toBe(false)
+    // Verify it was only called once, NOT recursing indefinitely
+    expect(taskApi.getAll).toHaveBeenCalledTimes(1)
+  })
+
+  it('toggleTaskCompletion keeps optimistic checkmark and enqueues action on OFFLINE_ERROR', async () => {
+    const task = { id: 10, columnId: 'daily', completed: false, currentCount: 0 }
+    useHabitStore.setState({ tasks: [task], isOffline: false })
+
+    taskApi.toggleComplete.mockRejectedValueOnce(new Error('OFFLINE_ERROR'))
+
+    await useHabitStore.getState().toggleTaskCompletion(10, true)
+
+    const state = useHabitStore.getState()
+    // Task remains completed optimistically
+    expect(state.tasks[0].completed).toBe(true)
+    // isOffline set to true
+    expect(state.isOffline).toBe(true)
+    // Enqueued for background sync
+    expect(state.syncQueue.length).toBe(1)
+    expect(state.syncQueue[0].type).toBe('TOGGLE_COMPLETION')
+    expect(state.syncQueue[0].taskId).toBe(10)
+  })
+
+  it('incrementTask keeps optimistic increment and enqueues action on OFFLINE_ERROR', async () => {
+    const task = { id: 20, columnId: 'daily', completed: false, currentCount: 2 }
+    useHabitStore.setState({ tasks: [task], isOffline: false })
+
+    taskApi.increment = vi.fn().mockRejectedValueOnce(new Error('OFFLINE_ERROR'))
+
+    await useHabitStore.getState().incrementTask(20)
+
+    const state = useHabitStore.getState()
+    expect(state.tasks[0].currentCount).toBe(3)
+    expect(state.isOffline).toBe(true)
+    expect(state.syncQueue.length).toBe(1)
+    expect(state.syncQueue[0].type).toBe('INCREMENT')
+  })
+})
+

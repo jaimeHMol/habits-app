@@ -28,15 +28,18 @@ export const useReminderStore = create((set, get) => ({
         isLoading: false 
       });
     } catch (error) {
+      if (error.message === 'OFFLINE_ERROR') {
+        useHabitStore.getState().setIsOffline(true);
+      }
       console.error("Failed to fetch reminders", error);
       set({ isLoading: false });
     }
   },
 
   addReminder: async (reminderData) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || useHabitStore.getState().isOffline) {
       const lang = useHabitStore.getState().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return false;
     }
     try {
@@ -44,14 +47,19 @@ export const useReminderStore = create((set, get) => ({
       get().fetchReminders();
       return true;
     } catch (error) {
+      if (error.message === 'OFFLINE_ERROR') {
+        useHabitStore.getState().setIsOffline(true);
+        const lang = useHabitStore.getState().language;
+        alert(translations[lang]?.offline_action || "Action not available without connection");
+      }
       return false;
     }
   },
 
   updateReminder: async (id, reminderData) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || useHabitStore.getState().isOffline) {
       const lang = useHabitStore.getState().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return false;
     }
     try {
@@ -59,14 +67,19 @@ export const useReminderStore = create((set, get) => ({
       get().fetchReminders();
       return true;
     } catch (error) {
+      if (error.message === 'OFFLINE_ERROR') {
+        useHabitStore.getState().setIsOffline(true);
+        const lang = useHabitStore.getState().language;
+        alert(translations[lang]?.offline_action || "Action not available without connection");
+      }
       return false;
     }
   },
 
   deleteReminder: async (id) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || useHabitStore.getState().isOffline) {
       const lang = useHabitStore.getState().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return false;
     }
     try {
@@ -74,14 +87,19 @@ export const useReminderStore = create((set, get) => ({
       set(state => ({ reminders: state.reminders.filter(r => r.id !== id) }));
       return true;
     } catch (error) {
+      if (error.message === 'OFFLINE_ERROR') {
+        useHabitStore.getState().setIsOffline(true);
+        const lang = useHabitStore.getState().language;
+        alert(translations[lang]?.offline_action || "Action not available without connection");
+      }
       return false;
     }
   },
 
   updateSettings: async (settings) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || useHabitStore.getState().isOffline) {
       const lang = useHabitStore.getState().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return false;
     }
     try {
@@ -89,6 +107,11 @@ export const useReminderStore = create((set, get) => ({
       set({ userSettings: { dayStartTime: settings.dayStartTime, dayEndTime: settings.dayEndTime } });
       return true;
     } catch (error) {
+      if (error.message === 'OFFLINE_ERROR') {
+        useHabitStore.getState().setIsOffline(true);
+        const lang = useHabitStore.getState().language;
+        alert(translations[lang]?.offline_action || "Action not available without connection");
+      }
       return false;
     }
   },

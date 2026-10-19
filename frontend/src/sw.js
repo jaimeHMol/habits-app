@@ -5,6 +5,8 @@ import { ExpirationPlugin } from 'workbox-expiration';
 
 precacheAndRoute(self.__WB_MANIFEST);
 
+const channel = new BroadcastChannel('reminders-channel');
+
 // Cache API GET requests for offline read support
 registerRoute(
   ({ request, url }) => {
@@ -22,11 +24,20 @@ registerRoute(
         maxEntries: 50,
         maxAgeSeconds: 24 * 60 * 60, // 24 hours
       }),
+      {
+        fetchDidFail: async () => {
+          channel.postMessage({ type: 'SERVER_OFFLINE' });
+        },
+        fetchDidSucceed: async ({ response }) => {
+          if (response && response.status < 500) {
+            channel.postMessage({ type: 'SERVER_ONLINE' });
+          }
+          return response;
+        }
+      }
     ],
   })
 );
-
-const channel = new BroadcastChannel('reminders-channel');
 
 self.addEventListener('push', (event) => {
   if (!event.data) return;

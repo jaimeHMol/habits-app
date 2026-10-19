@@ -53,12 +53,14 @@ export const useHabitStore = create(
         user, 
         isAuthenticated: true, 
         language: user.language,
-        lastUsedDate: user.last_period_reset_date 
+        lastUsedDate: user.last_period_reset_date,
+        isOffline: false
       });
       localStorage.setItem('habit_lang', user.language);
     } catch (error) {
-      get().fetchTasks(true);
-      if (error.message === 'Session expired') {
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+      } else if (error.message === 'Session expired') {
         set({ isAuthenticated: false, user: null });
       }
       console.error("Failed to fetch profile", error);
@@ -99,6 +101,8 @@ export const useHabitStore = create(
   ],
   tasks: [],
   isLoading: false,
+  isOffline: !navigator.onLine,
+  setIsOffline: (isOffline) => set({ isOffline }),
   error: null,
   showReviewModal: false,
   pendingResets: [], 
@@ -148,7 +152,9 @@ export const useHabitStore = create(
           return { syncQueue: newQueue };
         });
       } catch (error) {
-      get().fetchTasks(true);
+        if (error.message === 'OFFLINE_ERROR') {
+          set({ isOffline: true });
+        }
         console.error("Failed to sync action", action, error);
         hasErrors = true;
         break;
@@ -157,6 +163,7 @@ export const useHabitStore = create(
 
     set({ isSyncing: false });
     if (!hasErrors) {
+       set({ isOffline: false });
        get().fetchTasks();
        useReminderStore.getState().fetchReminders();
     }
@@ -308,7 +315,9 @@ export const useHabitStore = create(
       await get().fetchTasks();
       useReminderStore.getState().fetchReminders();
     } catch (error) {
-      get().fetchTasks(true);
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+      }
       console.error("Review confirmation failed", error);
       set({ isLoading: false });
     }
@@ -350,12 +359,13 @@ export const useHabitStore = create(
         });
       }
 
-      set({ tasks, isLoading: false, isAuthenticated: true });
+      set({ tasks, isLoading: false, isAuthenticated: true, isOffline: false });
       // Trigger day change check after tasks are loaded
       get().checkDayChange();
     } catch (error) {
-      get().fetchTasks(true);
-      if (error.message === 'Session expired') {
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true, isLoading: false });
+      } else if (error.message === 'Session expired') {
         set({ isAuthenticated: false, user: null, isLoading: false });
       } else {
         set({ error: error.message, isLoading: false });
@@ -372,9 +382,9 @@ export const useHabitStore = create(
   })),
 
   togglePinTask: async (taskId) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || get().isOffline) {
       const lang = get().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return;
     }
 
@@ -393,9 +403,18 @@ export const useHabitStore = create(
 
     try {
       await taskApi.update(taskId, { is_pinned: newPinnedState });
+      set({ isOffline: false });
     } catch (error) {
-      get().fetchTasks(true);
-      get().fetchTasks(); 
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+      }
+      // Rollback
+      set((state) => {
+        const updatedTasks = state.tasks.map(t => t.id === taskId ? { ...t, isPinned: !newPinnedState } : t);
+        return { tasks: updatedTasks };
+      });
+      const lang = get().language;
+      alert(translations[lang]?.offline_action || "Action not available without connection");
     }
   },
 
@@ -409,10 +428,12 @@ export const useHabitStore = create(
 
     if (task && task.completed === newCompletedState) return;
 
-    if (!navigator.onLine) {
-      set((state) => ({
-        tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
-      }));
+    // Optimistically update local state immediately
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
+    }));
+
+    if (!navigator.onLine || get().isOffline) {
       get().enqueueAction({ 
         type: 'TOGGLE_COMPLETION', 
         taskId, 
@@ -422,11 +443,7 @@ export const useHabitStore = create(
       return;
     }
 
-    set((state) => ({
-      tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: newCompletedState } : t)
-    }));
     try {
-      // Clear timer fields on server if completing
       if (newCompletedState) {
         await taskApi.update(taskId, { 
           timer_end_time: null,
@@ -434,58 +451,83 @@ export const useHabitStore = create(
         });
       }
       await taskApi.toggleComplete(taskId, false, targetState);
+      set({ isOffline: false });
       useReminderStore.getState().fetchReminders();
     } catch (error) {
-      get().fetchTasks(true);
-      get().fetchTasks();
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+        get().enqueueAction({ 
+          type: 'TOGGLE_COMPLETION', 
+          taskId, 
+          targetState, 
+          newCompletedState 
+        });
+      } else {
+        // Server rejected action: rollback
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === taskId ? { ...t, completed: !newCompletedState } : t)
+        }));
+      }
     }
   },
 
   incrementTask: async (taskId, isRetroactive = false) => {
-    if (!navigator.onLine) {
-      set((state) => ({
-        tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
-      }));
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
+    }));
+
+    if (!navigator.onLine || get().isOffline) {
       get().enqueueAction({ type: 'INCREMENT', taskId, isRetroactive });
       return;
     }
 
-    set((state) => ({
-      tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
-    }));
     try {
       await taskApi.increment(taskId, isRetroactive);
+      set({ isOffline: false });
       useReminderStore.getState().fetchReminders();
     } catch (error) {
-      get().fetchTasks(true);
-      get().fetchTasks();
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+        get().enqueueAction({ type: 'INCREMENT', taskId, isRetroactive });
+      } else {
+        // Rollback
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
+        }));
+      }
     }
   },
 
   decrementTask: async (taskId) => {
-    if (!navigator.onLine) {
-      set((state) => ({
-        tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
-      }));
+    set((state) => ({
+      tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
+    }));
+
+    if (!navigator.onLine || get().isOffline) {
       get().enqueueAction({ type: 'DECREMENT', taskId });
       return;
     }
 
-    set((state) => ({
-      tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: Math.max(0, t.currentCount - 1) } : t)
-    }));
     try {
       await taskApi.decrement(taskId);
+      set({ isOffline: false });
     } catch (error) {
-      get().fetchTasks(true);
-      get().fetchTasks();
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+        get().enqueueAction({ type: 'DECREMENT', taskId });
+      } else {
+        // Rollback
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === taskId ? { ...t, currentCount: t.currentCount + 1 } : t)
+        }));
+      }
     }
   },
 
   reorderTasks: async (columnId, startIndex, endIndex) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || get().isOffline) {
       const lang = get().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return;
     }
 
@@ -501,17 +543,19 @@ export const useHabitStore = create(
     const orderedIds = visibleTasks.map(t => t.id);
     try {
       await taskApi.reorderColumn(columnId, orderedIds);
+      set({ isOffline: false });
     } catch (error) {
-      get().fetchTasks(true);
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+      }
       console.error("Sync failed", error);
-      get().fetchTasks();
     }
   },
 
   addTask: async (columnId, taskData) => {
-    if (!navigator.onLine) {
+    if (!navigator.onLine || get().isOffline) {
       const lang = get().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return false;
     }
 
@@ -530,22 +574,24 @@ export const useHabitStore = create(
     };
     try {
       await taskApi.create(payload);
-      get().fetchTasks();
+      set({ isOffline: false });
+      await get().fetchTasks();
       useReminderStore.getState().fetchReminders();
       return true;
     } catch (error) {
-      get().fetchTasks(true);
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+        const lang = get().language;
+        alert(translations[lang]?.offline_action || "Action not available without connection");
+      }
       return false;
     }
   },
 
   updateTask: async (taskId, updatedData) => {
-    set((state) => ({
-      tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updatedData } : t)
-    }));
-    if (!navigator.onLine) {
+    if (!navigator.onLine || get().isOffline) {
       const lang = get().language;
-      alert(translations[lang].offline_action);
+      alert(translations[lang]?.offline_action || "Action not available without connection");
       return false;
     }
 
@@ -561,11 +607,18 @@ export const useHabitStore = create(
     };
     try {
       await taskApi.update(taskId, payload);
-      get().fetchTasks(true);
+      set((state) => ({
+        tasks: state.tasks.map(t => t.id === taskId ? { ...t, ...updatedData } : t),
+        isOffline: false
+      }));
       useReminderStore.getState().fetchReminders();
       return true;
     } catch (error) {
-      get().fetchTasks(true);
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+        const lang = get().language;
+        alert(translations[lang]?.offline_action || "Action not available without connection");
+      }
       return false;
     }
   },
@@ -574,18 +627,27 @@ export const useHabitStore = create(
     const taskToDelete = get().tasks.find(t => t.id === taskId);
     if (!taskToDelete) return;
 
+    if (!navigator.onLine || get().isOffline) {
+      const lang = get().language;
+      alert(translations[lang]?.offline_action || "Action not available without connection");
+      return;
+    }
+
     // Optimistic Deletion
     set((state) => ({ tasks: state.tasks.filter(t => t.id !== taskId) }));
 
     try {
       await taskApi.delete(taskId);
+      set({ isOffline: false });
       useReminderStore.getState().fetchReminders();
     } catch (error) {
-      get().fetchTasks(true);
+      if (error.message === 'OFFLINE_ERROR') {
+        set({ isOffline: true });
+      }
       // Rollback
       set((state) => ({ tasks: [...state.tasks, taskToDelete] }));
       const lang = get().language;
-      alert(translations[lang].offline_action || "Error deleting task offline.");
+      alert(translations[lang]?.offline_action || "Error deleting task offline.");
       console.error("Delete failed", error);
     }
   }
