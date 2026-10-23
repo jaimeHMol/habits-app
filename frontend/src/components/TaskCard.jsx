@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import confetti from 'canvas-confetti'
-import { customUrlTransform, isWebUrl } from '../utils/textUtils'
+import { customUrlTransform, isWebUrl, handleMarkdownLinkClick } from '../utils/textUtils'
 
 const MinimalPin = ({ size = 16, strokeWidth = 1.5, fill = "none", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -288,7 +288,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                           href={href}
                           className="text-paramo-frailejon underline hover:text-white transition-colors italic"
                           {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => handleMarkdownLinkClick(e, href)}
                           {...props}
                         />
                       ),
@@ -354,7 +354,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                             href={href}
                             className="text-paramo-frailejon underline hover:text-white transition-colors"
                             {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => handleMarkdownLinkClick(e, href)}
                             {...props}
                           />
                         ),

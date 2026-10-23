@@ -5,7 +5,7 @@ import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarCl
 import confetti from 'canvas-confetti'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { customUrlTransform, isWebUrl } from '../utils/textUtils'
+import { customUrlTransform, isWebUrl, handleMarkdownLinkClick } from '../utils/textUtils'
 
 const playVictorySound = () => {
   try {
@@ -154,7 +154,7 @@ export const PeriodicReviewModal = () => {
                               href={href}
                               className="text-paramo-frailejon underline hover:text-white transition-colors italic"
                               {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                              onClick={(e) => e.stopPropagation()}
+                              onClick={(e) => handleMarkdownLinkClick(e, href)}
                               {...props}
                             />
                           )
@@ -213,7 +213,7 @@ export const PeriodicReviewModal = () => {
                           href={href}
                           className="text-paramo-frailejon underline hover:text-white transition-colors italic"
                           {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                          onClick={(e) => e.stopPropagation()}
+                          onClick={(e) => handleMarkdownLinkClick(e, href)}
                           {...props}
                         />
                       )

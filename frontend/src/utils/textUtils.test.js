@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { stripMarkdown, customUrlTransform, isWebUrl } from './textUtils'
+import { describe, it, expect, vi } from 'vitest'
+import { stripMarkdown, customUrlTransform, isWebUrl, handleMarkdownLinkClick } from './textUtils'
 
 describe('stripMarkdown', () => {
   it('should remove links and keep only the text', () => {
@@ -61,5 +61,30 @@ describe('isWebUrl', () => {
   it('should return false for custom app protocols', () => {
     expect(isWebUrl('evernote:///xxx/yyy/zzz')).toBe(false)
     expect(isWebUrl('mailto:user@example.com')).toBe(false)
+  })
+})
+
+describe('handleMarkdownLinkClick', () => {
+  it('should preventDefault and use hidden iframe for custom app protocols', () => {
+    const mockEvent = {
+      stopPropagation: vi.fn(),
+      preventDefault: vi.fn(),
+    }
+    handleMarkdownLinkClick(mockEvent, 'evernote:///xxx/yyy/zzz')
+    expect(mockEvent.stopPropagation).toHaveBeenCalled()
+    expect(mockEvent.preventDefault).toHaveBeenCalled()
+    const iframe = document.querySelector('iframe[src="evernote:///xxx/yyy/zzz"]')
+    expect(iframe).not.toBeNull()
+    iframe?.remove()
+  })
+
+  it('should not preventDefault for regular web URLs', () => {
+    const mockEvent = {
+      stopPropagation: vi.fn(),
+      preventDefault: vi.fn(),
+    }
+    handleMarkdownLinkClick(mockEvent, 'https://www.google.com')
+    expect(mockEvent.stopPropagation).toHaveBeenCalled()
+    expect(mockEvent.preventDefault).not.toHaveBeenCalled()
   })
 })

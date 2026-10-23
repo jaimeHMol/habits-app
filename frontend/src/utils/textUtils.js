@@ -74,3 +74,27 @@ export const isWebUrl = (href) => {
   return /^(https?:\/\/|\/|#)/i.test(href);
 };
 
+/**
+ * Click handler for Markdown links.
+ * Stops card click propagation, and for custom application protocols
+ * (like evernote://), prevents default browser navigation and launches
+ * the protocol via a hidden iframe so browsers (especially Firefox)
+ * don't open an extra blank tab.
+ */
+export const handleMarkdownLinkClick = (e, href) => {
+  e.stopPropagation();
+  if (href && !isWebUrl(href)) {
+    e.preventDefault();
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = href;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      if (iframe.parentNode) {
+        iframe.parentNode.removeChild(iframe);
+      }
+    }, 3000);
+  }
+};
+
+
