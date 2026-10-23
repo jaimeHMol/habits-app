@@ -5,6 +5,7 @@ import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import confetti from 'canvas-confetti'
+import { customUrlTransform, isWebUrl } from '../utils/textUtils'
 
 const MinimalPin = ({ size = 16, strokeWidth = 1.5, fill = "none", className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -278,10 +279,19 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 ) : (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
+                    urlTransform={customUrlTransform}
                     disallowedElements={['p']}
                     unwrapDisallowed
                     components={{
-                      a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors italic" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
+                      a: ({node, href, ...props}) => (
+                        <a
+                          href={href}
+                          className="text-paramo-frailejon underline hover:text-white transition-colors italic"
+                          {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                          onClick={(e) => e.stopPropagation()}
+                          {...props}
+                        />
+                      ),
                       text: ({node, value}) => {
                         // Improved Regex for Emojis
                         const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/g;
@@ -336,9 +346,18 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   return (
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
+                      urlTransform={customUrlTransform}
                       components={{
                         p: ({node, ...props}) => <p className={`text-xs leading-relaxed font-light break-normal text-balance ${task.completed ? "text-paramo-muted/70" : "text-paramo-muted"}`} {...props} />,
-                        a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />,
+                        a: ({node, href, ...props}) => (
+                          <a
+                            href={href}
+                            className="text-paramo-frailejon underline hover:text-white transition-colors"
+                            {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                            onClick={(e) => e.stopPropagation()}
+                            {...props}
+                          />
+                        ),
                         strong: ({node, ...props}) => <strong className="font-bold text-white/90" {...props} />,
                         em: ({node, ...props}) => <em className="italic" {...props} />,
                         del: ({node, ...props}) => <del className="line-through decoration-white/30" {...props} />,

@@ -88,6 +88,31 @@ describe('TaskCard Component', () => {
     expect(link).toHaveAttribute('target', '_blank');
   });
 
+  it('renders www. links with https:// and custom app links without target="_blank"', () => {
+    const customLinksTask = {
+      ...defaultTask,
+      title: 'Open [google](www.google.com)',
+      isCollapsed: false,
+      description: 'See [note](evernote:///xxx/yyy/zzz)',
+    };
+    render(
+      <TaskCard
+        task={customLinksTask}
+        column={defaultColumn}
+        snapshot={defaultSnapshot}
+        dragHandleProps={{}}
+      />
+    );
+
+    const wwwLink = screen.getByRole('link', { name: /google/i });
+    expect(wwwLink).toHaveAttribute('href', 'https://www.google.com');
+    expect(wwwLink).toHaveAttribute('target', '_blank');
+
+    const appLink = screen.getByRole('link', { name: /note/i });
+    expect(appLink).toHaveAttribute('href', 'evernote:///xxx/yyy/zzz');
+    expect(appLink).not.toHaveAttribute('target');
+  });
+
   it('does not show description when collapsed', () => {
     render(
       <TaskCard 

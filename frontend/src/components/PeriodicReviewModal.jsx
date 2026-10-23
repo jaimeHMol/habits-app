@@ -5,6 +5,7 @@ import { CheckCircle2, Circle, PartyPopper, ArrowRight, CalendarDays, CalendarCl
 import confetti from 'canvas-confetti'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { customUrlTransform, isWebUrl } from '../utils/textUtils'
 
 const playVictorySound = () => {
   try {
@@ -144,10 +145,19 @@ export const PeriodicReviewModal = () => {
                     <span className="text-sm font-medium line-clamp-1 italic">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
+                        urlTransform={customUrlTransform}
                         disallowedElements={['p']}
                         unwrapDisallowed
                         components={{
-                          a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors italic" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />
+                          a: ({node, href, ...props}) => (
+                            <a
+                              href={href}
+                              className="text-paramo-frailejon underline hover:text-white transition-colors italic"
+                              {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                              onClick={(e) => e.stopPropagation()}
+                              {...props}
+                            />
+                          )
                         }}
                       >
                         {task.title}
@@ -194,10 +204,19 @@ export const PeriodicReviewModal = () => {
                 <span className="text-sm font-medium line-clamp-1 italic">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
+                    urlTransform={customUrlTransform}
                     disallowedElements={['p']}
                     unwrapDisallowed
                     components={{
-                      a: ({node, ...props}) => <a className="text-paramo-frailejon underline hover:text-white transition-colors italic" target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} {...props} />
+                      a: ({node, href, ...props}) => (
+                        <a
+                          href={href}
+                          className="text-paramo-frailejon underline hover:text-white transition-colors italic"
+                          {...(isWebUrl(href) ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                          onClick={(e) => e.stopPropagation()}
+                          {...props}
+                        />
+                      )
                     }}
                   >
                     {task.title}
