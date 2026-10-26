@@ -33,16 +33,33 @@ def get_reminder_repository(
     return SQLiteReminderRepository(session=session)
 
 
+def get_push_subscription_repository(
+    session: Session = Depends(get_session),
+) -> IPushSubscriptionRepository:
+    return SQLitePushSubscriptionRepository(session=session)
+
+
+def get_push_service(
+    repository: IPushSubscriptionRepository = Depends(get_push_subscription_repository),
+) -> PushService:
+    return PushService(repository=repository)
+
+
 # 2. Provide the Application Service
 # FastAPI will inject the dependencies into this function
 def get_task_service(
     repository: ITaskRepository = Depends(get_task_repository),
     reminder_repo: IReminderRepository = Depends(get_reminder_repository),
+    push_service: PushService = Depends(get_push_service),
 ) -> TaskService:
     """
     Returns the application service injected with its required repository.
     """
-    return TaskService(repository=repository, reminder_repo=reminder_repo)
+    return TaskService(
+        repository=repository,
+        reminder_repo=reminder_repo,
+        push_service=push_service,
+    )
 
 
 def get_reminder_service(
@@ -61,15 +78,3 @@ def get_user_service(
     repository: SQLiteUserRepository = Depends(get_user_repository),
 ) -> UserService:
     return UserService(repository=repository)
-
-
-def get_push_subscription_repository(
-    session: Session = Depends(get_session),
-) -> IPushSubscriptionRepository:
-    return SQLitePushSubscriptionRepository(session=session)
-
-
-def get_push_service(
-    repository: IPushSubscriptionRepository = Depends(get_push_subscription_repository),
-) -> PushService:
-    return PushService(repository=repository)

@@ -1,10 +1,16 @@
 import pytest
 from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
-from src.domain.models import Reminder, Task, User
+from src.domain.models import Reminder, Task, TaskCompletionLog, User
 from src.infrastructure.database import engine
+from src.infrastructure.sqlite_repository import (
+    SQLiteTaskRepository,
+    SQLiteReminderRepository,
+)
+from src.application.services import TaskService
 from src.application.reminder_scheduler import ReminderScheduler
-from unittest.mock import patch
+from src.application.push_service import PushService
+from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture(autouse=True)
@@ -165,10 +171,122 @@ async def test_scheduler_triggers_timer_with_high_urgency(db_session):
             urgency="high",
         )
 
-    # Verify the task was marked as completed and triggered
+    # Verify the task was marked as completed, triggered, and logged in TaskCompletionLog
     db_session.refresh(task)
     assert task.timer_triggered is True
     assert task.completed is True
+
+    completion_log = db_session.exec(
+        select(TaskCompletionLog).where(TaskCompletionLog.task_id == task.id)
+    ).first()
+    assert completion_log is not None
+
+
+@pytest.mark.asyncio
+async def test_scheduler_retries_timer_on_transient_push_failure(db_session):
+    """If push fails due to transient error within 2 min window, do not mark triggered so next tick retries."""
+    scheduler = ReminderScheduler()
+
+    user_id_ts = int(datetime.now().timestamp()) + 10
+    user = User(
+        username=f"retryuser_{user_id_ts}",
+        hashed_password="pw",
+        full_name="Retry",
+        day_start_time="00:00",
+        day_end_time="23:59",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    now_utc = datetime.now(timezone.utc)
+    task = Task(
+        title="Retry timer task",
+        column_id="daily",
+        user_id=user.id,
+        timer_end_time=now_utc.replace(tzinfo=None) - timedelta(seconds=10),
+        timer_triggered=False,
+        completed=False,
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    with patch("src.application.reminder_scheduler.PushService") as MockPushService:
+        mock_push = MockPushService.return_value
+        mock_push.send_notification.return_value = [
+            {"error": "ConnectTimeout: timed out"}
+        ]
+        with patch.object(ReminderScheduler, "datetime_now", return_value=now_utc):
+            await scheduler.check_all_reminders()
+
+    db_session.refresh(task)
+    assert task.timer_triggered is False
+    assert task.completed is False
+
+
+def test_toggle_completion_from_timer_sends_push_when_not_triggered(db_session):
+    """Completing a task with from_timer=True should send high-urgency push if scheduler hasn't yet."""
+    user_id_ts = int(datetime.now().timestamp()) + 20
+    user = User(
+        username=f"clienttimer_{user_id_ts}",
+        hashed_password="pw",
+        full_name="ClientTimer",
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    task = Task(
+        title="Client finished timer",
+        column_id="daily",
+        user_id=user.id,
+        timer_end_time=datetime.now(timezone.utc).replace(tzinfo=None),
+        timer_triggered=False,
+        completed=False,
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.refresh(task)
+
+    mock_push = MagicMock()
+    service = TaskService(
+        repository=SQLiteTaskRepository(db_session),
+        reminder_repo=SQLiteReminderRepository(db_session),
+        push_service=mock_push,
+    )
+
+    updated = service.toggle_completion(
+        task_id=task.id,
+        user_id=user.id,
+        is_retroactive=False,
+        target_state=True,
+        from_timer=True,
+    )
+
+    assert updated is not None
+    assert updated.completed is True
+    assert updated.timer_triggered is True
+    mock_push.send_notification.assert_called_once_with(
+        user_id=user.id,
+        title="RECUERDA",
+        body=f"Timer finalizado: {task.title}",
+        data={"task_id": task.id, "type": "timer_end"},
+        urgency="high",
+    )
+
+
+def test_push_service_b64_decode_handles_unpadded_base64url():
+    """Ensure _b64_decode properly pads strings of length 4n+2 and 4n+3."""
+    repo = MagicMock()
+    push_service = PushService(repo)
+
+    raw_65_bytes = b"\x04" + (b"\xab" * 64)
+    unpadded_b64url = (
+        __import__("base64").urlsafe_b64encode(raw_65_bytes).decode("utf-8").rstrip("=")
+    )
+    assert len(unpadded_b64url) % 4 == 3
+    assert push_service._b64_decode(unpadded_b64url) == raw_65_bytes
 
 
 @pytest.mark.asyncio

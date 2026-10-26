@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
 from src.domain.models import (
     Task,
@@ -60,12 +60,21 @@ def create_task(
 def update_task(
     task_id: int,
     task_in: TaskUpdate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
     task = service.update_task_details(task_id, task_in, current_user.id)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler:
+        if task.timer_end_time and not task.timer_triggered and not task.completed:
+            scheduler.schedule_exact_timer(task.id, task.timer_end_time)
+        elif task.timer_end_time is None or task.completed:
+            scheduler.cancel_exact_timer(task.id)
+
     return task
 
 
@@ -84,16 +93,27 @@ def delete_task(
 @router.patch("/{task_id}/complete", response_model=Task)
 def toggle_task_completion(
     task_id: int,
+    request: Request,
     is_retroactive: bool = False,
     target_state: Optional[bool] = None,
+    from_timer: bool = False,
     current_user: User = Depends(get_current_user),
     service: TaskService = Depends(get_task_service),
 ):
     task = service.toggle_completion(
-        task_id, current_user.id, is_retroactive, target_state
+        task_id,
+        current_user.id,
+        is_retroactive,
+        target_state,
+        from_timer=from_timer,
     )
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler and task.completed:
+        scheduler.cancel_exact_timer(task.id)
+
     return task
 
 

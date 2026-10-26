@@ -132,7 +132,8 @@ export const taskApi = {
         timer_end_time: taskData.timer_end_time,
         timer_triggered: taskData.timer_triggered
       }),
-      credentials: 'include'
+      credentials: 'include',
+      keepalive: true
     });
     return handleResponse(response);
   },
@@ -146,15 +147,19 @@ export const taskApi = {
     return handleResponse(response);
   },
 
-  toggleComplete: async (taskId, isRetroactive = false, targetState = null) => {
+  toggleComplete: async (taskId, isRetroactive = false, targetState = null, fromTimer = false) => {
     let url = `${API_URL}${taskId}/complete?is_retroactive=${isRetroactive}`;
     if (targetState !== null) {
       url += `&target_state=${targetState}`;
     }
+    if (fromTimer) {
+      url += `&from_timer=true`;
+    }
     const response = await apiFetch(url, {
       method: 'PATCH',
       headers: getHeaders(),
-      credentials: 'include'
+      credentials: 'include',
+      keepalive: true
     });
     return handleResponse(response);
   },

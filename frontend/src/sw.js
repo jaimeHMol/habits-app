@@ -86,6 +86,39 @@ self.addEventListener('push', (event) => {
   }
 });
 
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const subOptions = event.oldSubscription?.options || { userVisibleOnly: true };
+        const newSub =
+          event.newSubscription ||
+          (await self.registration.pushManager.subscribe(subOptions));
+
+        const p256dh = btoa(
+          String.fromCharCode.apply(null, new Uint8Array(newSub.getKey('p256dh')))
+        );
+        const auth = btoa(
+          String.fromCharCode.apply(null, new Uint8Array(newSub.getKey('auth')))
+        );
+
+        await fetch('/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: newSub.endpoint,
+            p256dh,
+            auth,
+          }),
+          credentials: 'include',
+        });
+      } catch (err) {
+        console.error('Failed to renew push subscription:', err);
+      }
+    })()
+  );
+});
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/';

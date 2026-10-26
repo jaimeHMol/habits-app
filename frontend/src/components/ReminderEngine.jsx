@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
 import { useHabitStore } from '../store/useHabitStore'
 import { stripMarkdown } from '../utils/textUtils'
+import { syncExistingPushSubscription } from '../services/pushSubscription'
 
 const SLACK_SOUND_URL = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3';
 
@@ -17,10 +18,11 @@ export const ReminderEngine = () => {
     }
   }, [isAuthenticated]);
 
-  // 2. Cargar datos iniciales
+  // 2. Cargar datos iniciales y sincronizar suscripción Push activa
   useEffect(() => {
     if (isAuthenticated) {
       fetchReminders();
+      syncExistingPushSubscription();
     }
   }, [isAuthenticated, fetchReminders]);
 
@@ -103,6 +105,13 @@ export const ReminderEngine = () => {
     channel.onmessage = (event) => {
       if (event.data?.type === 'PUSH_RECEIVED') {
         const { title, body, data } = event.data.payload;
+        if (data?.type === 'timer_end' && data?.task_id) {
+          const habitState = useHabitStore.getState();
+          if (habitState.activeTimer?.taskId === data.task_id) {
+            habitState.stopTimer(false);
+          }
+          habitState.fetchTasks(true);
+        }
         // The payload 'body' contains the habit text from the backend.
         // We use it as the title for our internal Toast UI.
         triggerNotification({ 

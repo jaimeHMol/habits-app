@@ -240,5 +240,43 @@ describe('useHabitStore - offline behavior and resilience', () => {
     expect(state.syncQueue.length).toBe(1)
     expect(state.syncQueue[0].type).toBe('INCREMENT')
   })
+
+  it('tickTimer completes task with fromTimer=true without wiping server timer_end_time beforehand', async () => {
+    const task = { id: 99, title: 'Focus Session', columnId: 'daily', completed: false }
+    const expiredEndTime = Date.now() - 1000
+
+    useHabitStore.setState({
+      tasks: [task],
+      activeTimer: { taskId: 99, endTime: expiredEndTime, remainingSeconds: 1 },
+      isOffline: false
+    })
+
+    useHabitStore.getState().tickTimer()
+
+    // Wait for async toggleTaskCompletion
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    // Should NOT have called taskApi.update with timer_end_time: null
+    expect(taskApi.update).not.toHaveBeenCalled()
+    // Should have called toggleComplete with fromTimer = true
+    expect(taskApi.toggleComplete).toHaveBeenCalledWith(99, false, true, true)
+    expect(useHabitStore.getState().tasks[0].completed).toBe(true)
+    expect(useHabitStore.getState().activeTimer.taskId).toBeNull()
+  })
+
+  it('manual stopTimer clears timer_end_time on the server', async () => {
+    useHabitStore.setState({
+      activeTimer: { taskId: 99, endTime: Date.now() + 60000, remainingSeconds: 60 },
+      isOffline: false
+    })
+
+    await useHabitStore.getState().stopTimer()
+
+    expect(taskApi.update).toHaveBeenCalledWith(99, {
+      timer_end_time: null,
+      timer_triggered: false
+    })
+    expect(useHabitStore.getState().activeTimer.taskId).toBeNull()
+  })
 })
 

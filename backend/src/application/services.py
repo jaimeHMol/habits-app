@@ -19,9 +19,15 @@ class TaskService:
     It encapsulates business logic and interacts with the repository port.
     """
 
-    def __init__(self, repository: ITaskRepository, reminder_repo: IReminderRepository):
+    def __init__(
+        self,
+        repository: ITaskRepository,
+        reminder_repo: IReminderRepository,
+        push_service=None,
+    ):
         self.repository = repository
         self.reminder_repo = reminder_repo
+        self.push_service = push_service
 
     def get_all_tasks(self, user_id: int) -> List[Task]:
         return self.repository.get_all(user_id)
@@ -82,6 +88,7 @@ class TaskService:
         user_id: int,
         is_retroactive: bool = False,
         target_state: Optional[bool] = None,
+        from_timer: bool = False,
     ) -> Optional[Task]:
         task = self.repository.get_by_id(task_id, user_id)
         if not task:
@@ -91,7 +98,33 @@ class TaskService:
         if new_status == task.completed:
             return task  # No change needed
 
-        update_data = TaskUpdate(completed=new_status)
+        if new_status:
+            if from_timer and not task.timer_triggered:
+                if self.push_service:
+                    self.push_service.send_notification(
+                        user_id=user_id,
+                        title="RECUERDA",
+                        body=f"Timer finalizado: {task.title}",
+                        data={"task_id": task.id, "type": "timer_end"},
+                        urgency="high",
+                    )
+                update_data = TaskUpdate(
+                    completed=True,
+                    timer_triggered=True,
+                )
+            else:
+                update_data = TaskUpdate(
+                    completed=True,
+                    timer_end_time=None,
+                    timer_triggered=False,
+                )
+        else:
+            update_data = TaskUpdate(
+                completed=False,
+                timer_end_time=None,
+                timer_triggered=False,
+            )
+
         updated_task = self.repository.update(task_id, update_data, user_id)
 
         if updated_task.completed:

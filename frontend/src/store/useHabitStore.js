@@ -4,6 +4,93 @@ import { taskApi } from '../services/api'
 import { useReminderStore } from './useReminderStore'
 import { translations } from '../i18n/translations'
 
+const TIMER_ALARM_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
+let primedAlarmAudio = null;
+
+const primeTimerAlarmAudio = () => {
+  try {
+    if (typeof Audio === 'undefined') return;
+    if (!primedAlarmAudio) {
+      primedAlarmAudio = new Audio(TIMER_ALARM_URL);
+      primedAlarmAudio.preload = 'auto';
+    }
+    primedAlarmAudio.load();
+  } catch {
+    // Ignore audio initialization errors in headless/test environments
+  }
+};
+
+const playSynthesizedFallbackAlarm = () => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if (ctx.state === 'suspended') {
+      ctx.resume();
+    }
+    const notes = [587.33, 880, 1174.66, 880, 1174.66];
+    notes.forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = ctx.currentTime + idx * 0.14;
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.35);
+    });
+  } catch {
+    // Ignore audio fallback errors
+  }
+};
+
+const playTimerAlarm = () => {
+  try {
+    const alarm = primedAlarmAudio || new Audio(TIMER_ALARM_URL);
+    alarm.currentTime = 0;
+    const playPromise = alarm.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(() => {
+        playSynthesizedFallbackAlarm();
+      });
+    }
+  } catch {
+    playSynthesizedFallbackAlarm();
+  }
+};
+
+const showLocalTimerNotification = async (task) => {
+  try {
+    if (
+      typeof window === 'undefined' ||
+      !('serviceWorker' in navigator) ||
+      !('Notification' in window) ||
+      Notification.permission !== 'granted'
+    ) {
+      return;
+    }
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration || !registration.showNotification) return;
+
+    await registration.showNotification('⏳ RECUERDA', {
+      body: `Timer finalizado: ${task?.title || ''}`,
+      icon: '/pwa-192x192.png',
+      badge: '/pwa-192x192.png',
+      data: { task_id: task?.id, type: 'timer_end' },
+      vibrate: [500, 200, 500, 200, 1000],
+      tag: `timer-${task?.id}`,
+      renotify: true,
+      requireInteraction: true
+    });
+  } catch {
+    // Non-fatal if SW notification is unavailable
+  }
+};
+
 export const useHabitStore = create(
   persist(
     (set, get) => ({
@@ -136,10 +223,10 @@ export const useHabitStore = create(
     for (const action of syncQueue) {
       try {
         if (action.type === 'TOGGLE_COMPLETION') {
-          if (action.newCompletedState) {
+          if (action.newCompletedState && !action.fromTimer) {
             await taskApi.update(action.taskId, { timer_end_time: null, timer_triggered: false });
           }
-          await taskApi.toggleComplete(action.taskId, false, action.targetState);
+          await taskApi.toggleComplete(action.taskId, false, action.targetState, Boolean(action.fromTimer));
         } else if (action.type === 'INCREMENT') {
           await taskApi.increment(action.taskId, action.isRetroactive);
         } else if (action.type === 'DECREMENT') {
@@ -186,6 +273,16 @@ export const useHabitStore = create(
       alert(translations[lang].offline_action);
       return;
     }
+    const prevTaskId = get().activeTimer?.taskId;
+    if (prevTaskId && prevTaskId !== taskId) {
+      get().updateTaskOnServer(prevTaskId, {
+        timer_end_time: null,
+        timer_triggered: false
+      });
+    }
+
+    primeTimerAlarmAudio();
+
     const now = Date.now();
     const endTime = now + (durationMinutes * 60 * 1000);
     localStorage.setItem('active_timer_task_id', JSON.stringify(taskId));
@@ -199,7 +296,7 @@ export const useHabitStore = create(
     });
   },
 
-  stopTimer: async () => {
+  stopTimer: async (syncWithServer = true) => {
     const { activeTimer } = get();
     const taskId = activeTimer.taskId;
     
@@ -207,7 +304,7 @@ export const useHabitStore = create(
     localStorage.removeItem('active_timer_end_time');
     set({ activeTimer: { taskId: null, endTime: 0, remainingSeconds: 0 } });
 
-    if (taskId) {
+    if (taskId && syncWithServer) {
       get().updateTaskOnServer(taskId, { 
         timer_end_time: null,
         timer_triggered: false 
@@ -222,7 +319,7 @@ export const useHabitStore = create(
     // If the task was already completed by the background scheduler, just stop locally
     const task = tasks.find(t => t.id === activeTimer.taskId);
     if (task?.completed) {
-      get().stopTimer();
+      get().stopTimer(false);
       return;
     }
 
@@ -230,12 +327,13 @@ export const useHabitStore = create(
     const remaining = Math.round((activeTimer.endTime - now) / 1000);
 
     if (remaining <= 0) {
-      const alarm = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-      alarm.play().catch(e => console.log("Audio blocked", e));
+      playTimerAlarm();
+      showLocalTimerNotification(task || { id: activeTimer.taskId, title: '' });
       
       const taskId = activeTimer.taskId;
-      get().stopTimer();
-      get().toggleTaskCompletion(taskId, true);
+      // Clear local timer without wiping timer_end_time on server before completion/push
+      get().stopTimer(false);
+      get().toggleTaskCompletion(taskId, true, true);
     } else {
       set({ 
         activeTimer: { 
@@ -422,11 +520,15 @@ export const useHabitStore = create(
     tasks: state.tasks.map(t => t.columnId === columnId ? { ...t, isCollapsed: setCollapsed } : t)
   })),
 
-  toggleTaskCompletion: async (taskId, targetState = null) => {
+  toggleTaskCompletion: async (taskId, targetState = null, fromTimer = false) => {
     const task = get().tasks.find(t => t.id === taskId);
     const newCompletedState = targetState !== null ? targetState : !task?.completed;
 
     if (task && task.completed === newCompletedState) return;
+
+    if (newCompletedState && !fromTimer && get().activeTimer?.taskId === taskId) {
+      get().stopTimer(false);
+    }
 
     // Optimistically update local state immediately
     set((state) => ({
@@ -438,19 +540,20 @@ export const useHabitStore = create(
         type: 'TOGGLE_COMPLETION', 
         taskId, 
         targetState, 
-        newCompletedState 
+        newCompletedState,
+        fromTimer
       });
       return;
     }
 
     try {
-      if (newCompletedState) {
+      if (newCompletedState && !fromTimer) {
         await taskApi.update(taskId, { 
           timer_end_time: null,
           timer_triggered: false 
         });
       }
-      await taskApi.toggleComplete(taskId, false, targetState);
+      await taskApi.toggleComplete(taskId, false, targetState, fromTimer);
       set({ isOffline: false });
       useReminderStore.getState().fetchReminders();
     } catch (error) {
@@ -460,7 +563,8 @@ export const useHabitStore = create(
           type: 'TOGGLE_COMPLETION', 
           taskId, 
           targetState, 
-          newCompletedState 
+          newCompletedState,
+          fromTimer
         });
       } else {
         // Server rejected action: rollback

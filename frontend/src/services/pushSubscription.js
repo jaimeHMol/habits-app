@@ -25,7 +25,7 @@ export const subscribeToPush = async () => {
       return null;
     }
 
-    const registration = await navigator.serviceWorker.getRegistration();
+    const registration = await navigator.serviceWorker.ready;
     if (!registration) return null;
     
     const permission = await Notification.requestPermission();
@@ -35,18 +35,43 @@ export const subscribeToPush = async () => {
     const vapidPublicKey = response.public_key;
     
     if (!vapidPublicKey) return null;
-// 3. Subscribe
-const subscription = await registration.pushManager.subscribe({
-  userVisibleOnly: true,
-  applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-});
+    // 3. Subscribe
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+    });
 
-// 4. Send subscription to backend
-await taskApi.subscribePush(subscription);
-return subscription;
+    // 4. Send subscription to backend
+    await taskApi.subscribePush(subscription);
+    return subscription;
 
   } catch (error) {
     console.error('Push subscription failed:', error);
+    return null;
+  }
+};
+
+export const syncExistingPushSubscription = async () => {
+  try {
+    if (
+      !('serviceWorker' in navigator) ||
+      !('PushManager' in window) ||
+      !('Notification' in window) ||
+      Notification.permission !== 'granted'
+    ) {
+      return null;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    if (!registration) return null;
+
+    const subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      await taskApi.subscribePush(subscription);
+    }
+    return subscription;
+  } catch (error) {
+    // Non-fatal background sync
     return null;
   }
 };

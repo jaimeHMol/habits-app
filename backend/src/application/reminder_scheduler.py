@@ -26,16 +26,50 @@ class ReminderScheduler:
         return datetime.now(timezone.utc)
 
     def start(self):
-        # Timers are time-critical: check every 15 seconds for precise delivery
+        # Timers are time-critical: check every 5 seconds for precise delivery
         self.scheduler.add_job(
-            self._check_all_active_timers, "interval", seconds=15, id="timer_check"
+            self._check_all_active_timers,
+            "interval",
+            seconds=5,
+            id="timer_check",
+            coalesce=True,
+            max_instances=1,
+            misfire_grace_time=30,
         )
         # Reminders use slot-based logic: 1-minute granularity is sufficient
         self.scheduler.add_job(
-            self._check_all_user_reminders, "interval", minutes=1, id="reminder_check"
+            self._check_all_user_reminders,
+            "interval",
+            minutes=1,
+            id="reminder_check",
+            coalesce=True,
+            max_instances=1,
+            misfire_grace_time=60,
         )
         self.scheduler.start()
         logger.info("Reminder Scheduler started")
+
+    def schedule_exact_timer(self, task_id: int, end_time: datetime):
+        """Schedules an exact one-shot check at the timer's expiration timestamp."""
+        if not self.scheduler.running:
+            return
+        run_date = end_time
+        if run_date.tzinfo is None:
+            run_date = run_date.replace(tzinfo=timezone.utc)
+        self.scheduler.add_job(
+            self._check_all_active_timers,
+            "date",
+            run_date=run_date,
+            id=f"timer_task_{task_id}",
+            replace_existing=True,
+            misfire_grace_time=30,
+        )
+
+    def cancel_exact_timer(self, task_id: int):
+        """Removes a scheduled one-shot timer job if the timer was stopped early."""
+        job_id = f"timer_task_{task_id}"
+        if self.scheduler.running and self.scheduler.get_job(job_id):
+            self.scheduler.remove_job(job_id)
 
     def shutdown(self):
         self.scheduler.shutdown()
@@ -93,7 +127,7 @@ class ReminderScheduler:
 
             if now_utc >= end_time:
                 # HIGH URGENCY to bypass Android Doze mode
-                push_service.send_notification(
+                results = push_service.send_notification(
                     user_id=user.id,
                     title="RECUERDA",
                     body=f"Timer finalizado: {task.title}",
@@ -101,10 +135,27 @@ class ReminderScheduler:
                     urgency="high",
                 )
 
+                # Retry on next cycle if all subscriptions failed due to transient network error
+                has_transient_failure = (
+                    isinstance(results, list)
+                    and len(results) > 0
+                    and all(
+                        "error" in r and r.get("error") != "No subscriptions"
+                        for r in results
+                    )
+                    and (now_utc - end_time) < timedelta(minutes=2)
+                )
+                if has_transient_failure:
+                    logger.warning(
+                        f"Transient push failure for timer on task {task.id}; will retry next tick."
+                    )
+                    continue
+
                 task.timer_triggered = True
                 task.completed = True
                 task_repo.session.add(task)
                 task_repo.session.commit()
+                task_repo.log_completion(task, is_retroactive=False)
 
     async def _check_user_reminders(
         self,
