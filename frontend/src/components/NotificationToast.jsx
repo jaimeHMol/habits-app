@@ -11,7 +11,7 @@ export const NotificationToast = () => {
     <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
       <AnimatePresence>
         {activeAlerts.map(alert => {
-          const isUrgent = !!alert.task_id;
+          const isTaskLinked = Boolean(alert.isTaskLinked ?? (alert.task_id && !alert.isTimer && alert.type !== 'timer_end' && !alert.title?.includes('Timer finalizado')));
           return (
             <motion.div 
               key={alert.alertId}
@@ -27,9 +27,9 @@ export const NotificationToast = () => {
                   removeAlert(alert.alertId);
                 }
               }}
-              className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] flex items-start gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 ${isUrgent ? 'border-orange-500' : 'border-paramo-frailejon'}`}
+              className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] flex items-start gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 ${isTaskLinked ? 'border-orange-500' : 'border-paramo-frailejon'}`}
             >
-              <div className={`p-2 rounded-full shrink-0 ${isUrgent ? 'bg-orange-500/10 text-orange-500' : 'bg-paramo-frailejon/10 text-paramo-frailejon'}`}>
+              <div className={`p-2 rounded-full shrink-0 ${isTaskLinked ? 'bg-orange-500/10 text-orange-500' : 'bg-paramo-frailejon/10 text-paramo-frailejon'}`}>
                 <BellRing size={20} />
               </div>
               

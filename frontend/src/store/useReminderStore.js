@@ -125,15 +125,25 @@ export const useReminderStore = create((set, get) => ({
 
   addAlert: (reminder) => {
     const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    const isUrgent = !!reminder.task_id;
+    const isTimer = Boolean(
+      reminder.isTimer ||
+      reminder.type === 'timer_end' ||
+      (typeof reminder.title === 'string' && reminder.title.includes('Timer finalizado'))
+    );
+    // Task-linked alerts (monthly/annual reminders for tasks due today)
+    const isTaskLinked = Boolean(reminder.task_id) && !isTimer;
     
     set(state => ({ 
-      activeAlerts: [...state.activeAlerts, { ...reminder, alertId: id, isUrgent }] 
+      activeAlerts: [
+        ...state.activeAlerts, 
+        { ...reminder, alertId: id, isUrgent: isTaskLinked, isTaskLinked }
+      ] 
     }));
 
-    // Auto-remove after 10 seconds ONLY if NOT urgent
-    if (!isUrgent) {
-      setTimeout(() => get().removeAlert(id), 10000);
+    // Auto-remove after 2 seconds ONLY if NOT a task-linked alert
+    // Task-linked alerts remain permanent until manually dismissed (X or swipe)
+    if (!isTaskLinked) {
+      setTimeout(() => get().removeAlert(id), 2000);
     }
   },
 

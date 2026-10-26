@@ -83,8 +83,35 @@ describe('ReminderEngine', () => {
     expect(mockAddAlert).toHaveBeenCalledWith({
       title: 'Push Body',
       task_id: 123,
-      id: 456
+      id: 456,
+      type: undefined,
+      isTimer: false
     })
     expect(mockSetTriggered).toHaveBeenCalledWith(456)
+  })
+
+  it('should trigger alert with isTimer: true when receiving timer_end push message', () => {
+    render(<ReminderEngine />)
+    
+    const mockPayload = {
+      title: 'Push Title',
+      body: 'Timer finalizado: Read book',
+      data: { task_id: 789, type: 'timer_end' }
+    }
+    
+    channelInstance.onmessage({
+      data: {
+        type: 'PUSH_RECEIVED',
+        payload: mockPayload
+      }
+    })
+
+    expect(mockAddAlert).toHaveBeenCalledWith({
+      title: 'Timer finalizado: Read book',
+      task_id: 789,
+      id: undefined,
+      type: 'timer_end',
+      isTimer: true
+    })
   })
 })

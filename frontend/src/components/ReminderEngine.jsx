@@ -105,19 +105,22 @@ export const ReminderEngine = () => {
     channel.onmessage = (event) => {
       if (event.data?.type === 'PUSH_RECEIVED') {
         const { title, body, data } = event.data.payload;
-        if (data?.type === 'timer_end' && data?.task_id) {
-          const habitState = useHabitStore.getState();
-          if (habitState.activeTimer?.taskId === data.task_id) {
-            habitState.stopTimer(false);
+        const isTimer = data?.type === 'timer_end';
+        if (isTimer && data?.task_id) {
+          const habitState = useHabitStore.getState?.();
+          if (habitState?.activeTimer?.taskId === data.task_id) {
+            habitState.stopTimer?.(false);
           }
-          habitState.fetchTasks(true);
+          habitState?.fetchTasks?.(true);
         }
         // The payload 'body' contains the habit text from the backend.
         // We use it as the title for our internal Toast UI.
         triggerNotification({ 
           title: body || title, 
           id: data?.reminder_id, 
-          task_id: data?.task_id 
+          task_id: data?.task_id,
+          type: data?.type,
+          isTimer
         });
       }
     };
