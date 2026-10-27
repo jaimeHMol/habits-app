@@ -7,6 +7,18 @@ import { translations } from '../i18n/translations'
 const TIMER_ALARM_URL = 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3';
 let primedAlarmAudio = null;
 
+export const getCurrentLocalDateStr = (overrideTz = null) => {
+  try {
+    const userTz =
+      overrideTz ||
+      Intl.DateTimeFormat?.().resolvedOptions?.().timeZone ||
+      'America/Bogota';
+    return new Date().toLocaleDateString('en-CA', { timeZone: userTz });
+  } catch {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+  }
+};
+
 const primeTimerAlarmAudio = () => {
   try {
     if (typeof Audio === 'undefined') return;
@@ -130,12 +142,31 @@ export const useHabitStore = create(
     } catch (e) {
       console.error("Logout failed on server", e);
     }
-    set({ isAuthenticated: false, user: null, tasks: [], lastUsedDate: null });
+    localStorage.removeItem('active_timer_task_id');
+    localStorage.removeItem('active_timer_end_time');
+    localStorage.removeItem('pomodoro-storage');
+    set({
+      isAuthenticated: false,
+      user: null,
+      tasks: [],
+      lastUsedDate: null,
+      activeTimer: { taskId: null, endTime: 0, remainingSeconds: 0 }
+    });
   },
 
   fetchUserProfile: async () => {
     try {
       const user = await taskApi.getMe();
+      const browserTz = Intl.DateTimeFormat?.().resolvedOptions?.().timeZone;
+      if (browserTz && user.timezone && user.timezone !== browserTz) {
+        taskApi.updateSettings({
+          dayStartTime: user.dayStartTime || '08:00',
+          dayEndTime: user.dayEndTime || '20:00',
+          language: user.language || 'en',
+          timezone: browserTz
+        }).catch(() => {});
+        user.timezone = browserTz;
+      }
       set({ 
         user, 
         isAuthenticated: true, 
@@ -346,22 +377,25 @@ export const useHabitStore = create(
 
   checkDayChange: async () => {
     const { lastUsedDate, tasks, showReviewModal } = get();
-    const today = new Date();
-    const todayStr = today.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+    const todayStr = getCurrentLocalDateStr();
 
-    if (lastUsedDate === todayStr && showReviewModal) {
+    if (lastUsedDate && lastUsedDate >= todayStr && showReviewModal) {
       set({ showReviewModal: false, pendingResets: [] });
       return;
     }
 
-    if (lastUsedDate && lastUsedDate !== todayStr) {
-      const lastDate = new Date(lastUsedDate + 'T00:00:00'); 
-      
+    // Only trigger period resets when moving forward in calendar days (todayStr > lastUsedDate).
+    // If a user travels westward across the dateline/midnight (todayStr < lastUsedDate) after
+    // already resetting for the new day, do not regress or double-reset their tasks.
+    if (lastUsedDate && todayStr > lastUsedDate) {
       const resets = ['daily'];
-      if (today.getMonth() !== lastDate.getMonth() || today.getFullYear() !== lastDate.getFullYear()) {
+      const [todayYear, todayMonth] = todayStr.split('-').map(Number);
+      const [lastYear, lastMonth] = lastUsedDate.split('-').map(Number);
+
+      if (todayYear > lastYear || (todayYear === lastYear && todayMonth > lastMonth)) {
         resets.push('monthly');
       }
-      if (today.getFullYear() !== lastDate.getFullYear()) {
+      if (todayYear > lastYear) {
         resets.push('annually');
       }
 
@@ -400,7 +434,7 @@ export const useHabitStore = create(
       if (pendingResets.includes('monthly')) await taskApi.resetMonthly();
       if (pendingResets.includes('annually')) await taskApi.resetAnnually();
       
-      const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+      const todayStr = getCurrentLocalDateStr();
       await taskApi.confirmReset(todayStr);
       
       set({ 

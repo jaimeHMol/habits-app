@@ -5,6 +5,16 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    proxy: {
+      '/tasks': 'http://localhost:8000',
+      '/pomodoros': 'http://localhost:8000',
+      '/users': 'http://localhost:8000',
+      '/auth': 'http://localhost:8000',
+      '/push': 'http://localhost:8000',
+      '/reminders': 'http://localhost:8000',
+    }
+  },
   plugins: [
     react(),
     VitePWA({

@@ -9,6 +9,7 @@ from src.domain.models import (
     ReminderUpdate,
     PushSubscription,
     User,
+    PomodoroSession,
 )
 
 
@@ -129,7 +130,32 @@ class IUserRepository(Protocol):
     def get_by_id(self, user_id: int) -> Optional[User]: ...
 
     def update_settings(
-        self, user_id: int, start_time: str, end_time: str, language: str
+        self,
+        user_id: int,
+        start_time: str,
+        end_time: str,
+        language: str,
+        timezone: Optional[str] = None,
     ) -> Optional[User]: ...
 
     def update_last_reset_date(self, user_id: int, date_str: str) -> bool: ...
+
+
+class IPomodoroRepository(Protocol):
+    """
+    Interface (Port) for PomodoroSession data persistence.
+    """
+
+    def create(self, session_obj: PomodoroSession) -> PomodoroSession: ...
+
+    def get_by_id(
+        self, pomodoro_id: int, user_id: int
+    ) -> Optional[PomodoroSession]: ...
+
+    def get_active_for_user(self, user_id: int) -> Optional[PomodoroSession]: ...
+
+    def get_by_date(self, user_id: int, date_str: str) -> List[PomodoroSession]: ...
+
+    def update(self, session_obj: PomodoroSession) -> PomodoroSession: ...
+
+    def delete(self, pomodoro_id: int, user_id: int) -> bool: ...

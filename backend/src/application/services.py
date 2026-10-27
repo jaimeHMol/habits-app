@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from src.domain.models import (
     Task,
@@ -8,9 +9,19 @@ from src.domain.models import (
     ReminderCreate,
     ReminderUpdate,
     User,
+    PomodoroSession,
+    PomodoroStatus,
+    PomodoroPhase,
+    DeviceType,
+    PomodoroTodayStatsResponse,
 )
-from src.application.interfaces import ITaskRepository, IReminderRepository
+from src.application.interfaces import (
+    ITaskRepository,
+    IReminderRepository,
+    IPomodoroRepository,
+)
 from src.application.utils import strip_markdown
+from src.core.timezone import get_user_zone
 
 
 class TaskService:
@@ -39,7 +50,7 @@ class TaskService:
         # 2. FIX: If it's a date-based column, force re-sorting
         if created_task.column_id in [ColumnId.MONTHLY, ColumnId.ANNUALLY]:
             self._ensure_chronological_order(created_task.column_id, user_id)
-            # Refrescamos la tarea desde la BD para devolverla con el order_index correcto
+            # Refresh the task from DB to return it with the updated order_index
             created_task = self.repository.get_by_id(created_task.id, user_id)
 
         # 3. Sync Reminder
@@ -315,12 +326,274 @@ class UserService:
         self.repository = repository
 
     def update_settings(
-        self, user_id: int, start_time: str, end_time: str, language: str
+        self,
+        user_id: int,
+        start_time: str,
+        end_time: str,
+        language: str,
+        timezone: Optional[str] = None,
     ) -> Optional[User]:
-        return self.repository.update_settings(user_id, start_time, end_time, language)
+        return self.repository.update_settings(
+            user_id, start_time, end_time, language, timezone
+        )
 
     def confirm_period_resets(self, user_id: int, date_str: str) -> bool:
         """
         Updates the last_period_reset_date in the database.
         """
         return self.repository.update_last_reset_date(user_id, date_str)
+
+
+class PomodoroService:
+    """
+    Application Service that orchestrates use cases for Pomodoro sessions.
+    """
+
+    def __init__(
+        self,
+        repository: IPomodoroRepository,
+        push_service=None,
+        user_repo=None,
+    ):
+        self.repository = repository
+        self.push_service = push_service
+        self.user_repo = user_repo
+
+    def _get_user_tz(self, user_id: int):
+        user = self.user_repo.get_by_id(user_id) if self.user_repo else None
+        return get_user_zone(getattr(user, "timezone", None))
+
+    def get_today_stats(self, user_id: int) -> PomodoroTodayStatsResponse:
+        user_tz = self._get_user_tz(user_id)
+        now_utc = datetime.now(timezone.utc)
+        now_local = now_utc.astimezone(user_tz)
+        today_str = now_local.strftime("%Y-%m-%d")
+
+        sessions = self.repository.get_by_date(user_id, today_str)
+        completed_today_count = sum(
+            1 for s in sessions if s.status == PomodoroStatus.COMPLETED
+        )
+        interrupted_today_count = sum(
+            1 for s in sessions if s.status == PomodoroStatus.INTERRUPTED
+        )
+        active_session = self.repository.get_active_for_user(user_id)
+
+        return PomodoroTodayStatsResponse(
+            date_str=today_str,
+            completed_today_count=completed_today_count,
+            interrupted_today_count=interrupted_today_count,
+            active_session=active_session,
+            today_sessions=sessions,
+        )
+
+    def start_focus(
+        self, user_id: int, device_type: DeviceType = DeviceType.DESKTOP
+    ) -> PomodoroSession:
+        user_tz = self._get_user_tz(user_id)
+        now_utc = datetime.now(timezone.utc)
+        active = self.repository.get_active_for_user(user_id)
+        if active:
+            if active.status == PomodoroStatus.IN_PROGRESS:
+                active.status = PomodoroStatus.INTERRUPTED
+                active.interrupted_at = now_utc
+                started_at = active.started_at
+                if started_at and started_at.tzinfo is None:
+                    started_at = started_at.replace(tzinfo=timezone.utc)
+                active.elapsed_focus_seconds = (
+                    max(0, int((now_utc - started_at).total_seconds()))
+                    if started_at
+                    else 0
+                )
+                active.timer_end_time = None
+                active.phase = PomodoroPhase.DONE
+                self.repository.update(active)
+            elif active.phase == PomodoroPhase.BREAK:
+                active.timer_end_time = None
+                active.phase = PomodoroPhase.DONE
+                self.repository.update(active)
+
+        now_local = now_utc.astimezone(user_tz)
+        new_session = PomodoroSession(
+            user_id=user_id,
+            status=PomodoroStatus.IN_PROGRESS,
+            phase=PomodoroPhase.FOCUS,
+            date_str=now_local.strftime("%Y-%m-%d"),
+            year=now_local.year,
+            month=now_local.month,
+            day=now_local.day,
+            hour_of_day=now_local.hour,
+            started_at=now_utc,
+            focus_duration_minutes=25,
+            break_duration_minutes=5,
+            elapsed_focus_seconds=0,
+            is_manual=False,
+            device_type=device_type,
+            timer_end_time=now_utc + timedelta(minutes=25),
+            notification_sent=False,
+        )
+        return self.repository.create(new_session)
+
+    def complete_focus(
+        self, pomodoro_id: int, user_id: int, from_timer: bool = False
+    ) -> Optional[PomodoroSession]:
+        session = self.repository.get_by_id(pomodoro_id, user_id)
+        if not session:
+            return None
+
+        now_utc = datetime.now(timezone.utc)
+        if session.status != PomodoroStatus.COMPLETED:
+            session.status = PomodoroStatus.COMPLETED
+            session.completed_at = now_utc
+            session.elapsed_focus_seconds = 1500
+            session.timer_end_time = None
+
+        if from_timer and not session.notification_sent and self.push_service:
+            lang = "en"
+            if self.user_repo:
+                user = self.user_repo.get_by_id(user_id)
+                if user and getattr(user, "language", None) == "es":
+                    lang = "es"
+            title = "POMODORO"
+            body = (
+                "¡Tiempo de foco terminado! Toma un descanso de 5 minutos"
+                if lang == "es"
+                else "Focus time finished! Take a 5-minute break"
+            )
+            self.push_service.send_notification(
+                user_id=user_id,
+                title=title,
+                body=body,
+                data={"pomodoro_id": session.id, "type": "pomodoro_focus_end"},
+                urgency="high",
+            )
+            session.notification_sent = True
+
+        return self.repository.update(session)
+
+    def start_break(self, pomodoro_id: int, user_id: int) -> Optional[PomodoroSession]:
+        session = self.repository.get_by_id(pomodoro_id, user_id)
+        if not session or session.status != PomodoroStatus.COMPLETED:
+            return None
+
+        now_utc = datetime.now(timezone.utc)
+        session.phase = PomodoroPhase.BREAK
+        session.timer_end_time = now_utc + timedelta(minutes=5)
+        session.notification_sent = False
+        return self.repository.update(session)
+
+    def complete_break(
+        self, pomodoro_id: int, user_id: int, from_timer: bool = False
+    ) -> Optional[PomodoroSession]:
+        session = self.repository.get_by_id(pomodoro_id, user_id)
+        if not session:
+            return None
+
+        session.phase = PomodoroPhase.DONE
+        session.timer_end_time = None
+
+        if from_timer and not session.notification_sent and self.push_service:
+            lang = "en"
+            if self.user_repo:
+                user = self.user_repo.get_by_id(user_id)
+                if user and getattr(user, "language", None) == "es":
+                    lang = "es"
+            title = "POMODORO"
+            body = (
+                "¡Felicidades! Completaste tu Pomodoro y tu descanso"
+                if lang == "es"
+                else "Congratulations! You completed your Pomodoro and break"
+            )
+            self.push_service.send_notification(
+                user_id=user_id,
+                title=title,
+                body=body,
+                data={"pomodoro_id": session.id, "type": "pomodoro_break_end"},
+                urgency="high",
+            )
+            session.notification_sent = True
+
+        return self.repository.update(session)
+
+    def interrupt_session(
+        self,
+        pomodoro_id: int,
+        user_id: int,
+        elapsed_seconds: Optional[int] = None,
+    ) -> Optional[PomodoroSession]:
+        session = self.repository.get_by_id(pomodoro_id, user_id)
+        if not session:
+            return None
+
+        now_utc = datetime.now(timezone.utc)
+        if (
+            session.phase == PomodoroPhase.FOCUS
+            and session.status == PomodoroStatus.IN_PROGRESS
+        ):
+            session.status = PomodoroStatus.INTERRUPTED
+            session.interrupted_at = now_utc
+            started_at = session.started_at
+            if started_at and started_at.tzinfo is None:
+                started_at = started_at.replace(tzinfo=timezone.utc)
+            if elapsed_seconds is not None:
+                session.elapsed_focus_seconds = elapsed_seconds
+            else:
+                session.elapsed_focus_seconds = (
+                    max(0, int((now_utc - started_at).total_seconds()))
+                    if started_at
+                    else 0
+                )
+            session.timer_end_time = None
+            session.phase = PomodoroPhase.DONE
+        elif session.phase == PomodoroPhase.BREAK:
+            session.phase = PomodoroPhase.DONE
+            session.timer_end_time = None
+
+        return self.repository.update(session)
+
+    def log_manual_pomodoro(
+        self,
+        user_id: int,
+        hour_of_day: int,
+        device_type: DeviceType = DeviceType.DESKTOP,
+    ) -> PomodoroSession:
+        user_tz = self._get_user_tz(user_id)
+        now_utc = datetime.now(timezone.utc)
+        now_local = now_utc.astimezone(user_tz)
+
+        manual_local = datetime(
+            now_local.year,
+            now_local.month,
+            now_local.day,
+            hour_of_day,
+            0,
+            0,
+            tzinfo=user_tz,
+        )
+        manual_utc = manual_local.astimezone(timezone.utc)
+
+        session = PomodoroSession(
+            user_id=user_id,
+            status=PomodoroStatus.COMPLETED,
+            phase=PomodoroPhase.DONE,
+            date_str=now_local.strftime("%Y-%m-%d"),
+            year=now_local.year,
+            month=now_local.month,
+            day=now_local.day,
+            hour_of_day=hour_of_day,
+            started_at=manual_utc,
+            completed_at=manual_utc + timedelta(minutes=25),
+            focus_duration_minutes=25,
+            break_duration_minutes=5,
+            elapsed_focus_seconds=1500,
+            is_manual=True,
+            device_type=device_type,
+            timer_end_time=None,
+            notification_sent=False,
+        )
+        return self.repository.create(session)
+
+    def delete_manual_pomodoro(self, pomodoro_id: int, user_id: int) -> bool:
+        session = self.repository.get_by_id(pomodoro_id, user_id)
+        if not session or not session.is_manual:
+            return False
+        return self.repository.delete(pomodoro_id, user_id)

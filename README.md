@@ -17,7 +17,8 @@ A minimalist, high-performance task and habit tracker built with a focus on simp
 - **Multi-language Support**: Full interface available in **English** and **Spanish**, with user preference persisted in the profile.
 - **Pin Tasks**: Keep your most important items at the top of Monthly and Annually columns, above auto-sorted due dates.
 - **Task-Linked Alerts**: Automated, mandatory reminders for **Monthly** and **Annually** tasks. They trigger 3 times during your workday (Start, Middle, and End) on the due day until the task is completed.
-- **Lock-Resistant Timers**: Improved focused timers that stay accurate even when the mobile device is locked or the app is in the background.
+- **Lock-Resistant Timers & Pomodoro Engine**: Dedicated 25m Focus / 5m Break Pomodoro engine (with manual session logging and Low-Focus dashboard overlay) alongside task-specific timers that stay accurate even when the mobile device is locked or the app is in the background.
+- **Travel-Ready UTC & Multi-Timezone Architecture**: All timestamps are stored and compared in strict UTC while daily resets, reminder windows, and Pomodoro analytics dynamically adapt to the user's current IANA timezone (e.g., seamlessly transitioning when traveling between `America/Bogota` and `Europe/Madrid`).
 - **Real-time Sync**: Automatic data refresh whenever you return to the app or switch tabs, ensuring consistency across multiple devices.
 - **Task Types**: 
   - **Checkbox**: Standard "done/not-done" tasks.

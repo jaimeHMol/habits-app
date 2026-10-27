@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useReminderStore } from '../store/useReminderStore'
 import { useHabitStore } from '../store/useHabitStore'
+import { usePomodoroStore } from '../store/usePomodoroStore'
 import { stripMarkdown } from '../utils/textUtils'
 import { syncExistingPushSubscription } from '../services/pushSubscription'
 
@@ -11,14 +12,14 @@ export const ReminderEngine = () => {
   const { tasks, isAuthenticated } = useHabitStore();
   const audioRef = useRef(new Audio(SLACK_SOUND_URL));
 
-  // 1. Pedir permisos (Estándar)
+  // 1. Request notification permissions
   useEffect(() => {
     if (isAuthenticated && 'Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, [isAuthenticated]);
 
-  // 2. Cargar datos iniciales y sincronizar suscripción Push activa
+  // 2. Load initial data and sync active push subscription
   useEffect(() => {
     if (isAuthenticated) {
       fetchReminders();
@@ -26,13 +27,13 @@ export const ReminderEngine = () => {
     }
   }, [isAuthenticated, fetchReminders]);
 
-  // 3. LOGICA LOCAL (Para Toasts inmediatos cuando la app está abierta)
+  // 3. Local reminder engine (for immediate in-app Toasts when the app is open)
   useEffect(() => {
     if (!isAuthenticated) return;
 
     const checkReminders = () => {
       const now = new Date();
-      // Usamos hora local del navegador para el motor de Toasts
+      // Use browser local time for the in-app Toast engine
       const currentStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
       const todayStr = now.toLocaleDateString('en-CA');
       
@@ -43,7 +44,7 @@ export const ReminderEngine = () => {
       reminders.forEach(reminder => {
         if (!reminder.isActive) return;
 
-        // Intervalos
+        // Interval reminders
         if (!reminder.task_id) {
           const lastTime = lastTriggeredAt[reminder.id] ? new Date(lastTriggeredAt[reminder.id]) : null;
           const diffMinutes = lastTime ? (now - lastTime) / (1000 * 60) : Infinity;
@@ -53,7 +54,7 @@ export const ReminderEngine = () => {
           return;
         }
 
-        // Tareas (Slots)
+        // Task-linked reminders (3 daily slots)
         const task = tasks.find(t => t.id === reminder.task_id);
         if (!task || task.completed) return;
 
@@ -66,7 +67,7 @@ export const ReminderEngine = () => {
 
         if (!isDueToday) return;
 
-        // Reutilizamos la lógica de slots que teníamos
+        // Calculate the 3 daily reminder slots within the user's active window
         const slots = calculateSlots(userSettings.dayStartTime, userSettings.dayEndTime);
         slots.forEach((slotTime, index) => {
           if (currentStr >= slotTime) {
@@ -99,13 +100,16 @@ export const ReminderEngine = () => {
     return () => clearInterval(interval);
   }, [reminders, userSettings, lastTriggeredAt, isAuthenticated, tasks, addAlert, setTriggered]);
 
-  // 4. LOGICA PUSH
+  // 4. Push notification broadcast channel listener
   useEffect(() => {
     const channel = new BroadcastChannel('reminders-channel');
     channel.onmessage = (event) => {
       if (event.data?.type === 'PUSH_RECEIVED') {
         const { title, body, data } = event.data.payload;
         const isTimer = data?.type === 'timer_end';
+        const isPomodoroFocus = data?.type === 'pomodoro_focus_end';
+        const isPomodoroBreak = data?.type === 'pomodoro_break_end';
+
         if (isTimer && data?.task_id) {
           const habitState = useHabitStore.getState?.();
           if (habitState?.activeTimer?.taskId === data.task_id) {
@@ -113,14 +117,21 @@ export const ReminderEngine = () => {
           }
           habitState?.fetchTasks?.(true);
         }
+
+        if (isPomodoroFocus || isPomodoroBreak) {
+          const pomodoroStore = usePomodoroStore.getState?.();
+          pomodoroStore?.handlePushNotification?.(data.type, data.pomodoro_id);
+        }
+
         // The payload 'body' contains the habit text from the backend.
         // We use it as the title for our internal Toast UI.
         triggerNotification({ 
           title: body || title, 
           id: data?.reminder_id, 
           task_id: data?.task_id,
+          pomodoro_id: data?.pomodoro_id,
           type: data?.type,
-          isTimer
+          isTimer: isTimer || isPomodoroFocus || isPomodoroBreak
         });
       }
     };
@@ -130,7 +141,7 @@ export const ReminderEngine = () => {
   const triggerNotification = (reminder) => {
     const plainTitle = stripMarkdown(reminder.title);
     
-    // Sonido
+    // Play notification sound
     try {
       const audio = new Audio(SLACK_SOUND_URL);
       audio.play().catch(e => {});

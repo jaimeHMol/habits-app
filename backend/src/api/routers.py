@@ -1,6 +1,8 @@
+import re
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+from src.core.timezone import normalize_timezone_name
 from src.domain.models import (
     Task,
     TaskCreate,
@@ -10,12 +12,23 @@ from src.domain.models import (
     ReminderCreate,
     ReminderUpdate,
     User,
+    PomodoroSession,
+    PomodoroStartRequest,
+    PomodoroManualCreate,
+    PomodoroInterruptRequest,
+    PomodoroTodayStatsResponse,
 )
-from src.application.services import TaskService, ReminderService, UserService
+from src.application.services import (
+    TaskService,
+    ReminderService,
+    UserService,
+    PomodoroService,
+)
 from src.api.dependencies import (
     get_task_service,
     get_reminder_service,
     get_user_service,
+    get_pomodoro_service,
     get_push_subscription_repository,
     get_push_service,
 )
@@ -256,10 +269,39 @@ class UserSettingsUpdate(BaseModel):
     day_start_time: str
     day_end_time: str
     language: str
+    timezone: Optional[str] = None
+
+    @field_validator("day_start_time", "day_end_time")
+    @classmethod
+    def validate_time_format(cls, value: str) -> str:
+        if not re.match(r"^(?:[01]\d|2[0-3]):[0-5]\d$", value):
+            raise ValueError("Time must be in HH:MM 24-hour format (00:00 to 23:59)")
+        return value
+
+    @field_validator("language")
+    @classmethod
+    def validate_language(cls, value: str) -> str:
+        if value not in ("en", "es"):
+            raise ValueError("Supported languages are 'en' and 'es'")
+        return value
+
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        return normalize_timezone_name(value)
 
 
 class ResetConfirmationRequest(BaseModel):
     date_str: str
+
+    @field_validator("date_str")
+    @classmethod
+    def validate_date_str(cls, value: str) -> str:
+        if not re.match(r"^\d{4}-\d{2}-\d{2}$", value):
+            raise ValueError("date_str must be in YYYY-MM-DD format")
+        return value
 
 
 @users_router.get("/me", response_model=User)
@@ -278,6 +320,7 @@ def update_settings(
         settings.day_start_time,
         settings.day_end_time,
         settings.language,
+        settings.timezone,
     )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -340,3 +383,136 @@ def unsubscribe(
     if not success:
         raise HTTPException(status_code=404, detail="Subscription not found")
     return {"message": "Unsubscribed successfully"}
+
+
+pomodoro_router = APIRouter(
+    prefix="/pomodoros",
+    tags=["Pomodoros"],
+    dependencies=[Depends(get_current_user)],
+)
+
+
+@pomodoro_router.get("/today", response_model=PomodoroTodayStatsResponse)
+def get_today_pomodoro_stats(
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    return service.get_today_stats(current_user.id)
+
+
+@pomodoro_router.post(
+    "/start",
+    response_model=PomodoroSession,
+    status_code=status.HTTP_201_CREATED,
+)
+def start_pomodoro(
+    request: Request,
+    body: PomodoroStartRequest = PomodoroStartRequest(),
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    session = service.start_focus(current_user.id, body.device_type)
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler and session.timer_end_time:
+        scheduler.schedule_exact_pomodoro(session.id, session.timer_end_time)
+    return session
+
+
+@pomodoro_router.post("/{pomodoro_id}/complete-focus", response_model=PomodoroSession)
+def complete_focus(
+    pomodoro_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    session = service.complete_focus(pomodoro_id, current_user.id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Pomodoro session not found")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler:
+        scheduler.cancel_exact_pomodoro(pomodoro_id)
+    return session
+
+
+@pomodoro_router.post("/{pomodoro_id}/start-break", response_model=PomodoroSession)
+def start_break(
+    pomodoro_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    session = service.start_break(pomodoro_id, current_user.id)
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail="Pomodoro session not found or not eligible for break",
+        )
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler and session.timer_end_time:
+        scheduler.schedule_exact_pomodoro(session.id, session.timer_end_time)
+    return session
+
+
+@pomodoro_router.post("/{pomodoro_id}/complete-break", response_model=PomodoroSession)
+def complete_break(
+    pomodoro_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    session = service.complete_break(pomodoro_id, current_user.id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Pomodoro session not found")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler:
+        scheduler.cancel_exact_pomodoro(pomodoro_id)
+    return session
+
+
+@pomodoro_router.post("/{pomodoro_id}/interrupt", response_model=PomodoroSession)
+def interrupt_pomodoro(
+    pomodoro_id: int,
+    request: Request,
+    body: PomodoroInterruptRequest = PomodoroInterruptRequest(),
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    session = service.interrupt_session(
+        pomodoro_id, current_user.id, body.elapsed_seconds
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="Pomodoro session not found")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if scheduler:
+        scheduler.cancel_exact_pomodoro(pomodoro_id)
+    return session
+
+
+@pomodoro_router.post(
+    "/manual",
+    response_model=PomodoroSession,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_manual_pomodoro(
+    body: PomodoroManualCreate,
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    return service.log_manual_pomodoro(
+        current_user.id, body.hour_of_day, body.device_type
+    )
+
+
+@pomodoro_router.delete("/{pomodoro_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_manual_pomodoro(
+    pomodoro_id: int,
+    current_user: User = Depends(get_current_user),
+    service: PomodoroService = Depends(get_pomodoro_service),
+):
+    success = service.delete_manual_pomodoro(pomodoro_id, current_user.id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Pomodoro session not found or cannot be deleted",
+        )
+    return None

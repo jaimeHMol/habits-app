@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 from enum import Enum
 from sqlmodel import SQLModel, Field
 from datetime import datetime, timezone
@@ -76,6 +76,7 @@ class UserBase(SQLModel):
     day_start_time: str = Field(default="08:00")
     day_end_time: str = Field(default="20:00")
     language: str = Field(default="en")
+    timezone: str = Field(default="America/Bogota")
     last_period_reset_date: Optional[str] = Field(default=None)
 
 
@@ -144,3 +145,72 @@ class InvitationCode(SQLModel, table=True):
     is_used: bool = Field(default=False)
     used_by_id: Optional[int] = Field(default=None)
     created_by_id: int
+
+
+class PomodoroStatus(str, Enum):
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    INTERRUPTED = "interrupted"
+
+
+class PomodoroPhase(str, Enum):
+    FOCUS = "focus"
+    BREAK = "break"
+    DONE = "done"
+
+
+class DeviceType(str, Enum):
+    DESKTOP = "desktop"
+    MOBILE = "mobile"
+
+
+class PomodoroSession(SQLModel, table=True):
+    __tablename__ = "pomodoro_session"
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(index=True)
+    status: PomodoroStatus = Field(default=PomodoroStatus.IN_PROGRESS, index=True)
+    phase: PomodoroPhase = Field(default=PomodoroPhase.FOCUS)
+
+    # Time dimensions for fast analytics queries (computed in the user's configured local timezone)
+    date_str: str = Field(index=True)  # Format: "YYYY-MM-DD"
+    year: int = Field(index=True)  # e.g., 2026
+    month: int = Field(index=True)  # 1..12
+    day: int = Field(index=True)  # 1..31
+    hour_of_day: int = Field(index=True)  # 0..23 (time slot)
+
+    # Exact UTC timestamps (for manual entries: minutes and seconds are set to 00)
+    started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: Optional[datetime] = Field(default=None)
+    interrupted_at: Optional[datetime] = Field(default=None)
+
+    # Durations and metadata
+    focus_duration_minutes: int = Field(default=25)
+    break_duration_minutes: int = Field(default=5)
+    elapsed_focus_seconds: int = Field(default=0)
+    is_manual: bool = Field(default=False, index=True)
+    device_type: DeviceType = Field(default=DeviceType.DESKTOP)
+
+    # Scheduler and Push notification control (Focus and Break phases)
+    timer_end_time: Optional[datetime] = Field(default=None, index=True)
+    notification_sent: bool = Field(default=False)
+
+
+class PomodoroStartRequest(SQLModel):
+    device_type: DeviceType = DeviceType.DESKTOP
+
+
+class PomodoroManualCreate(SQLModel):
+    hour_of_day: int = Field(ge=0, le=23)
+    device_type: DeviceType = DeviceType.DESKTOP
+
+
+class PomodoroInterruptRequest(SQLModel):
+    elapsed_seconds: Optional[int] = Field(default=None, ge=0, le=1500)
+
+
+class PomodoroTodayStatsResponse(SQLModel):
+    date_str: str
+    completed_today_count: int
+    interrupted_today_count: int
+    active_session: Optional[PomodoroSession] = None
+    today_sessions: List[PomodoroSession]

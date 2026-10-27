@@ -16,6 +16,11 @@ from unittest.mock import MagicMock, patch
 @pytest.fixture(autouse=True)
 def clean_reminders():
     """Ensure no reminders or timer tasks are left from other tests."""
+    from src.main import app
+
+    if hasattr(app.state, "scheduler") and app.state.scheduler.scheduler.running:
+        app.state.scheduler.shutdown()
+
     with Session(engine) as session:
         for r in session.exec(select(Reminder)).all():
             session.delete(r)

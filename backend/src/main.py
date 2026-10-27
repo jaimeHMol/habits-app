@@ -14,6 +14,7 @@ from src.api.routers import (
     reminders_router,
     users_router,
     push_router,
+    pomodoro_router,
 )
 from src.api.auth_router import router as auth_router
 from src.application.reminder_scheduler import ReminderScheduler
@@ -73,6 +74,7 @@ app.include_router(tasks_router)
 app.include_router(reminders_router)
 app.include_router(users_router)
 app.include_router(push_router)
+app.include_router(pomodoro_router)
 
 
 @app.get("/")

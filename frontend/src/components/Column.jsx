@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useHabitStore } from '../store/useHabitStore'
+import { usePomodoroStore } from '../store/usePomodoroStore'
 import { Droppable, Draggable } from '@hello-pangea/dnd'
 import { Plus, ChevronsUpDown, Coffee, Wind } from 'lucide-react'
 import { TaskCard } from './TaskCard'
@@ -11,6 +12,7 @@ import { translations } from '../i18n/translations'
 export const Column = ({ column, isActiveOnMobile }) => {
   // Pull viewMode and setViewMode from the store
   const { tasks, isLoading, toggleColumnCollapse, addTask, updateTask, deleteTask, setViewMode, language } = useHabitStore();
+  const isPomodoroActive = usePomodoroStore((state) => state.isOverlayOpen && !!state.activeSession);
   
   const t = translations[language] || translations.en;
   const [activeNewTask, setActiveNewTask] = useState(false);
@@ -71,7 +73,7 @@ export const Column = ({ column, isActiveOnMobile }) => {
           <LoadingSkeleton />
         </div>
       ) : (
-        <Droppable droppableId={column.id}>
+        <Droppable droppableId={column.id} isDropDisabled={isPomodoroActive}>
           {(provided, snapshot) => (
             <div 
               ref={provided.innerRef} 
@@ -79,7 +81,7 @@ export const Column = ({ column, isActiveOnMobile }) => {
               className={`flex-1 transition-colors ${snapshot.isDraggingOver ? 'bg-white/5 rounded-xl' : ''}`}
             >
               {displayedTasks.map((task, index) => (
-                <Draggable key={task.id} draggableId={task.id.toString()} index={index}>
+                <Draggable key={task.id} draggableId={task.id.toString()} index={index} isDragDisabled={isPomodoroActive}>
                   {(provided, snapshot) => (
                     <div 
                       ref={provided.innerRef} 
@@ -102,7 +104,9 @@ export const Column = ({ column, isActiveOnMobile }) => {
                           task={task} column={column} 
                           dragHandleProps={provided.dragHandleProps} 
                           snapshot={snapshot} 
-                          onEditClick={() => setActiveEditTaskId(task.id)} 
+                          onEditClick={() => {
+                            if (!isPomodoroActive) setActiveEditTaskId(task.id);
+                          }} 
                         />
                       )}
                     </div>
@@ -133,7 +137,7 @@ export const Column = ({ column, isActiveOnMobile }) => {
         </Droppable>
       )}
 
-      {!isLoading && currentViewMode === 'active' && (
+      {!isLoading && currentViewMode === 'active' && !isPomodoroActive && (
         activeNewTask ? (
           <InlineTaskForm 
             column={column} 

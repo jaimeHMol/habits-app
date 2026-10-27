@@ -180,6 +180,70 @@ describe('useHabitStore - checkDayChange', () => {
     
     vi.useRealTimers()
   })
+
+  it('should trigger daily reset when traveling eastward from Colombia to Spain across midnight', async () => {
+    // 2026-10-27 23:30:00 UTC is 18:30 on Oct 27 in Colombia (America/Bogota),
+    // but 00:30 on Oct 28 in Spain (Europe/Madrid).
+    const utcInstantInSpainNextDay = new Date('2026-10-27T23:30:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(utcInstantInSpainNextDay)
+
+    const origDateTimeFormat = Intl.DateTimeFormat
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((locale, options) => {
+      if (!locale && !options) {
+        return { resolvedOptions: () => ({ timeZone: 'Europe/Madrid' }) }
+      }
+      return new origDateTimeFormat(locale, options)
+    })
+
+    useHabitStore.setState({
+      lastUsedDate: '2026-10-27',
+      tasks: [{ id: 1, columnId: 'daily', completed: false, taskType: 'normal' }]
+    })
+
+    await useHabitStore.getState().checkDayChange()
+
+    const state = useHabitStore.getState()
+    expect(state.showReviewModal).toBe(true)
+    expect(state.pendingResets).toEqual(['daily'])
+
+    Intl.DateTimeFormat.mockRestore()
+    vi.useRealTimers()
+  })
+
+  it('should NOT double-reset or regress lastUsedDate when traveling westward from Spain back to Colombia', async () => {
+    // User already reset their board at 00:30 on Oct 28 in Spain (lastUsedDate = '2026-10-28'),
+    // and then lands in Colombia where it is still 19:30 on Oct 27 ('2026-10-27').
+    const utcInstantStillOct27InColombia = new Date('2026-10-28T00:30:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(utcInstantStillOct27InColombia)
+
+    const origDateTimeFormat = Intl.DateTimeFormat
+    vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((locale, options) => {
+      if (!locale && !options) {
+        return { resolvedOptions: () => ({ timeZone: 'America/Bogota' }) }
+      }
+      return new origDateTimeFormat(locale, options)
+    })
+
+    useHabitStore.setState({
+      lastUsedDate: '2026-10-28',
+      tasks: [{ id: 1, columnId: 'daily', completed: false, taskType: 'normal' }],
+      showReviewModal: false
+    })
+
+    await useHabitStore.getState().checkDayChange()
+
+    const state = useHabitStore.getState()
+    expect(state.showReviewModal).toBe(false)
+    expect(state.pendingResets).toEqual([])
+    expect(state.lastUsedDate).toBe('2026-10-28')
+    expect(taskApi.resetDaily).not.toHaveBeenCalled()
+    expect(taskApi.confirmReset).not.toHaveBeenCalled()
+
+    Intl.DateTimeFormat.mockRestore()
+    vi.useRealTimers()
+  })
 })
 
 describe('useHabitStore - offline behavior and resilience', () => {

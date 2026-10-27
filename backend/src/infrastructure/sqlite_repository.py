@@ -1,3 +1,4 @@
+from datetime import timezone
 from typing import List, Optional
 from sqlmodel import Session, select
 from src.domain.models import (
@@ -12,13 +13,43 @@ from src.domain.models import (
     ReminderUpdate,
     User,
     PushSubscription,
+    PomodoroSession,
+    PomodoroStatus,
+    PomodoroPhase,
 )
 from src.application.interfaces import (
     ITaskRepository,
     IReminderRepository,
     IPushSubscriptionRepository,
     IUserRepository,
+    IPomodoroRepository,
 )
+
+
+def _normalize_task_tz(task: Optional[Task]) -> Optional[Task]:
+    if not task:
+        return None
+    for attr in ("timer_end_time", "created_at"):
+        val = getattr(task, attr, None)
+        if val is not None:
+            if val.tzinfo is None:
+                setattr(task, attr, val.replace(tzinfo=timezone.utc))
+            else:
+                setattr(task, attr, val.astimezone(timezone.utc))
+    return task
+
+
+def _normalize_reminder_tz(reminder: Optional[Reminder]) -> Optional[Reminder]:
+    if not reminder:
+        return None
+    for attr in ("last_triggered_at", "created_at"):
+        val = getattr(reminder, attr, None)
+        if val is not None:
+            if val.tzinfo is None:
+                setattr(reminder, attr, val.replace(tzinfo=timezone.utc))
+            else:
+                setattr(reminder, attr, val.astimezone(timezone.utc))
+    return reminder
 
 
 class SQLiteTaskRepository(ITaskRepository):
@@ -36,12 +67,13 @@ class SQLiteTaskRepository(ITaskRepository):
             .where(Task.user_id == user_id)
             .order_by(Task.is_pinned.desc(), Task.order_index)
         )
-        results = self.session.exec(statement)
-        return results.all()
+        results = self.session.exec(statement).all()
+        return [_normalize_task_tz(t) for t in results]
 
     def get_by_id(self, task_id: int, user_id: int) -> Optional[Task]:
         statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
-        return self.session.exec(statement).first()
+        res = self.session.exec(statement).first()
+        return _normalize_task_tz(res)
 
     def create(self, task_data: TaskCreate, user_id: int) -> Task:
         db_task = Task.model_validate(task_data)
@@ -57,10 +89,11 @@ class SQLiteTaskRepository(ITaskRepository):
                 self.session.add(t)
             db_task.order_index = 0
 
+        _normalize_task_tz(db_task)
         self.session.add(db_task)
         self.session.commit()
         self.session.refresh(db_task)
-        return db_task
+        return _normalize_task_tz(db_task)
 
     def update(
         self, task_id: int, task_data: TaskUpdate, user_id: int
@@ -73,10 +106,11 @@ class SQLiteTaskRepository(ITaskRepository):
         for key, value in update_data.items():
             setattr(db_task, key, value)
 
+        _normalize_task_tz(db_task)
         self.session.add(db_task)
         self.session.commit()
         self.session.refresh(db_task)
-        return db_task
+        return _normalize_task_tz(db_task)
 
     def delete(self, task_id: int, user_id: int) -> bool:
         db_task = self.get_by_id(task_id, user_id)
@@ -260,22 +294,24 @@ class SQLiteReminderRepository(IReminderRepository):
             .where(Reminder.user_id == user_id)
             .order_by(Reminder.created_at)
         )
-        results = self.session.exec(statement)
-        return results.all()
+        results = self.session.exec(statement).all()
+        return [_normalize_reminder_tz(r) for r in results]
 
     def get_by_id(self, reminder_id: int, user_id: int) -> Optional[Reminder]:
         statement = select(Reminder).where(
             Reminder.id == reminder_id, Reminder.user_id == user_id
         )
-        return self.session.exec(statement).first()
+        res = self.session.exec(statement).first()
+        return _normalize_reminder_tz(res)
 
     def create(self, reminder_data: ReminderCreate, user_id: int) -> Reminder:
         db_reminder = Reminder.model_validate(reminder_data)
         db_reminder.user_id = user_id
+        _normalize_reminder_tz(db_reminder)
         self.session.add(db_reminder)
         self.session.commit()
         self.session.refresh(db_reminder)
-        return db_reminder
+        return _normalize_reminder_tz(db_reminder)
 
     def update(
         self, reminder_id: int, reminder_data: ReminderUpdate, user_id: int
@@ -288,10 +324,11 @@ class SQLiteReminderRepository(IReminderRepository):
         for key, value in update_data.items():
             setattr(db_reminder, key, value)
 
+        _normalize_reminder_tz(db_reminder)
         self.session.add(db_reminder)
         self.session.commit()
         self.session.refresh(db_reminder)
-        return db_reminder
+        return _normalize_reminder_tz(db_reminder)
 
     def delete(self, reminder_id: int, user_id: int) -> bool:
         db_reminder = self.get_by_id(reminder_id, user_id)
@@ -319,7 +356,12 @@ class SQLiteUserRepository(IUserRepository):
         return self.session.get(User, user_id)
 
     def update_settings(
-        self, user_id: int, start_time: str, end_time: str, language: str
+        self,
+        user_id: int,
+        start_time: str,
+        end_time: str,
+        language: str,
+        timezone: Optional[str] = None,
     ) -> Optional[User]:
         db_user = self.session.get(User, user_id)
         if not db_user:
@@ -328,6 +370,8 @@ class SQLiteUserRepository(IUserRepository):
         db_user.day_start_time = start_time
         db_user.day_end_time = end_time
         db_user.language = language
+        if timezone:
+            db_user.timezone = timezone
 
         self.session.add(db_user)
         self.session.commit()
@@ -395,5 +439,86 @@ class SQLitePushSubscriptionRepository(IPushSubscriptionRepository):
             return False
 
         self.session.delete(db_sub)
+        self.session.commit()
+        return True
+
+
+def _normalize_pomodoro_tz(
+    session_obj: Optional[PomodoroSession],
+) -> Optional[PomodoroSession]:
+    if not session_obj:
+        return None
+    for attr in ("started_at", "timer_end_time", "completed_at", "interrupted_at"):
+        val = getattr(session_obj, attr, None)
+        if val is not None:
+            if val.tzinfo is None:
+                setattr(session_obj, attr, val.replace(tzinfo=timezone.utc))
+            else:
+                setattr(session_obj, attr, val.astimezone(timezone.utc))
+    return session_obj
+
+
+class SQLitePomodoroRepository(IPomodoroRepository):
+    """
+    SQLite Adapter for the Pomodoro Repository using SQLModel.
+    """
+
+    def __init__(self, session: Session):
+        self.session = session
+
+    def create(self, session_obj: PomodoroSession) -> PomodoroSession:
+        _normalize_pomodoro_tz(session_obj)
+        self.session.add(session_obj)
+        self.session.commit()
+        self.session.refresh(session_obj)
+        return _normalize_pomodoro_tz(session_obj)
+
+    def get_by_id(self, pomodoro_id: int, user_id: int) -> Optional[PomodoroSession]:
+        statement = select(PomodoroSession).where(
+            PomodoroSession.id == pomodoro_id, PomodoroSession.user_id == user_id
+        )
+        res = self.session.exec(statement).first()
+        return _normalize_pomodoro_tz(res)
+
+    def get_active_for_user(self, user_id: int) -> Optional[PomodoroSession]:
+        statement = (
+            select(PomodoroSession)
+            .where(
+                PomodoroSession.user_id == user_id,
+                (PomodoroSession.status == PomodoroStatus.IN_PROGRESS)
+                | (
+                    (PomodoroSession.phase == PomodoroPhase.BREAK)
+                    & (PomodoroSession.timer_end_time.is_not(None))  # noqa: E711
+                ),
+            )
+            .order_by(PomodoroSession.id.desc())
+        )
+        res = self.session.exec(statement).first()
+        return _normalize_pomodoro_tz(res)
+
+    def get_by_date(self, user_id: int, date_str: str) -> List[PomodoroSession]:
+        statement = (
+            select(PomodoroSession)
+            .where(
+                PomodoroSession.user_id == user_id,
+                PomodoroSession.date_str == date_str,
+            )
+            .order_by(PomodoroSession.started_at.desc(), PomodoroSession.id.desc())
+        )
+        sessions = self.session.exec(statement).all()
+        return [_normalize_pomodoro_tz(s) for s in sessions]
+
+    def update(self, session_obj: PomodoroSession) -> PomodoroSession:
+        _normalize_pomodoro_tz(session_obj)
+        self.session.add(session_obj)
+        self.session.commit()
+        self.session.refresh(session_obj)
+        return _normalize_pomodoro_tz(session_obj)
+
+    def delete(self, pomodoro_id: int, user_id: int) -> bool:
+        session_obj = self.get_by_id(pomodoro_id, user_id)
+        if not session_obj:
+            return False
+        self.session.delete(session_obj)
         self.session.commit()
         return True

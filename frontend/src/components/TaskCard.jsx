@@ -1,5 +1,6 @@
 import React from 'react'
 import { useHabitStore } from '../store/useHabitStore'
+import { usePomodoroStore } from '../store/usePomodoroStore'
 import { translations } from "../i18n/translations"
 import { CheckCircle2, ChevronDown, ChevronUp, Calendar, GripVertical, RotateCcw, Clock, Play, Square, Minus, Plus, Hash, Bookmark } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
@@ -97,6 +98,7 @@ const getPriorityTheme = (priority) => {
 
 export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick }) => {
   const { toggleCollapse, toggleTaskCompletion, activeTimer, startTimer, stopTimer, incrementTask, decrementTask, togglePinTask, updateTask, language } = useHabitStore();
+  const isPomodoroActive = usePomodoroStore((state) => state.isOverlayOpen && !!state.activeSession);
   const t = translations[language] || translations.en;
 
   const hasMonthlyDate = column.type === 'monthly' && task.targetDay != null;
@@ -109,6 +111,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
   const hasDescription = !!(task.description && task.description.trim().length > 0);
   const handleCheckboxChange = (index, newCheckedState, e) => {
     e.stopPropagation();
+    if (isPomodoroActive) return;
     let currentIndex = 0;
     const newDesc = task.description.replace(/\[([ xX])\]/g, (match) => {
       if (currentIndex === index) {
@@ -139,8 +142,8 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
 
   return (
     <div 
-      onClick={onEditClick}
-      className={`rounded-xl border-l-4 cursor-pointer group transition-all duration-300
+      onClick={isPomodoroActive ? undefined : onEditClick}
+      className={`rounded-xl border-l-4 ${isPomodoroActive ? 'cursor-default' : 'cursor-pointer'} group transition-all duration-300
         ${snapshot.isDragging ? 'shadow-2xl ring-2 ring-paramo-frailejon z-50 bg-paramo-board' : 'shadow-md ring-1 hover:ring-white/20'}
         ${task.completed ? 'bg-white/5 ring-white/5 grayscale-[20%]' : 'bg-paramo-card ring-white/10'}
         ${isTimerActive ? theme.ring : ''}
@@ -156,8 +159,10 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
             <div className="flex flex-col items-center gap-2">
               <button 
                 title={t.increment}
+                disabled={isPomodoroActive}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isPomodoroActive) return;
                   try {
                     const rect = e.currentTarget.getBoundingClientRect();
                     const x = (rect.left + rect.width / 2) / window.innerWidth;
@@ -178,17 +183,19 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   }
                   incrementTask(task.id);
                 }}
-                className="text-paramo-muted hover:text-paramo-frailejon transition-colors"
+                className={`text-paramo-muted hover:text-paramo-frailejon transition-colors ${isPomodoroActive ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 <Plus size={20} strokeWidth={1.5} />
               </button>
               <button 
                 title={t.decrement}
+                disabled={isPomodoroActive}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isPomodoroActive) return;
                   decrementTask(task.id);
                 }}
-                className={`p-1 text-paramo-muted/40 hover:text-white transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : ''}`}
+                className={`p-1 text-paramo-muted/40 hover:text-white transition-all active:scale-90 ${task.currentCount === 0 ? 'invisible' : ''} ${isPomodoroActive ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 <Minus size={14} />
               </button>
@@ -197,8 +204,10 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
             <>
               <button 
                 title={task.completed ? t.mark_active : t.mark_done}
+                disabled={isPomodoroActive}
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isPomodoroActive) return;
                   if (!task.completed) {
                     try {
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -223,6 +232,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                 }}
                 className={`transition-colors
                   ${task.completed ? 'text-paramo-frailejon hover:text-white' : 'text-paramo-muted hover:text-paramo-frailejon'}
+                  ${isPomodoroActive ? 'opacity-40 cursor-not-allowed' : ''}
                 `}
               >
                 {task.completed ? <RotateCcw size={18} strokeWidth={2} /> : <CheckCircle2 size={20} strokeWidth={1.5} />}
@@ -231,12 +241,14 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
               {isDailyColumn && !task.completed && task.durationMinutes > 0 && (
                 <button
                   title={isTimerActive ? t.stop_focus : t.start_focus}
+                  disabled={isPomodoroActive}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isPomodoroActive) return;
                     if (isTimerActive) stopTimer();
                     else startTimer(task.id, task.durationMinutes);
                   }}
-                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? theme.button : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-40 group-hover:opacity-100'}`}
+                  className={`p-1.5 rounded-lg transition-all duration-300 ${isTimerActive ? theme.button : 'text-paramo-muted hover:text-white hover:bg-white/5 opacity-40 group-hover:opacity-100'} ${isPomodoroActive ? 'opacity-30 cursor-not-allowed' : ''}`}
                 >
                   {isTimerActive ? <Square size={10} fill="currentColor" /> : <Play size={10} fill="currentColor" />}
                 </button>
@@ -317,15 +329,24 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
             <div className="flex items-center gap-1 flex-shrink-0 ml-1">
               {(column.id !== 'daily' && column.id !== 'todo') && (
                 <button 
-                  onClick={(e) => { e.stopPropagation(); togglePinTask(task.id); }} 
-                  className={`p-1 rounded-md hover:bg-white/5 transition-colors ${task.isPinned ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'}`}
+                  disabled={isPomodoroActive}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (isPomodoroActive) return;
+                    togglePinTask(task.id);
+                  }} 
+                  className={`p-1 rounded-md hover:bg-white/5 transition-colors ${task.isPinned ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'} ${isPomodoroActive ? 'opacity-30 cursor-not-allowed' : ''}`}
                   title={task.isPinned ? t.unpin_task : t.pin_task}
                 >
                   {task.isPinned ? <MinimalPin size={16} fill="currentColor" strokeWidth={1.5} /> : <MinimalPin size={16} strokeWidth={1.5} />}
                 </button>
               )}
               {/* BUG FIX: We now use the explicitly passed dragHandleProps */}
-              <div {...dragHandleProps} onClick={(e) => e.stopPropagation()} className="text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors cursor-grab active:cursor-grabbing">
+              <div
+                {...(isPomodoroActive ? {} : dragHandleProps)}
+                onClick={(e) => e.stopPropagation()}
+                className={`text-paramo-muted hover:text-white p-1 rounded-md hover:bg-white/5 transition-colors ${isPomodoroActive ? 'opacity-30 cursor-default' : 'cursor-grab active:cursor-grabbing'}`}
+              >
                 <GripVertical size={16} strokeWidth={1.5} />
               </div>
               {hasDescription && (

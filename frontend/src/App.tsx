@@ -1,18 +1,21 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useHabitStore } from './store/useHabitStore'
 import { useReminderStore } from './store/useReminderStore'
+import { usePomodoroStore } from './store/usePomodoroStore'
 import { translations } from './i18n/translations'
 import { DragDropContext } from '@hello-pangea/dnd'
 import { Column } from './components/Column'
 import { PeriodicReviewModal } from './components/PeriodicReviewModal'
 import { ReminderEngine } from './components/ReminderEngine'
 import { ReminderPanel } from './components/ReminderPanel'
+import { PomodoroPanel, TomatoIcon } from './components/PomodoroPanel'
+import { PomodoroFocusOverlay } from './components/PomodoroFocusOverlay'
 import { NotificationToast } from './components/NotificationToast'
 import { ReloadPrompt } from './components/ReloadPrompt'
-import { LogOut, Lock, UserPlus, Copy, Check, Globe, Eye, EyeOff, CloudOff, Download } from 'lucide-react'
+import { LogOut, Lock, Copy, Check, Globe, Eye, EyeOff, CloudOff, Download, MoreHorizontal } from 'lucide-react'
 
 // Custom "Finger with ribbon" SVG Component
-const FingerRibbonIcon = ({ size = 24, className = "" }) => (
+const FingerRibbonIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
   <svg 
     width={size} height={size} viewBox="0 0 24 24" fill="none" 
     stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" 
@@ -24,6 +27,30 @@ const FingerRibbonIcon = ({ size = 24, className = "" }) => (
     <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
     <path d="M11 6c-1-1-3-1-3 1s2 2 3 1" className="text-paramo-frailejon" />
     <path d="M11 6c1-1 3-1 3 1s-2 2-3 1" className="text-paramo-frailejon" />
+  </svg>
+);
+
+// Custom "User Plus" SVG Component with paramo-frailejon green accent on the plus
+const UserPlusIcon = ({ size = 18, strokeWidth = 2, className = "" }: { size?: number; strokeWidth?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={strokeWidth}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    {/* User silhouette */}
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    {/* Plus sign with brand green accent */}
+    <g className="text-paramo-frailejon">
+      <line x1="19" x2="19" y1="8" y2="14" />
+      <line x1="22" x2="16" y1="11" y2="11" />
+    </g>
   </svg>
 );
 
@@ -42,6 +69,15 @@ function App() {
     processSyncQueue, isOffline, setIsOffline
   } = useHabitStore()
   const { fetchReminders } = useReminderStore()
+  const {
+    isPanelOpen: isPomodoroPanelOpen,
+    openPanel: openPomodoroPanel,
+    closePanel: closePomodoroPanel,
+    isOverlayOpen: isPomodoroOverlayOpen,
+    activeSession: activePomodoroSession,
+    tickPomodoro
+  } = usePomodoroStore()
+  const isPomodoroActive = isPomodoroOverlayOpen && !!activePomodoroSession;
 
   // Initial and Automatic Refresh Logic
 
@@ -86,6 +122,8 @@ function App() {
   const [authError, setAuthError] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [isReminderPanelOpen, setIsReminderPanelOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const mobileMenuRef = useRef(null)
   
   // Admin State
   const [generatedInvite, setGeneratedInvite] = useState('')
@@ -138,6 +176,32 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [isAuthenticated, activeTimer.taskId, tickTimer]);
+
+  // Pomodoro Timer loop
+  useEffect(() => {
+    let interval;
+    if (isAuthenticated) {
+      interval = setInterval(() => {
+        tickPomodoro();
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isAuthenticated, tickPomodoro]);
+
+  // Close mobile menu on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(e.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isMobileMenuOpen]);
 
   // Offline Sync Queue Processor & Online Status
   useEffect(() => {
@@ -348,6 +412,8 @@ function App() {
       <NotificationToast />
       <ReminderEngine />
       <ReminderPanel isOpen={isReminderPanelOpen} onClose={() => setIsReminderPanelOpen(false)} />
+      <PomodoroPanel isOpen={isPomodoroPanelOpen} onClose={closePomodoroPanel} />
+      <PomodoroFocusOverlay />
       <ReloadPrompt />
       
       <header className="p-4 md:p-6 mb-1 md:mb-2 flex flex-col gap-2">
@@ -373,7 +439,25 @@ function App() {
               </div>
             )}
 
-            {/* Language Toggle */}
+            {/* 1. Tomato (Pomodoro) */}
+            <button
+              onClick={openPomodoroPanel}
+              title={t.pomodoro_title}
+              className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center justify-center"
+            >
+              <TomatoIcon size={20} isActive={isPomodoroActive} className={isPomodoroActive ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'} />
+            </button>
+
+            {/* 2. Reminders */}
+            <button
+              onClick={() => setIsReminderPanelOpen(true)}
+              title={t.reminders_title}
+              className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center justify-center"
+            >
+              <FingerRibbonIcon size={20} />
+            </button>
+
+            {/* 3. Language Toggle */}
             <button 
               onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
               className="text-paramo-muted hover:text-white bg-paramo-board px-2.5 py-2 rounded-lg border border-white/5 transition-colors text-[10px] font-black tracking-widest flex items-center gap-2"
@@ -383,14 +467,15 @@ function App() {
               <span className="hidden sm:inline">{language === 'en' ? 'ES' : 'EN'}</span>
             </button>
 
+            {/* 4. Desktop: Generate Invitation (if admin) */}
             {user?.role === 'admin' && (
-              <div className="relative group">
+              <div className="relative group hidden sm:block">
                 <button
                   onClick={handleGenerateInvite}
                   title={t.generate_invite}
                   className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors"
                 >
-                  <UserPlus size={18} />
+                  <UserPlusIcon size={18} />
                 </button>
                 
                 {generatedInvite && (
@@ -413,23 +498,67 @@ function App() {
               </div>
             )}
 
-            <button
-              onClick={() => setIsReminderPanelOpen(true)}
-              title={t.reminders_title}
-              className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center gap-2"
-            >
-              <FingerRibbonIcon size={20} />
-            </button>          
-            <button onClick={logout} title={t.logout} className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
+            {/* 5. Desktop: Logout */}
+            <button onClick={logout} title={t.logout} className="hidden sm:flex text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
               <LogOut size={18} />
             </button>
+
+            {/* Mobile (Vertical < sm): Three dots (...) More Menu */}
+            <div className="relative sm:hidden" ref={mobileMenuRef}>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                title={t.more_options}
+                className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center justify-center"
+              >
+                <MoreHorizontal size={18} />
+              </button>
+
+              {isMobileMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 bg-paramo-card border border-white/10 rounded-xl shadow-2xl p-1.5 z-[200] animate-fadeIn min-w-[170px] space-y-1">
+                  {user?.role === 'admin' && (
+                    <>
+                      <button
+                        onClick={async () => {
+                          await handleGenerateInvite();
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-paramo-muted hover:text-white hover:bg-white/5 rounded-lg transition-colors text-left"
+                      >
+                        <UserPlusIcon size={15} />
+                        <span>{t.generate_invite}</span>
+                      </button>
+                      {generatedInvite && (
+                        <div className="p-2 bg-black/40 rounded-lg border border-white/5 mb-1">
+                          <p className="text-[9px] font-black uppercase text-paramo-muted mb-1 tracking-widest">{t.invitation_code}</p>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono text-white flex-1">{generatedInvite}</span>
+                            <button onClick={copyToClipboard} className="text-paramo-muted hover:text-white p-1">
+                              {copied ? <Check size={14} className="text-paramo-frailejon" /> : <Copy size={14} />}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-400 hover:text-red-300 hover:bg-white/5 rounded-lg transition-colors text-left"
+                  >
+                    <LogOut size={15} />
+                    <span>{t.logout}</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <div 
-          className="w-full px-4 md:px-6 overflow-hidden md:overflow-visible pb-10"
+          className={`w-full px-4 md:px-6 overflow-hidden md:overflow-visible pb-10 transition-all duration-500 ${isPomodoroOverlayOpen ? 'grayscale opacity-35' : ''}`}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}

@@ -19,11 +19,21 @@ export const useReminderStore = create((set, get) => ({
     try {
       const reminders = await taskApi.getReminders();
       const me = await taskApi.getMe();
+      const browserTz = Intl.DateTimeFormat?.().resolvedOptions?.().timeZone;
+      if (browserTz && me.timezone && me.timezone !== browserTz) {
+        taskApi.updateSettings({
+          dayStartTime: me.dayStartTime,
+          dayEndTime: me.dayEndTime,
+          language: me.language || 'en',
+          timezone: browserTz
+        }).catch(() => {});
+      }
       set({ 
         reminders, 
         userSettings: { 
           dayStartTime: me.dayStartTime, 
-          dayEndTime: me.dayEndTime 
+          dayEndTime: me.dayEndTime,
+          timezone: browserTz || me.timezone || 'America/Bogota'
         },
         isLoading: false 
       });
@@ -103,8 +113,9 @@ export const useReminderStore = create((set, get) => ({
       return false;
     }
     try {
-      await taskApi.updateSettings(settings);
-      set({ userSettings: { dayStartTime: settings.dayStartTime, dayEndTime: settings.dayEndTime } });
+      const timezone = settings.timezone || Intl.DateTimeFormat?.().resolvedOptions?.().timeZone || 'America/Bogota';
+      await taskApi.updateSettings({ ...settings, timezone });
+      set({ userSettings: { dayStartTime: settings.dayStartTime, dayEndTime: settings.dayEndTime, timezone } });
       return true;
     } catch (error) {
       if (error.message === 'OFFLINE_ERROR') {

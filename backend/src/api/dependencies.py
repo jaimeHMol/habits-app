@@ -5,14 +5,21 @@ from src.application.interfaces import (
     ITaskRepository,
     IReminderRepository,
     IPushSubscriptionRepository,
+    IPomodoroRepository,
 )
 from src.infrastructure.sqlite_repository import (
     SQLiteTaskRepository,
     SQLiteReminderRepository,
     SQLiteUserRepository,
     SQLitePushSubscriptionRepository,
+    SQLitePomodoroRepository,
 )
-from src.application.services import TaskService, ReminderService, UserService
+from src.application.services import (
+    TaskService,
+    ReminderService,
+    UserService,
+    PomodoroService,
+)
 from src.application.push_service import PushService
 
 
@@ -78,3 +85,21 @@ def get_user_service(
     repository: SQLiteUserRepository = Depends(get_user_repository),
 ) -> UserService:
     return UserService(repository=repository)
+
+
+def get_pomodoro_repository(
+    session: Session = Depends(get_session),
+) -> IPomodoroRepository:
+    return SQLitePomodoroRepository(session=session)
+
+
+def get_pomodoro_service(
+    repository: IPomodoroRepository = Depends(get_pomodoro_repository),
+    push_service: PushService = Depends(get_push_service),
+    user_repo: SQLiteUserRepository = Depends(get_user_repository),
+) -> PomodoroService:
+    return PomodoroService(
+        repository=repository,
+        push_service=push_service,
+        user_repo=user_repo,
+    )

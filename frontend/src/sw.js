@@ -14,7 +14,7 @@ registerRoute(
     if (request.method !== 'GET') return false;
     
     // API paths to cache
-    const apiPaths = ['/tasks', '/users/me', '/reminders'];
+    const apiPaths = ['/tasks', '/users/me', '/reminders', '/pomodoros'];
     return apiPaths.some(path => url.pathname.startsWith(path));
   },
   new NetworkFirst({
@@ -49,18 +49,28 @@ self.addEventListener('push', (event) => {
     
     // Determine vibration pattern and title based on type
     const isTimer = payloadData.type === 'timer_end';
-    const vibratePattern = isTimer 
+    const isPomodoroFocus = payloadData.type === 'pomodoro_focus_end';
+    const isPomodoroBreak = payloadData.type === 'pomodoro_break_end';
+    const isPomodoro = isPomodoroFocus || isPomodoroBreak;
+    const isUrgentTimer = isTimer || isPomodoro;
+
+    const vibratePattern = isUrgentTimer 
       ? [500, 200, 500, 200, 1000] // Long pulses for alarm
       : [200, 100, 200];           // Short pop for normal reminder
 
     if (isTimer) {
       title = `⏳ ${title}`;
+    } else if (isPomodoro) {
+      title = `🍅 ${title}`;
     }
 
     // Use unique tags per notification source to prevent silent replacement
-    const tag = isTimer
-      ? `timer-${payloadData.task_id}`
-      : `reminder-${payloadData.reminder_id || payloadData.task_id || Date.now()}`;
+    let tag = `reminder-${payloadData.reminder_id || payloadData.task_id || Date.now()}`;
+    if (isTimer) {
+      tag = `timer-${payloadData.task_id}`;
+    } else if (isPomodoro) {
+      tag = `pomodoro-${payloadData.pomodoro_id}-${payloadData.type}`;
+    }
     
     const options = {
       body: payload.body,
@@ -70,7 +80,7 @@ self.addEventListener('push', (event) => {
       vibrate: vibratePattern,
       tag,
       renotify: true,
-      requireInteraction: isTimer // Require interaction for timers so it stays on screen until dismissed
+      requireInteraction: isUrgentTimer // Require interaction for timers so it stays on screen until dismissed
     };
 
     // Notify the app if it's open

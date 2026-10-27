@@ -1,5 +1,5 @@
-// Dynamic BASE_URL: localhost for dev, relative path for production
-const BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : '';
+// Relative BASE_URL: proxied by Vite in dev and Nginx in prod (same-origin architecture)
+const BASE_URL = '';
 const API_URL = `${BASE_URL}/tasks/`;
 
 
@@ -282,7 +282,8 @@ export const taskApi = {
       ...data,
       fullName: data.full_name,
       dayStartTime: data.day_start_time,
-      dayEndTime: data.day_end_time
+      dayEndTime: data.day_end_time,
+      timezone: data.timezone || 'America/Bogota'
     };
   },
 
@@ -293,7 +294,8 @@ export const taskApi = {
       body: JSON.stringify({
         day_start_time: settings.dayStartTime,
         day_end_time: settings.dayEndTime,
-        language: settings.language
+        language: settings.language,
+        timezone: settings.timezone || Intl.DateTimeFormat?.().resolvedOptions?.().timeZone || 'America/Bogota'
       }),
       credentials: 'include'
     });
@@ -345,6 +347,76 @@ export const taskApi = {
         p256dh: '', // Not needed for delete
         auth: ''
       }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  // --- Pomodoro Endpoints ---
+  getTodayPomodoros: async () => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/today`, {
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  startPomodoro: async (deviceType = 'desktop') => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/start`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ device_type: deviceType }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  completePomodoroFocus: async (pomodoroId) => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/${pomodoroId}/complete-focus`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  startPomodoroBreak: async (pomodoroId) => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/${pomodoroId}/start-break`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  completePomodoroBreak: async (pomodoroId) => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/${pomodoroId}/complete-break`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  interruptPomodoro: async (pomodoroId, elapsedSeconds = null) => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/${pomodoroId}/interrupt`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ elapsed_seconds: elapsedSeconds }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  createManualPomodoro: async (hourOfDay, deviceType = 'desktop') => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/manual`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ hour_of_day: hourOfDay, device_type: deviceType }),
+      credentials: 'include'
+    });
+    return handleResponse(response);
+  },
+
+  deleteManualPomodoro: async (pomodoroId) => {
+    const response = await apiFetch(`${BASE_URL}/pomodoros/${pomodoroId}`, {
+      method: 'DELETE',
       credentials: 'include'
     });
     return handleResponse(response);
