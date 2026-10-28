@@ -1,13 +1,62 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { usePomodoroStore, parseServerDateMs } from '../store/usePomodoroStore'
 import { useHabitStore } from '../store/useHabitStore'
+import { useReminderStore } from '../store/useReminderStore'
 import { translations } from '../i18n/translations'
-import { X, Play, Plus, Trash2, ChevronDown, CheckCircle2 } from 'lucide-react'
+import { X, Play, Plus, Trash2, ChevronDown, CheckCircle2, Clock } from 'lucide-react'
 
 export const formatHour12 = (hour) => {
   const period = hour >= 12 ? 'PM' : 'AM';
   const h = hour % 12 === 0 ? 12 : hour % 12;
   return `${h}:00 ${period}`;
+};
+
+const parseHourFromTimeStr = (timeStr, fallbackHour) => {
+  if (!timeStr || typeof timeStr !== 'string') return fallbackHour;
+  const parts = timeStr.split(':');
+  const h = parseInt(parts[0], 10);
+  if (isNaN(h) || h < 0 || h > 23) return fallbackHour;
+  return h;
+};
+
+export const getActiveWindowHours = (dayStartTime, dayEndTime) => {
+  const startHour = parseHourFromTimeStr(dayStartTime, 8);
+  const endHour = parseHourFromTimeStr(dayEndTime, 20);
+  const hours = [];
+
+  if (startHour <= endHour) {
+    for (let h = startHour; h <= endHour; h++) {
+      hours.push(h);
+    }
+  } else {
+    for (let h = startHour; h < 24; h++) {
+      hours.push(h);
+    }
+    for (let h = 0; h <= endHour; h++) {
+      hours.push(h);
+    }
+  }
+
+  return hours.length > 0 ? hours : Array.from({ length: 24 }, (_, i) => i);
+};
+
+export const getClosestHourInOptions = (targetHour, availableHours) => {
+  if (!availableHours || availableHours.length === 0) return targetHour;
+  if (availableHours.includes(targetHour)) return targetHour;
+
+  let closest = availableHours[0];
+  let minDiff = Infinity;
+
+  for (const h of availableHours) {
+    const directDiff = Math.abs(h - targetHour);
+    const circularDiff = Math.min(directDiff, 24 - directDiff);
+    if (circularDiff < minDiff) {
+      minDiff = circularDiff;
+      closest = h;
+    }
+  }
+
+  return closest;
 };
 
 export const TomatoIcon = ({ size = 20, strokeWidth = 2, isActive = false, className = "" }) => (
@@ -67,13 +116,13 @@ const CustomDropdown = ({ value, options, onChange, disabled, className }) => {
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center justify-between w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs font-bold text-white focus:outline-none focus:border-paramo-frailejon disabled:opacity-50 transition-colors ${className || ''}`}
+        className={`flex items-center justify-between gap-2 bg-black/40 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-paramo-frailejon disabled:opacity-50 transition-colors whitespace-nowrap ${className || ''}`}
       >
         <span>{selectedOption ? selectedOption.label : ''}</span>
-        <ChevronDown size={14} className={`transition-transform text-paramo-muted ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={12} className={`transition-transform text-paramo-muted ${isOpen ? 'rotate-180' : ''}`} />
       </button>
       {isOpen && !disabled && (
-        <div className="absolute top-full mt-1 left-0 right-0 bg-paramo-board border border-white/10 rounded-lg shadow-2xl z-50 overflow-y-auto max-h-48 flex flex-col custom-scrollbar">
+        <div className="absolute top-full mt-1 left-0 min-w-[110px] bg-paramo-board border border-white/10 rounded-lg shadow-2xl z-50 overflow-y-auto max-h-48 flex flex-col custom-scrollbar">
           {options.map((o) => (
             <button
               key={o.value}
@@ -104,11 +153,33 @@ export const PomodoroPanel = ({ isOpen, onClose }) => {
     isLoading
   } = usePomodoroStore();
   const { language } = useHabitStore();
+  const { userSettings } = useReminderStore();
   const t = translations[language] || translations.en;
 
-  const currentHour = new Date().getHours();
-  const [selectedHour, setSelectedHour] = useState(currentHour);
+  const availableHours = useMemo(
+    () => getActiveWindowHours(userSettings?.dayStartTime, userSettings?.dayEndTime),
+    [userSettings?.dayStartTime, userSettings?.dayEndTime]
+  );
+
+  const hourOptions = useMemo(
+    () =>
+      availableHours.map((h) => ({
+        value: h,
+        label: formatHour12(h)
+      })),
+    [availableHours]
+  );
+
+  const [selectedHour, setSelectedHour] = useState(() =>
+    getClosestHourInOptions(new Date().getHours(), availableHours)
+  );
   const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedHour(getClosestHourInOptions(new Date().getHours(), availableHours));
+    }
+  }, [isOpen, availableHours]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -126,11 +197,6 @@ export const PomodoroPanel = ({ isOpen, onClose }) => {
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const hourOptions = Array.from({ length: 24 }, (_, i) => ({
-    value: i,
-    label: formatHour12(i)
-  }));
 
   const handleStart = async () => {
     await startFocus();
@@ -206,88 +272,96 @@ export const PomodoroPanel = ({ isOpen, onClose }) => {
         </div>
 
         {/* Section 3: Log Manual Pomodoro */}
-        <form onSubmit={handleAddManual} className="bg-black/20 border border-white/5 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted">
-              {t.pomodoro_manual_section}
-            </h3>
-          </div>
+        <section className="space-y-4">
+          <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
+            <Plus size={14} /> {t.pomodoro_manual_section}
+          </h3>
+          <form onSubmit={handleAddManual} className="bg-black/20 border border-white/5 rounded-xl p-3 flex items-center justify-between gap-2 focus-within:border-paramo-frailejon/30 transition-all">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase font-black text-paramo-muted/60">
+                {t.pomodoro_manual_hour}
+              </span>
+              <CustomDropdown
+                value={selectedHour}
+                options={hourOptions}
+                onChange={(val) => setSelectedHour(Number(val))}
+                disabled={isLoading}
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-paramo-muted">
-              {t.pomodoro_manual_hour}
-            </label>
-            <CustomDropdown
-              value={selectedHour}
-              options={hourOptions}
-              onChange={(val) => setSelectedHour(Number(val))}
+            <button
+              type="submit"
               disabled={isLoading}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex items-center justify-center gap-1.5 bg-white/5 hover:bg-white/10 text-white font-bold text-xs py-2 px-3 rounded-lg border border-white/10 transition-colors"
-          >
-            <Plus size={14} />
-            {t.pomodoro_manual_add}
-          </button>
-        </form>
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-paramo-frailejon/10 hover:bg-paramo-frailejon/20 text-paramo-frailejon border border-paramo-frailejon/30 font-black uppercase tracking-widest text-[10px] rounded-lg transition-all disabled:opacity-50 shrink-0"
+            >
+              <Plus size={14} strokeWidth={2} />
+              {t.add}
+            </button>
+          </form>
+        </section>
 
         {/* Section 4: Today's History */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted">
-            {t.pomodoro_history_today}
+        <section className="space-y-4">
+          <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
+            <Clock size={14} /> {t.pomodoro_history_today}
           </h3>
 
           {completedSessions.length === 0 ? (
-            <div className="text-center py-6 border border-dashed border-white/10 rounded-xl">
-              <p className="text-xs text-paramo-muted">{t.pomodoro_no_sessions}</p>
-            </div>
+            <p className="text-xs text-paramo-muted italic text-center py-2">
+              {t.pomodoro_no_sessions}
+            </p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {completedSessions.map((session) => {
-                let timeLabel = '';
+                let primaryTime = '';
+                let secondaryBadge = '';
                 if (session.is_manual) {
-                  timeLabel = `${formatHour12(session.hour_of_day)} · ${t.pomodoro_manual_badge}`;
+                  primaryTime = formatHour12(session.hour_of_day);
+                  secondaryBadge = t.pomodoro_manual_badge;
                 } else if (session.started_at) {
                   const ms = parseServerDateMs(session.started_at);
                   const date = ms ? new Date(ms) : new Date();
-                  const formattedTime = date.toLocaleTimeString([], {
+                  primaryTime = date.toLocaleTimeString([], {
                     hour: 'numeric',
                     minute: '2-digit',
                     hour12: true
                   });
-                  timeLabel = `${formattedTime} · 25m`;
+                  secondaryBadge = `25 ${t.minutes}`;
                 }
 
                 return (
                   <div
                     key={session.id}
-                    className="flex items-center justify-between bg-black/20 border border-white/5 rounded-lg px-3 py-2 text-xs"
+                    className="p-4 rounded-xl border bg-paramo-card border-white/10 transition-all"
                   >
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 size={14} className="text-paramo-frailejon" />
-                      <span className="font-mono text-white/90">{timeLabel}</span>
-                    </div>
+                    <div className="flex justify-between items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <CheckCircle2 size={18} strokeWidth={1.5} className="text-paramo-frailejon shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-sm font-bold text-white truncate">{primaryTime}</h4>
+                          <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">{secondaryBadge}</p>
+                        </div>
+                      </div>
 
-                    {session.is_manual && (
-                      <button
-                        type="button"
-                        onClick={() => deleteManualPomodoro(session.id)}
-                        className="text-paramo-muted hover:text-red-400 p-1 transition-colors"
-                        title={t.delete}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    )}
+                      {session.is_manual && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => deleteManualPomodoro(session.id)}
+                            className="flex items-center justify-center p-2 text-paramo-muted hover:text-red-400 transition-colors"
+                            title={t.delete}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

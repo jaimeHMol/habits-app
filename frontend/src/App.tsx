@@ -432,10 +432,10 @@ function App() {
             {/* Offline Indicator */}
             {isOffline && (
               <div 
-                className="text-paramo-tierra bg-paramo-tierra/10 p-2 rounded-lg border border-paramo-tierra/20 animate-pulse"
+                className="h-9 w-9 text-paramo-tierra bg-paramo-tierra/10 rounded-lg border border-paramo-tierra/20 animate-pulse flex items-center justify-center"
                 title={t.offline_mode || t.offline_error || "Offline Mode"}
               >
-                <CloudOff size={16} />
+                <CloudOff size={18} />
               </div>
             )}
 
@@ -443,28 +443,28 @@ function App() {
             <button
               onClick={openPomodoroPanel}
               title={t.pomodoro_title}
-              className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center justify-center"
+              className="h-9 w-9 text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors flex items-center justify-center"
             >
-              <TomatoIcon size={20} isActive={isPomodoroActive} className={isPomodoroActive ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'} />
+              <TomatoIcon size={18} isActive={isPomodoroActive} className={isPomodoroActive ? 'text-paramo-frailejon' : 'text-paramo-muted hover:text-white'} />
             </button>
 
             {/* 2. Reminders */}
             <button
               onClick={() => setIsReminderPanelOpen(true)}
               title={t.reminders_title}
-              className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center justify-center"
+              className="h-9 w-9 text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors flex items-center justify-center"
             >
-              <FingerRibbonIcon size={20} />
+              <FingerRibbonIcon size={18} />
             </button>
 
             {/* 3. Language Toggle */}
             <button 
               onClick={() => setLanguage(language === 'en' ? 'es' : 'en')}
-              className="text-paramo-muted hover:text-white bg-paramo-board px-2.5 py-2 rounded-lg border border-white/5 transition-colors text-[10px] font-black tracking-widest flex items-center gap-2"
+              className="h-9 w-9 sm:w-auto sm:px-2.5 text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors text-[10px] font-black tracking-widest flex items-center justify-center gap-1.5"
               title={t.change_language}
             >
-              <Globe size={16} />
-              <span className="hidden sm:inline">{language === 'en' ? 'ES' : 'EN'}</span>
+              <Globe size={18} />
+              <span className="hidden sm:inline leading-none">{language === 'en' ? 'ES' : 'EN'}</span>
             </button>
 
             {/* 4. Desktop: Generate Invitation (if admin) */}
@@ -473,7 +473,7 @@ function App() {
                 <button
                   onClick={handleGenerateInvite}
                   title={t.generate_invite}
-                  className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors"
+                  className="h-9 w-9 text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors flex items-center justify-center"
                 >
                   <UserPlusIcon size={18} />
                 </button>
@@ -499,7 +499,7 @@ function App() {
             )}
 
             {/* 5. Desktop: Logout */}
-            <button onClick={logout} title={t.logout} className="hidden sm:flex text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors">
+            <button onClick={logout} title={t.logout} className="hidden sm:flex h-9 w-9 items-center justify-center text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors">
               <LogOut size={18} />
             </button>
 
@@ -508,7 +508,7 @@ function App() {
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 title={t.more_options}
-                className="text-paramo-muted hover:text-white bg-paramo-board p-2 rounded-lg border border-white/5 transition-colors flex items-center justify-center"
+                className="h-9 w-9 text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors flex items-center justify-center"
               >
                 <MoreHorizontal size={18} />
               </button>

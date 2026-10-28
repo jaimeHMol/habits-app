@@ -27,9 +27,9 @@ export const NotificationToast = () => {
                   removeAlert(alert.alertId);
                 }
               }}
-              className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] flex items-start gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 ${isTaskLinked ? 'border-orange-500' : 'border-paramo-frailejon'}`}
+              className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] flex items-start gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 ${isTaskLinked ? 'border-paramo-tierra' : 'border-paramo-frailejon'}`}
             >
-              <div className={`p-2 rounded-full shrink-0 ${isTaskLinked ? 'bg-orange-500/10 text-orange-500' : 'bg-paramo-frailejon/10 text-paramo-frailejon'}`}>
+              <div className={`p-2 rounded-full shrink-0 ${isTaskLinked ? 'bg-paramo-tierra/15 text-paramo-tierra' : 'bg-paramo-frailejon/10 text-paramo-frailejon'}`}>
                 <BellRing size={20} />
               </div>
               

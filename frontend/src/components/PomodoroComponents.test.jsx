@@ -1,11 +1,12 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PomodoroPanel } from './PomodoroPanel';
+import { PomodoroPanel, getActiveWindowHours, getClosestHourInOptions } from './PomodoroPanel';
 import { PomodoroFocusOverlay } from './PomodoroFocusOverlay';
 import { TaskCard } from './TaskCard';
 import { usePomodoroStore } from '../store/usePomodoroStore';
 import { useHabitStore } from '../store/useHabitStore';
+import { useReminderStore } from '../store/useReminderStore';
 
 vi.mock('canvas-confetti', () => ({
   default: vi.fn(),
@@ -54,12 +55,65 @@ describe('Pomodoro UI Components', () => {
 
       expect(screen.getByText('Log Manual Pomodoro')).toBeDefined();
       expect(screen.getByText('Today\'s Sessions')).toBeDefined();
-      expect(screen.getByText(/2:00 PM · Manual/i)).toBeDefined();
+      expect(screen.getByText('2:00 PM')).toBeDefined();
+      expect(screen.getByText('Manual')).toBeDefined();
     });
 
     it('does not render when isOpen is false', () => {
       const { container } = render(<PomodoroPanel isOpen={false} onClose={vi.fn()} />);
       expect(container.firstChild).toBeNull();
+    });
+
+    it('filters manual hour dropdown based on reminders active window and selects closest hour on open', () => {
+      vi.useFakeTimers();
+      // Set current time to 06:30 AM (before the 09:00 - 17:00 window)
+      vi.setSystemTime(new Date(2026, 9, 27, 6, 30, 0));
+
+      useReminderStore.setState({
+        userSettings: {
+          dayStartTime: '09:00',
+          dayEndTime: '17:00',
+        },
+      });
+
+      const { rerender } = render(<PomodoroPanel isOpen={true} onClose={vi.fn()} />);
+
+      // Closest hour in [9..17] to 6 is 9 (9:00 AM)
+      const dropdownTrigger = screen.getByText('9:00 AM');
+      expect(dropdownTrigger).toBeDefined();
+
+      // Open dropdown options
+      fireEvent.click(dropdownTrigger);
+
+      // Should contain 9:00 AM and 5:00 PM, but not 8:00 AM or 6:00 PM
+      expect(screen.getAllByText('9:00 AM').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('5:00 PM')).toBeDefined();
+      expect(screen.queryByText('8:00 AM')).toBeNull();
+      expect(screen.queryByText('6:00 PM')).toBeNull();
+
+      // Change selection manually to 11:00 AM
+      fireEvent.click(screen.getByText('11:00 AM'));
+      expect(screen.getByText('11:00 AM')).toBeDefined();
+
+      // Close panel, advance clock to 15:10 (3:10 PM), and reopen panel
+      rerender(<PomodoroPanel isOpen={false} onClose={vi.fn()} />);
+      vi.setSystemTime(new Date(2026, 9, 27, 15, 10, 0));
+      rerender(<PomodoroPanel isOpen={true} onClose={vi.fn()} />);
+
+      // Should reset to closest hour to current time (3:00 PM) when reopened
+      expect(screen.getByText('3:00 PM')).toBeDefined();
+
+      vi.useRealTimers();
+    });
+
+    it('computes active window hours including overnight ranges and circular closest hour', () => {
+      // Standard daytime window
+      expect(getActiveWindowHours('08:00', '12:00')).toEqual([8, 9, 10, 11, 12]);
+      // Overnight window crossing midnight
+      expect(getActiveWindowHours('22:00', '02:00')).toEqual([22, 23, 0, 1, 2]);
+      // Closest hour calculation
+      expect(getClosestHourInOptions(7, [9, 10, 11, 12])).toBe(9);
+      expect(getClosestHourInOptions(23, [8, 9, 10, 20])).toBe(20);
     });
   });
 

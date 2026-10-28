@@ -195,8 +195,9 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
               
               <button 
                 type="submit" disabled={!newTitle.trim() || isLoading}
-                className="px-3 py-1 bg-paramo-frailejon/10 text-paramo-frailejon border border-paramo-frailejon/30 font-black uppercase tracking-widest text-[9px] rounded-md hover:bg-paramo-frailejon/20 transition-all disabled:opacity-50"
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-paramo-frailejon/10 hover:bg-paramo-frailejon/20 text-paramo-frailejon border border-paramo-frailejon/30 font-black uppercase tracking-widest text-[10px] rounded-lg transition-all disabled:opacity-50"
               >
+                <Plus size={14} strokeWidth={2} />
                 {t.add}
               </button>
             </div>
@@ -215,22 +216,22 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
               )}
               {reminders.filter(r => !r.task_id).map(reminder => (
                 <div key={reminder.id} className={`p-4 rounded-xl border transition-all ${reminder.isActive ? 'bg-paramo-card border-white/10' : 'bg-black/10 border-white/5 opacity-60'}`}>
-                  <div className="flex justify-between items-start gap-3">
+                  <div className="flex justify-between items-center gap-3">
                     <div className="flex-1 min-w-0">
                       <h4 className={`text-sm font-bold truncate ${reminder.isActive ? 'text-white' : 'text-paramo-muted'}`}>{stripMarkdown(reminder.title)}</h4>
                       <p className="text-[10px] text-paramo-muted uppercase font-black mt-1">{t.every} {reminder.intervalMinutes} {t.minutes}</p>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <button 
                         onClick={() => handleToggle(reminder)}
-                        className={`p-2 rounded-lg transition-colors ${reminder.isActive ? 'text-paramo-frailejon hover:bg-paramo-frailejon/10' : 'text-paramo-muted hover:bg-white/5'}`}
+                        className={`flex items-center justify-center p-2 rounded-lg transition-colors ${reminder.isActive ? 'text-paramo-frailejon hover:bg-paramo-frailejon/10' : 'text-paramo-muted hover:bg-white/5'}`}
                         title={t.toggle}
                       >
                         {reminder.isActive ? <BellRing size={16} /> : <BellOff size={16} />}
                       </button>
                       <button 
                         onClick={() => deleteReminder(reminder.id)}
-                        className="p-2 text-paramo-muted hover:text-red-400 transition-colors"
+                        className="flex items-center justify-center p-2 text-paramo-muted hover:text-red-400 transition-colors"
                         title={t.delete}
                       >
                         <Trash2 size={16} />
@@ -245,19 +246,19 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
           {/* Separator for Task Alerts */}
           {reminders.some(r => r.task_id) && (
             <div className="space-y-4 pt-4 border-t border-white/5">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500/80 flex items-center gap-2">
-                <BellRing size={12} /> {t.task_alerts}
+              <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
+                <BellRing size={14} /> {t.task_alerts}
               </h3>
               <div className="space-y-3">
                 {reminders.filter(r => r.task_id).map(reminder => (
-                  <div key={reminder.id} className="p-4 rounded-xl border bg-orange-500/5 border-orange-500/20">
-                    <div className="flex justify-between items-start gap-3">
+                  <div key={reminder.id} className="p-4 rounded-xl border bg-paramo-tierra/10 border-paramo-tierra/30">
+                    <div className="flex justify-between items-center gap-3">
                       <div className="flex-1 min-w-0">
                         <h4 className="text-sm font-bold text-white/90 truncate italic">{stripMarkdown(reminder.title)}</h4>
-                        <p className="text-[9px] text-orange-500/60 uppercase font-black mt-1 tracking-wider">{t.alerts_on_day}</p>
+                        <p className="text-[10px] text-paramo-tierra uppercase font-black mt-1">{t.alerts_on_day}</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className="p-2 text-orange-500/40" title={t.managed_by_task}>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="flex items-center justify-center p-2 text-paramo-tierra/70" title={t.managed_by_task}>
                           <BellRing size={16} />
                         </span>
                       </div>
