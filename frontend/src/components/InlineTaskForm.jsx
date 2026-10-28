@@ -3,8 +3,6 @@ import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
 import { Trash2, X, Save, AlertCircle, ChevronUp, ChevronDown, LoaderPinwheel } from 'lucide-react'
 
-const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-
 const Dropdown = ({ value, options, onChange, disabled, className, placeholder }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -214,7 +212,7 @@ export const InlineTaskForm = ({ column, initialData, onSave, onCancel, onDelete
             disabled={isSaving}
             className="text-paramo-muted"
             placeholder={t.month_label || "Month"}
-            options={monthNames.map((m, i) => ({ value: i + 1, label: m, className: "text-paramo-muted" }))}
+            options={(t.months_short || ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]).map((m, i) => ({ value: i + 1, label: m, className: "text-paramo-muted" }))}
           />
         )}
       </div>

@@ -1,11 +1,15 @@
 import React from 'react'
 import { useReminderStore } from '../store/useReminderStore'
+import { useHabitStore } from '../store/useHabitStore'
+import { translations } from '../i18n/translations'
 import { stripMarkdown } from '../utils/textUtils'
 import { X, BellRing } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export const NotificationToast = () => {
   const { activeAlerts, removeAlert } = useReminderStore();
+  const { language } = useHabitStore();
+  const t = translations[language] || translations.en;
 
   return (
     <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none">
@@ -27,22 +31,23 @@ export const NotificationToast = () => {
                   removeAlert(alert.alertId);
                 }
               }}
-              className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] flex items-start gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 ${isTaskLinked ? 'border-paramo-tierra' : 'border-paramo-frailejon'}`}
+              className={`pointer-events-auto shadow-2xl rounded-xl p-4 min-w-[280px] flex items-center gap-4 ring-1 ring-white/10 bg-paramo-card border-l-4 ${isTaskLinked ? 'border-paramo-tierra' : 'border-paramo-frailejon'}`}
             >
-              <div className={`p-2 rounded-full shrink-0 ${isTaskLinked ? 'bg-paramo-tierra/15 text-paramo-tierra' : 'bg-paramo-frailejon/10 text-paramo-frailejon'}`}>
+              <div className={`p-2 rounded-full shrink-0 flex items-center justify-center ${isTaskLinked ? 'bg-paramo-tierra/15 text-paramo-tierra' : 'bg-paramo-frailejon/10 text-paramo-frailejon'}`}>
                 <BellRing size={20} />
               </div>
               
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-bold text-white uppercase tracking-tight">
-                  RECUERDA
+                  {t.remember_header}
                 </h4>
                 <p className="text-sm text-paramo-muted mt-0.5 line-clamp-2">{stripMarkdown(alert.title)}</p>
               </div>
 
               <button 
                 onClick={() => removeAlert(alert.alertId)}
-                className="text-paramo-muted hover:text-white transition-colors"
+                className="text-paramo-muted hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center shrink-0"
+                title={t.close}
               >
                 <X size={18} />
               </button>

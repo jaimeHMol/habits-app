@@ -94,7 +94,7 @@ export const TomatoIcon = ({ size = 20, strokeWidth = 2, isActive = false, class
   </div>
 );
 
-const CustomDropdown = ({ value, options, onChange, disabled, className }) => {
+export const CustomDropdown = ({ value, options, onChange, disabled, className }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
@@ -220,18 +220,18 @@ export const PomodoroPanel = ({ isOpen, onClose }) => {
       <div className="p-6 border-b border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-3">
           <TomatoIcon size={24} className="text-paramo-frailejon" />
-          <h2 className="text-xl font-bold tracking-tight text-white">{t.pomodoro_title}</h2>
+          <h2 className="text-xl font-bold italic tracking-tight text-white">{t.pomodoro_title}</h2>
         </div>
         <button
           onClick={onClose}
-          className="text-paramo-muted hover:text-white p-1 rounded-lg hover:bg-white/5 transition-colors"
+          className="text-paramo-muted hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center"
           title={t.close}
         >
           <X size={18} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
         {/* Section 1: Today's Summary */}
         <div className="bg-black/20 border border-white/5 rounded-xl p-5 flex items-center justify-between">
           <div>
@@ -253,11 +253,11 @@ export const PomodoroPanel = ({ isOpen, onClose }) => {
         <div className="bg-black/20 border border-white/5 rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-center gap-2">
             <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-paramo-frailejon/15 text-paramo-frailejon border border-paramo-frailejon/20">
-              25 MIN FOCUS
+              {t.pomodoro_focus_pill}
             </span>
             <span className="text-paramo-muted text-xs">·</span>
             <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/5 text-paramo-muted border border-white/10">
-              5 MIN BREAK
+              {t.pomodoro_break_pill}
             </span>
           </div>
 

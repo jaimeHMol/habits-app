@@ -15,8 +15,6 @@ const MinimalPin = ({ size = 16, strokeWidth = 1.5, fill = "none", className = "
   </svg>
 );
 
-const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
-
 const playVictorySound = () => {
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -265,7 +263,7 @@ export const TaskCard = ({ task, column, dragHandleProps, snapshot, onEditClick 
                   {showDateBadge && (
                     <span className={`flex items-center gap-1 text-[10px] md:text-[11px] font-black uppercase tracking-tighter ${task.completed ? 'text-paramo-muted' : 'text-paramo-frailejon'}`}>
                       <Calendar size={10} />
-                      {column.type === 'monthly' ? task.targetDay : `${task.targetDay} ${monthNames[task.targetMonth - 1]}`}
+                      {column.type === 'monthly' ? task.targetDay : `${task.targetDay} ${(t.months_short || ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"])[task.targetMonth - 1]}`}
                     </span>
                   )}
                   {task.taskType === 'counter' && (

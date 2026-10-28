@@ -4,8 +4,20 @@ import { useHabitStore } from '../store/useHabitStore'
 import { translations } from '../i18n/translations'
 import { stripMarkdown } from '../utils/textUtils'
 import { checkPushSubscription, subscribeToPush, unsubscribeFromPush } from '../services/pushSubscription'
-import { taskApi } from '../services/api'
+import { CustomDropdown, formatHour12 } from './PomodoroPanel'
 import { X, Plus, Trash2, Bell, Clock, BellOff, BellRing, ChevronUp, ChevronDown, Smartphone } from 'lucide-react'
+
+const HOUR_OPTIONS_24 = Array.from({ length: 24 }, (_, i) => ({
+  value: `${String(i).padStart(2, '0')}:00`,
+  label: formatHour12(i),
+}));
+
+const normalizeToHourSlot = (timeStr, fallback = '08:00') => {
+  if (!timeStr || typeof timeStr !== 'string') return fallback;
+  const h = parseInt(timeStr.split(':')[0], 10);
+  if (isNaN(h) || h < 0 || h > 23) return fallback;
+  return `${String(h).padStart(2, '0')}:00`;
+};
 
 // Custom "Finger with ribbon" SVG Component
 const FingerRibbonIcon = ({ size = 24, className = "" }) => (
@@ -97,11 +109,15 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
     <div ref={panelRef} className="fixed inset-y-0 right-0 w-full max-w-sm bg-paramo-board border-l border-white/10 z-[150] shadow-2xl animate-slideInRight flex flex-col">
       <div className="p-6 border-b border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <FingerRibbonIcon className="text-paramo-frailejon" />
+          <FingerRibbonIcon size={24} className="text-paramo-frailejon" />
           <h2 className="text-xl font-bold text-white italic tracking-tight">{t.reminders_title}</h2>
         </div>
-        <button onClick={onClose} className="text-paramo-muted hover:text-white transition-colors">
-          <X size={24} />
+        <button
+          onClick={onClose}
+          className="text-paramo-muted hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center"
+          title={t.close}
+        >
+          <X size={18} />
         </button>
       </div>
 
@@ -111,23 +127,25 @@ export const ReminderPanel = ({ isOpen, onClose }) => {
           <h3 className="text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2">
             <Clock size={14} /> {t.activity_window}
           </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">{t.start}</label>
-              <input 
-                type="time" 
-                value={userSettings.dayStartTime} 
-                onChange={(e) => updateSettings({ ...userSettings, dayStartTime: e.target.value, language })}
-                className="w-full bg-black/20 border border-white/5 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-paramo-frailejon"
+          <div className="bg-black/20 border border-white/5 rounded-xl p-4 grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-paramo-muted/60 uppercase font-black block">{t.start}</label>
+              <CustomDropdown
+                value={normalizeToHourSlot(userSettings.dayStartTime, '08:00')}
+                options={HOUR_OPTIONS_24}
+                onChange={(val) => updateSettings({ ...userSettings, dayStartTime: val, language })}
+                disabled={isLoading}
+                className="w-full"
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-paramo-muted/70 uppercase font-bold">{t.end}</label>
-              <input 
-                type="time" 
-                value={userSettings.dayEndTime} 
-                onChange={(e) => updateSettings({ ...userSettings, dayEndTime: e.target.value, language })}
-                className="w-full bg-black/20 border border-white/5 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-paramo-frailejon"
+            <div className="space-y-1.5">
+              <label className="text-[10px] text-paramo-muted/60 uppercase font-black block">{t.end}</label>
+              <CustomDropdown
+                value={normalizeToHourSlot(userSettings.dayEndTime, '20:00')}
+                options={HOUR_OPTIONS_24}
+                onChange={(val) => updateSettings({ ...userSettings, dayEndTime: val, language })}
+                disabled={isLoading}
+                className="w-full"
               />
             </div>
           </div>

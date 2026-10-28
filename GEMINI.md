@@ -40,13 +40,59 @@ Eres un experto en ingeniería de software incluyendo UI and UX (Gemini) operand
 - Si sugieres comandos de terminal, especifica si deben ejecutarse en la máquina local o en el servidor Ubuntu.
 - Asume que los puertos de red (80, 443) ya están configurados y Caddy está deshabilitado en el servidor.
 
-## 6. Principios y Reglas de UI/UX (Establecidos post-auditoría)
-- **Local-First y UI Optimista:** Las interacciones del usuario (crear, completar, borrar tareas) deben reflejarse **inmediatamente** en la interfaz (0ms de latencia percibida) antes de esperar la respuesta del servidor. Usa encolado de acciones (Background Sync) para conexiones offline. El estado inicial debe cargarse desde el caché local (Zero-Loading-Screen).
-- **Consistencia de Elementos e Íconos:** Mantén homogeneidad estricta geométrica y de peso visual. Íconos agrupados deben compartir el mismo tamaño y grosor de línea (ej. `size={16} strokeWidth={1.5}`). Prioriza formas básicas y angulares sobre diseños redondeados y complejos.
-- **Evitar Controles Nativos del OS:** Nunca uses elementos nativos (como `<select>`) que rompan la inmersión del diseño oscuro ("dark/páramo"). Sustitúyelos por componentes personalizados (ej. `<Dropdown>`) hechos con Tailwind.
-- **Copywriting de Interfaz (Puntuación):** Los textos cortos de la UI (etiquetas, estados vacíos, mensajes de error cortos, botones) **NUNCA deben llevar punto final**. Solo los párrafos largos y descriptivos llevan punto.
-- **Microinteracciones ("Delight"):** Recompensa al usuario sutilmente al completar hábitos. Usa retroalimentación visual no bloqueante (como partículas de confeti respetando las preferencias de movimiento reducido) y auditiva sintetizada a través de la Web Audio API (tonos cálidos, octavas bajas, ondas suaves como 'sine' o 'triangle') en lugar de cargar pesados archivos mp3.
-- **Empty States y Estados de Carga:** No dejes espacios en blanco "muertos". Usa "Empty States" iconográficos e inspiradores cuando no haya datos. Evita oscurecer (dimming) agresivamente los componentes durante estados de carga (`isSaving`); usa *spinners* localizados en los botones de acción para mantener la tarjeta viva.
+## 6. Principios, Sistema de Diseño ("Páramo Dark") y Reglas de UI/UX
+Todo cambio visual, ajuste o nueva funcionalidad en el frontend **DEBE** adherirse estrictamente a este sistema de diseño para garantizar coherencia total desde el primer momento:
+
+1. **Principios Fundamentales de UX:**
+   - **Local-First y UI Optimista:** Las interacciones del usuario (crear, completar, borrar tareas) deben reflejarse **inmediatamente** en la interfaz (0ms de latencia percibida) antes de esperar la respuesta del servidor. Usa encolado de acciones (Background Sync) para conexiones offline. El estado inicial debe cargarse desde el caché local (Zero-Loading-Screen).
+   - **Evitar Controles Nativos del OS:** NUNCA uses elementos nativos del navegador/OS (`<select>`, `<input type="time">`, `<input type="date">`, spinners numéricos nativos) que rompan la inmersión del tema oscuro. Sustitúyelos siempre por componentes personalizados en Tailwind (como `<CustomDropdown>`, `<Dropdown>` o inputs con `.no-spinner` y botones de incremento/decremento propios).
+   - **Copywriting de Interfaz (Sin Puntuación Final):** Los textos cortos de la UI (etiquetas, placeholders, estados vacíos, mensajes de error cortos, botones) **NUNCA deben llevar punto final ni puntos suspensivos (`...`)**. Solo los párrafos descriptivos largos llevan punto.
+   - **Microinteracciones ("Delight"):** Recompensa al usuario sutilmente al completar hábitos o ciclos de foco. Usa retroalimentación visual no bloqueante (`canvas-confetti` respetando `disableForReducedMotion: true`) y auditiva sintetizada con Web Audio API (ondas `'sine'` o `'triangle'`) en lugar de archivos de audio externos pesados.
+   - **Empty States y Estados de Carga:** Usa "Empty States" limpios (`text-xs text-paramo-muted italic text-center py-2` en paneles, o ícono + texto uppercase en columnas). Evita oscurecer agresivamente las tarjetas durante guardados (`isSaving`); usa *spinners* localizados (`LoaderPinwheel`) en los botones de acción.
+
+2. **Paleta Semántica Estricta (`tailwind.config.js`):**
+   - **Prohibido usar colores arbitrarios de Tailwind** (ej. `orange-500`, `blue-500`, `gray-700`) fuera de la paleta del tema (salvo `red-*` para acciones destructivas/errores).
+   - `bg-paramo-bg` (`#1c1917`): Fondo base de la aplicación y texto sobre botones sólidos primarios.
+   - `bg-paramo-board` (`#292524`): Superficie de columnas, paneles laterales (drawers), barra superior y menús desplegables.
+   - `bg-paramo-card` (`#44403c`): Superficie elevada para tarjetas de tareas, tarjetas de listas en paneles (alertas, sesiones de pomodoro), modales y toasts.
+   - `bg-black/20 border border-white/5`: Superficie hundida ("recessed") exclusiva para cajas de formularios inline, resúmenes estadísticos o contenedores de configuración dentro de paneles.
+   - `text-paramo-text` (`#e7e5e4`) / `text-white`: Texto primario.
+   - `text-paramo-muted` (`#a8a29e`): Texto secundario, subtítulos de sección, íconos en reposo y prioridad opcional.
+   - `paramo-frailejon` (`#0d9488`): Color primario de marca, foco activo, éxito, prioridad importante y botones de adición.
+   - `paramo-tierra` (`#b45309`): Color semántico de alerta crítica, tareas vinculadas a fecha (`Task-Linked Alerts`), contadores y estado offline.
+
+3. **Jerarquía Tipográfica Estándar:**
+   - **Títulos de Página, Modales y Paneles (`h1`, `h2`):** Siempre llevan `font-bold italic tracking-tight text-white` (ej. `text-xl font-bold italic tracking-tight text-white` en encabezados de paneles laterales y `text-2xl` en modales).
+   - **Subtítulos de Sección en Paneles y Modales (`h3`):** Estrictamente `text-xs font-black uppercase tracking-widest text-paramo-muted flex items-center gap-2` acompañados **siempre** a su izquierda por un ícono Lucide con `size={14}`. Nunca cambies el color ni el tamaño de un `h3` para diferenciar una sección; deja que las tarjetas internas hablen por sí solas.
+   - **Títulos de Ítems en Tarjetas de Paneles (`h4`):** `text-sm font-bold text-white truncate` (añadiendo `italic` cuando representen el nombre de una tarea vinculada).
+   - **Subtextos / Metadatos de Tarjetas (`p`):** `text-[10px] text-paramo-muted uppercase font-black mt-1` (o `text-paramo-tierra` en alertas críticas vinculadas a tareas).
+   - **Etiquetas Inline en Formularios (`label` / `span`):** `text-[10px] uppercase font-black text-paramo-muted/60`.
+
+4. **Catálogo de Botones e Íconos (Geometría y Alineación Estricta):**
+   - **Regla de Oro de Centrado Vertical:** Todo `<button>` o `<span>` que envuelva un ícono SVG **DEBE** incluir `flex items-center justify-center` para eliminar el espacio fantasma de `line-height` inline y garantizar un centrado vertical perfecto al píxel.
+   - **Botones de la Barra Superior Derecha (Topbar Controls):**
+     - Dimensiones fijas obligatorias: `h-9 w-9` (`36×36px`) para botones de ícono (y `h-9 w-9 sm:w-auto sm:px-2.5` cuando incluye etiqueta de texto como el selector de idioma).
+     - Estilo: `text-paramo-muted hover:text-white bg-paramo-board rounded-lg border border-white/5 transition-colors flex items-center justify-center`.
+     - Tamaño de ícono: Estrictamente `size={18}` en todos los elementos de la barra superior (`TomatoIcon`, `FingerRibbonIcon`, `Globe`, `UserPlusIcon`, `LogOut`, `MoreHorizontal`, `CloudOff`).
+   - **Botón CTA Primario Sólido (ej. "Iniciar Pomodoro", "Iniciar Nuevo Ciclo", "Instalar"):**
+     - Estilo: `bg-paramo-frailejon text-paramo-bg font-black uppercase tracking-widest text-xs py-3 px-4 rounded-xl shadow-lg hover:bg-opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2`.
+   - **Botón de Adición / Acción Secundaria en Paneles y Auth (ej. `+ ADD` en Reminders y Pomodoro Manual):**
+     - En formularios de paneles se ubica en la misma fila horizontal al lado derecho del input final, usando el texto corto `t.add` (`"Add"` / `"Añadir"`).
+     - Estilo: `flex items-center justify-center gap-1.5 px-3 py-1.5 bg-paramo-frailejon/10 hover:bg-paramo-frailejon/20 text-paramo-frailejon border border-paramo-frailejon/30 font-black uppercase tracking-widest text-[10px] rounded-lg transition-all disabled:opacity-50 shrink-0` con ícono `<Plus size={14} strokeWidth={2} />`.
+   - **Botón Fantasma de Columna (ej. "+ Nueva Tarea"):**
+     - Estilo: `mt-4 flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-xs font-black uppercase tracking-widest text-paramo-muted border border-dashed border-white/10 hover:bg-white/5 hover:text-white transition-all group`.
+   - **Botones de Acción dentro de Tarjetas de Lista (`Trash2`, `BellRing`, `BellOff`) y Botones de Cerrar (`X`):**
+     - En tarjetas de listas: contenedor `flex items-center justify-center p-2 rounded-lg transition-colors` con ícono `size={16}`.
+     - En encabezados de paneles/overlays/toasts (`X`): contenedor `text-paramo-muted hover:text-white p-1.5 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-center` con `<X size={18} />`.
+
+5. **Anatomía de Paneles Laterales (`ReminderPanel`, `PomodoroPanel` y futuros paneles):**
+   - **Contenedor Raíz:** `fixed inset-y-0 right-0 w-full max-w-sm bg-paramo-board border-l border-white/10 z-[150] shadow-2xl animate-slideInRight flex flex-col`.
+   - **Header del Panel:** `p-6 border-b border-white/5 flex justify-between items-center`, con ícono principal a la izquierda (`size={24} className="text-paramo-frailejon"`), título `h2` (`text-xl font-bold italic tracking-tight text-white`) y botón de cierre `<X size={18} />`.
+   - **Cuerpo del Panel:** `flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar`, dividido en bloques `<section className="space-y-4">`.
+   - **Tarjetas de Listado en Paneles (`My Alerts`, `Task-Linked Alerts`, `Today's Sessions`):**
+     - Contenedor de lista: `space-y-3`.
+     - Cada ítem: `p-4 rounded-xl border bg-paramo-card border-white/10 transition-all` (o `bg-paramo-tierra/10 border-paramo-tierra/30` para ítems vinculados a tareas).
+     - Fila interna: `flex justify-between items-center gap-3` (NUNCA usar `items-start`, para asegurar que los íconos laterales y botones de acción queden centrados verticalmente respecto a las dos líneas de texto).
 
 ## 7. Arquitectura y Reglas de Manejo de Fechas, Timers y Zonas Horarias (UTC + IANA Local)
 Cualquier modelo o desarrollador que modifique lógica temporal (tareas, recordatorios, pomodoros, resets diarios/mensuales/anuales o analítica) **DEBE** seguir estrictamente estas reglas:

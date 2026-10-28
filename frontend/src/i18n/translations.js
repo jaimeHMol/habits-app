@@ -49,7 +49,7 @@ export const translations = {
     push_not_supported: "Push not supported",
     
     // Toast
-    remember_header: "RECUERDA",
+    remember_header: "REMINDER",
     
     // Actions
     confirm: "Confirm",
@@ -67,6 +67,8 @@ export const translations = {
     review_syncing: "Syncing...",
     review_start: "Start New Cycle",
     review_cycle_added: "Added this cycle",
+    review_select_all: "Select All",
+    review_deselect_all: "Deselect All",
     
     // Form
     title_label: "Title",
@@ -75,6 +77,7 @@ export const translations = {
     type_label: "Type",
     day_label: "Day",
     month_label: "Month",
+    months_short: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     duration_label: "Focus Time (min)",
     save_btn: "Save Task",
     saving_status: "Saving",
@@ -96,8 +99,8 @@ export const translations = {
     prio_critical: "Critical",
     
     // Placeholders
-    ex_reminder: "Ex: Drink water, Posture...",
-    reminder_placeholder: "Reminder title...",
+    ex_reminder: "Ex: Drink water, Posture",
+    reminder_placeholder: "Reminder title",
     
     // PWA Prompt
     pwa_ready: "App ready",
@@ -151,6 +154,8 @@ export const translations = {
     pomodoro_no_sessions: "No pomodoros completed today",
     pomodoro_manual_badge: "Manual",
     pomodoro_interrupt_tip: "Interrupt Pomodoro",
+    pomodoro_focus_pill: "25 MIN FOCUS",
+    pomodoro_break_pill: "5 MIN BREAK",
     more_options: "More options",
   },
   es: {
@@ -231,6 +236,7 @@ export const translations = {
     type_label: "Tipo",
     day_label: "Día",
     month_label: "Mes",
+    months_short: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"],
     duration_label: "Tiempo de Foco (min)",
     save_btn: "Guardar Tarea",
     saving_status: "Guardando",
@@ -252,8 +258,8 @@ export const translations = {
     prio_critical: "Crítico",
     
     // Placeholders
-    ex_reminder: "Ej: Beber agua, Postura...",
-    reminder_placeholder: "Título del recordatorio...",
+    ex_reminder: "Ej: Beber agua, Postura",
+    reminder_placeholder: "Título del recordatorio",
     
     // PWA Prompt
     pwa_ready: "App lista",
@@ -307,6 +313,8 @@ export const translations = {
     pomodoro_no_sessions: "Sin pomodoros completados hoy",
     pomodoro_manual_badge: "Manual",
     pomodoro_interrupt_tip: "Interrumpir Pomodoro",
+    pomodoro_focus_pill: "25 MIN FOCO",
+    pomodoro_break_pill: "5 MIN DESCANSO",
     more_options: "Más opciones",
   }
 };
